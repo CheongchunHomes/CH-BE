@@ -1,21 +1,45 @@
 package com.chcorp.homes.common.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+@RequiredArgsConstructor
 @Configuration
 public class SecurityConfig {
 
-    @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable());
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-        return http.build();
+    private final String[] WHITE_LIST = {
+            "/api/auth/login",
+            "/api/auth/signup",
+            "/api/auth/refresh",
+            "/swagger-ui/**",
+            "/v3/api-docs/**"
+    };
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .csrf(AbstractHttpConfigurer::disable)      //JWT를 쓸 것이므로 CSRF 비활성화
+                .formLogin(AbstractHttpConfigurer::disable) //Spring Security 기본 로그인 폼 비활성화
+                .httpBasic(AbstractHttpConfigurer::disable) //JWT를 쓸 것이므로 Basic 인증은 사용 x
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )       // 세션을 만들지 않도록 설정, Stateless 로
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(WHITE_LIST).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                )
+                .build();
     }
 }
