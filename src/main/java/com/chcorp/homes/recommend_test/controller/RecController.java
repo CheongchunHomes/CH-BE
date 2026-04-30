@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/recommend")
-@CrossOrigin(origins = "http://localhost:3000")
+@RequestMapping("/recommend")
 @RequiredArgsConstructor
 public class RecController {
 
