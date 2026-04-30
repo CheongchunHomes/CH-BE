@@ -10,5 +10,8 @@ import java.util.UUID;
 
 @Entity
 public class RefreshToken {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
 }

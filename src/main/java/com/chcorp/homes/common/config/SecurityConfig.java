@@ -20,7 +20,8 @@ public class SecurityConfig {
             "/api/auth/signup",
             "/api/auth/refresh",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+            "/**"   // 임시
     };
 
     @Bean

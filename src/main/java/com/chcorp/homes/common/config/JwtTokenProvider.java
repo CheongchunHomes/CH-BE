@@ -7,7 +7,6 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 
@@ -23,31 +23,43 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
-    private String secret;
-
-    @Value("${jwt.access-token-expiration-ms}")
-    private long accessTokenExpirationMs;
+    private final JwtProperties jwtProperties;
 
     private SecretKey secretKey;
 
     @PostConstruct
     protected void init() {
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.secretKey = Keys.hmacShaKeyFor(
+                jwtProperties.secret().getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     public String createAccessToken(Long userId, String role) {
-        Date now = new Date();
-        Date expiration = new Date(now.getTime() + accessTokenExpirationMs);
+        Instant now = Instant.now();
+        Instant expiration = now.plus(jwtProperties.accessTokenExpiration());
 
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("role", role)
-                .issuedAt(now)
-                .expiration(expiration)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiration))
                 .signWith(secretKey)
                 .compact();
     }
+    public String createRefreshToken(Long userId, String role) {
+        Instant now = Instant.now();
+        Instant expiration = now.plus(jwtProperties.refreshTokenExpiration());
+
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("role", role)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(expiration))
+                .signWith(secretKey)
+                .compact();
+    }
+
+
 
     public boolean validateToken(String token) {
         try {
