@@ -1,5 +1,6 @@
 package com.chcorp.homes.users.entity;
 
+import com.chcorp.homes.common.entity.MutableBaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,7 +11,7 @@ import java.time.LocalDate;
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 @Builder
-public class UserProfile {
+public class UserProfile extends MutableBaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long profileId;

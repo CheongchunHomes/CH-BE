@@ -39,7 +39,7 @@ public class RecoService {
     public List<Recoentity> getRecommendPolicies(Long userId) {
         UserProfile user = getUserProfile(userId);
         int age = Period.between(user.getBirthDate(), LocalDate.now()).getYears();
-        long annualIncomeInManwon = user.getAnnualIncome() / 10000; //원 > 만원
+        long annualIncomeInManwon = user.getAnnualIncome() / 10000; //원 > 만원단위로 소득변환
         String region = user.getCurrentResidence();
         return  recorepository.findByActiveTrue().stream().filter(p -> age >= p.getMinAge() && age <= p.getMaxAge())
                 .filter(p -> annualIncomeInManwon <= p.getMaxIncome()).filter(p -> p.getRegion().equals("전국") || p.getRegion().equals(region)).collect(Collectors.toList());
