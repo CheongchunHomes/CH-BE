@@ -1,6 +1,6 @@
 package com.chcorp.homes.announcement.service;
 
-import com.chcorp.homes.announcement.dto.AnnouncementListResponse;
+import com.chcorp.homes.announcement.dto.AnnouncementListDTO;
 import com.chcorp.homes.announcement.entity.Announcement;
 import com.chcorp.homes.announcement.repository.AnnouncementRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ public class AnnouncementService {
 
     private final AnnouncementRepository announcementRepository;
 
-    public List<AnnouncementListResponse> getAnnouncements(String recruitmentType) {
+    public List<AnnouncementListDTO> getAnnouncements(String recruitmentType) {
         List<Announcement> announcements;
 
         if (recruitmentType == null || recruitmentType.isBlank()) {
@@ -25,7 +25,7 @@ public class AnnouncementService {
         }
 
         return announcements.stream()
-                .map(AnnouncementListResponse::from)
+                .map(AnnouncementListDTO::from)
                 .toList();
     }
 }

@@ -1,11 +1,15 @@
 package com.chcorp.homes.announcement.entity;
 
+import com.chcorp.homes.common.entity.BaseEntity;
+import com.chcorp.homes.common.entity.MutableBaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
+
 
 @Entity
 @Table(name = "announcements")
@@ -14,8 +18,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Announcement {
-
+public class Announcement extends MutableBaseEntity {
     @Id
     @Column(name = "announcement_id")
     private Long announcementId;
@@ -65,12 +68,6 @@ public class Announcement {
     @Column(name = "source_url")
     private String sourceUrl;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
     @Column(name = "address", nullable = false)
     private String address;
 
@@ -80,3 +77,5 @@ public class Announcement {
     @Column(name = "longitude", precision = 10, scale = 7)
     private BigDecimal longitude;
 }
+
+

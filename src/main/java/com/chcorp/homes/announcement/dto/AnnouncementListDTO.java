@@ -1,12 +1,11 @@
 package com.chcorp.homes.announcement.dto;
-
 import com.chcorp.homes.announcement.entity.Announcement;
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
 @Builder
-public class AnnouncementListResponse {
+public class AnnouncementListDTO {
 
     private Long id;
     private String type;
@@ -18,8 +17,8 @@ public class AnnouncementListResponse {
     private String recruitmentType;
     private String sourceType;
 
-    public static AnnouncementListResponse from(Announcement announcement) {
-        return AnnouncementListResponse.builder()
+    public static AnnouncementListDTO from(Announcement announcement) {
+        return AnnouncementListDTO.builder()
                 .id(announcement.getAnnouncementId())
                 .type(announcement.getTargetType())
                 .title(announcement.getTitle())
