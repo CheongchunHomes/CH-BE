@@ -2,10 +2,7 @@ package com.chcorp.homes.announcements.entity;
 
 import com.chcorp.homes.common.entity.MutableBaseEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,9 +11,10 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "announcements")
 @Getter
-@Setter
-@NoArgsConstructor
-@EntityListeners(AuditingEntityListener.class)
+@ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Announcement extends MutableBaseEntity {
 
     @Id
@@ -29,7 +27,11 @@ public class Announcement extends MutableBaseEntity {
 
     @Column(name = "source_type")
     private String sourceType;      // "LH", "청약홈" 등 출처 구분
+
+    @Column
     private String title;       // 공고명
+
+    @Column
     private String region;    // 지역 정보 (예: "서울", "경기", "인천")
 
     @Column(name = "recuitment_type")
@@ -56,6 +58,7 @@ public class Announcement extends MutableBaseEntity {
     @Column(name = "apply_end_date")
     private LocalDate applyEndDate;     // 신청 종료일
 
+    @Column
     private String status;      // 공고 상태 (예: "모집중", "마감", "예정")
 
     @Column(name = "is_visible")
@@ -77,10 +80,10 @@ public class Announcement extends MutableBaseEntity {
     private String totHshldCo;  // 총 가구 수 (예: "100세대")
 
     @Column(name = "rent_gtn")
-    private Long rentGtn;       // 임대보증금
+    private Integer rentGtn;       // 임대보증금
 
     @Column(name = "mt_rntchrg")
-    private Long mtRntchrg;     // 월 임대료
+    private Integer mtRntchrg;     // 월 임대료
 
     @Column(name = "heat_mthd_nm")
     private String heatMthdNm;  // 난방 방식 (예: "개별난방", "중앙난방" 등)
@@ -90,5 +93,8 @@ public class Announcement extends MutableBaseEntity {
 
     @Column(name = "end_de")
     private LocalDate endDe;        // 공고 종료일 (예: "2024-04-30")
+
+    @Column(name = "longitude", precision = 10, scale = 7)
+    private BigDecimal longitude;   // 공고 위치의 경도 정보
 
 }

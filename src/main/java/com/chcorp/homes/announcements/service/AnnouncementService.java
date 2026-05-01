@@ -1,5 +1,6 @@
 package com.chcorp.homes.announcements.service;
 
+import com.chcorp.homes.announcements.dto.RentalHouseApiResponse;
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,12 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -29,7 +29,6 @@ public class AnnouncementService {
 
     private final RestTemplate restTemplate;
     private final AnnouncementRepository repository;
-    private final ObjectMapper objectMapper;
 
     @Value("${api.public.service-key}")
     private String serviceKey;
@@ -51,46 +50,68 @@ public class AnnouncementService {
                         + "&numOfRows=" + NUM_OF_ROWS
                         + "&brtcCode=" + brtcCode;
 
-                ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
-                JsonNode root = objectMapper.readTree(response.getBody());
-                JsonNode body = root.path("response").path("body");
+            ResponseEntity<RentalHouseApiResponse> response =
+                    restTemplate.getForEntity(url, RentalHouseApiResponse.class);
 
-                if (pageNo == 1) {
-                    totalCount = body.path("totalCount").asInt();
-                    log.info("[{}] 전체 {}건 수집 시작", brtcCode, totalCount);
-                }
+            RentalHouseApiResponse apiResponse = response.getBody();
 
-                JsonNode items = body.path("item");
-
-                // 데이터가 없을 때 종료되는 조건
-                if (items.isMissingNode() || (items.isArray() && items.size() == 0)) {
-                    log.info("{} 지역 수집 종료 (데이터 없음)", brtcCode);
-                    break;
-                }
-
-                if (items.isArray()) {
-                    for (JsonNode item : items) {
-                        String externalId = item.path("pblanId").asText();
-                        if (repository.existsByExternalId(externalId)) continue;
-                        repository.save(toEntity(item));
-                    }
-                } else if(items.isObject()) {
-                    //데이터가 딱 1개일 때는 배열이 아니라 객체로 올 수 있기 때문에 해당 내용 처리
-                    String externalId = items.path("pblanId").asText();
-                    if (!repository.existsByExternalId(externalId)) {
-                        repository.save(toEntity(items));
-                    }
-                }
-
-                log.info("{}페이지 완료", pageNo);
-                pageNo++;
-            } catch (Exception e) {
-                log.error("{}페이지 실패: {}", pageNo, e.getMessage());
+            if (apiResponse == null || apiResponse.getBody() == null) {
+                log.warn("[{}] {}페이지 응답 body 없음", brtcCode, pageNo);
                 break;
             }
 
-        }   while((pageNo - 1) * NUM_OF_ROWS < totalCount);
+            RentalHouseApiResponse.Body body = apiResponse.getBody();
+
+            if (pageNo == 1) {
+                totalCount = parseIntOrZero(body.getTotalCount());
+                log.info("[{}] 전체 {}건 수집 시작", brtcCode, totalCount);
+            }
+
+            List<RentalHouseApiResponse.Item> items = body.getItem();
+
+                // 데이터가 없을 때 종료되는 조건
+                if (items == null || items.isEmpty()) {
+                log.info("[{}] {}페이지 수집 종료 - 데이터 없음", brtcCode, pageNo);
+                break;
+            }
+
+            for (RentalHouseApiResponse.Item item : items) {
+                String externalId = item.getPblancId();
+
+                if (externalId == null || externalId.isBlank()) {
+                    log.warn("[{}] {}페이지 pblancId 없음 - 저장 건너뜀", brtcCode, pageNo);
+                    continue;
+                }
+
+                if (repository.existsByExternalId(externalId)) {
+                    continue;
+                }
+
+                repository.save(toEntity(item));
+            }
+
+            log.info("[{}] {}페이지 완료", brtcCode, pageNo);
+            pageNo++;
+
+        } catch (Exception e) {
+            log.error("[{}] {}페이지 실패: {}", brtcCode, pageNo, e.getMessage(), e);
+            break;
+        }
+
+    } while ((pageNo - 1) * NUM_OF_ROWS < totalCount);
+}
+
+    private int parseIntOrZero(String value) {
+        if (value == null || value.isBlank()) {
+        return 0;
     }
+
+    try {
+        return Integer.parseInt(value);
+           } catch (NumberFormatException e) {
+        return 0;
+       }
+}
 
     @Transactional
     public void fetchAllRegions() {
@@ -120,33 +141,29 @@ public class AnnouncementService {
     }
 
     // API 응답 -> ERD 컬럼 매핑
-    private Announcement toEntity(JsonNode item) {
-        Announcement a = new Announcement();
-
-        a.setExternalId(item.path("pblancId").asText(null));
-        a.setSourceType("청약홈");
-        a.setTitle(item.path("pblancNm").asText(null));
-        a.setRegion(item.path("brtcNm").asText(null));
-        a.setAddress(item.path("fullAdres").asText(null));
-        a.setStatus(item.path("sttusNm").asText(null));
-        a.setRecuitmentType(item.path("houseTyNm").asText(null));
-        a.setTargetType(item.path("houseTyNm").asText(null));
-        a.setSourceUrl(item.path("url").asText(null));
-        a.setSupplyInstitution(item.path("suplyInsttNm").asText(null));
-        a.setTotHshldCo(item.path("totHshldCo").asText(null));
-        a.setRentGtn(item.path("rentGtn").asLong(0));
-        a.setMtRntchrg(item.path("mtRntchrg").asLong(0));
-        a.setHeatMthdNm(item.path("heatMtndNm").asText(null));
-        a.setBeginDe(parseDate(item.path("beginDe").asText(null)));
-        a.setEndDe(parseDate(item.path("endDe").asText(null)));
-        a.setContent(item.path("refrnc").asText(null));
-        a.setIsVisible(true);
-
-        // 날짜 파싱 (yyyyMMdd 형식)
-        a.setApplyStartDate(parseDate(item.path("rcritPblancDe").asText(null)));
-        a.setApplyEndDate(parseDate(item.path("przwnerPresnatnDe").asText(null)));
-
-        return a;
+    private Announcement toEntity(RentalHouseApiResponse.Item item) {
+       return Announcement.builder()
+                .externalId(item.getPblancId())
+                .sourceType("청약홈")
+                .title(item.getPblancNm())
+                .region(item.getBrtcNm())
+                .address(item.getFullAdres())
+                .status(item.getSttusNm())
+                .recuitmentType(item.getHouseTyNm())
+               .targetType(item.getHouseTyNm())
+               .sourceUrl(item.getUrl())
+               .supplyInstitution(item.getSuplyInsttNm())
+               .totHshldCo(item.getTotHshldCo())
+               .rentGtn(item.getRentGtn())
+               .mtRntchrg(item.getMtRntchrg())
+               .heatMthdNm(item.getHeatMthdNm())
+               .beginDe(parseDate(item.getBeginDe()))
+               .endDe(parseDate(item.getEndDe()))
+               .content(item.getRefrnc())
+               .isVisible(true)
+               .applyStartDate(parseDate(item.getRcritPblancDe()))
+               .applyEndDate(parseDate(item.getPrzwnerPresnatnDe()))
+               .build();
     }
 
     // "20260421" -> LocalDate
@@ -174,7 +191,7 @@ public class AnnouncementService {
         return repository.findAll(pageable);
     }
 
-    // api 단건 조회 (공고 상세페이지 용)
+    // api 단건 조회 (공고 상세페이지 용) - 아직
     @Transactional(readOnly = true)
     public Announcement getOne(Long id) {
         return repository.findById(id).orElseThrow(() -> new RuntimeException("공고를 찾을 수 없습니다."));

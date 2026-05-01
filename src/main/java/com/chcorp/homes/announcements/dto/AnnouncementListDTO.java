@@ -19,8 +19,8 @@ public class AnnouncementListDTO {
     private String targetType;
     private String supplyInstitution;
     private String totHshldCo;
-    private Long rentGtn;
-    private Long mtRntchrg;
+    private Integer rentGtn;
+    private Integer mtRntchrg;
     private String heatMthdNm;
     private LocalDate beginDe;
     private LocalDate endDe;
