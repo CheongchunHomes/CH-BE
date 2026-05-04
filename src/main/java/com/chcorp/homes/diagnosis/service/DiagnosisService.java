@@ -43,7 +43,7 @@ public class DiagnosisService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
         // UserProfile UPSERT
-        Optional<UserProfile> existing = userProfileRepository.findByUser_Id(userId);
+        Optional<UserProfile> existing = userProfileRepository.findByUserId(userId);
         if (existing.isPresent()) {
             // 이미 있으면 UPDATE (Dirty Checking 활용)
             existing.get().updateFromRequest(dto);
