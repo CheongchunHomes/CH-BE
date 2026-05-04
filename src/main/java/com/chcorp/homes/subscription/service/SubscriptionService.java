@@ -21,8 +21,8 @@ public class SubscriptionService {
     public List<SubscriptionDTO> getAnnouncements(String recruitmentType) {
 
         Pageable pageable = PageRequest.of(
-                0,  // 첫 번째 페이지
-                100, // 최대 100개 조회
+                0,
+                100,
                 Sort.by(Sort.Direction.ASC, "applyStartDate")
         );
 

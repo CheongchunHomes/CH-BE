@@ -3,7 +3,6 @@ package com.chcorp.homes.subscription.dto;
 import com.chcorp.homes.announcements.entity.Announcement;
 import lombok.Builder;
 import lombok.Getter;
-
 import java.time.LocalDate;
 
 @Getter

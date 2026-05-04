@@ -9,7 +9,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/announcements")
+@RequestMapping("/subscription")
 @RequiredArgsConstructor
 public class SubscriptionController {
 
