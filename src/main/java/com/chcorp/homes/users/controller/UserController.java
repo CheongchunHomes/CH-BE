@@ -2,13 +2,12 @@ package com.chcorp.homes.users.controller;
 
 import com.chcorp.homes.users.dto.request.LoginDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
+import com.chcorp.homes.users.dto.response.MyProfileDTO;
 import com.chcorp.homes.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -30,5 +29,13 @@ public class UserController {
         log.info("Register DTO: {}", registerDTO);
         String nickname = userService.register(registerDTO);
         return ResponseEntity.ok(nickname);
+    }
+
+    // 임시
+    @GetMapping("/mypage")
+    public ResponseEntity<?> mypage(@RequestParam String nickname) {
+        log.info("Mypage nickname: {}", nickname);
+        MyProfileDTO dto = userService.mypage(nickname);
+        return ResponseEntity.ok(dto);
     }
 }
