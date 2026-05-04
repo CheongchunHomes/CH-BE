@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "http://localhost:3000")   // React 앱이 다른 포트에서 실행될 때 CORS 허용
 @RequiredArgsConstructor    // AnnouncementService 주입
-@RequestMapping("/api/announcements")   // Postman 주소 앞 부분 일치
+@RequestMapping("/announcements")   // Postman 주소 앞 부분 일치
 @RestController     // API 데이터를 반환하기 위해
 // 목록형 API 호출 Controller
 public class AnnouncementController {
