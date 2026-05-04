@@ -1,14 +1,11 @@
-package com.chcorp.homes.announcement.entity;
+package com.chcorp.homes.subscription.entity;
 
-import com.chcorp.homes.common.entity.BaseEntity;
 import com.chcorp.homes.common.entity.MutableBaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-
 
 
 @Entity
@@ -18,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Announcement extends MutableBaseEntity {
+public class Announcem extends MutableBaseEntity {
     @Id
     @Column(name = "announcement_id")
     private Long announcementId;

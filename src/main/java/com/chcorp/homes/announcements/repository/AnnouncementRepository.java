@@ -14,5 +14,5 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     Page<Announcement> findByStatus(String status, Pageable pageable);
     Page<Announcement> findByRegionAndStatus(String region, String status, Pageable pageable);
     Page<Announcement> findByIsVisibleTrue(Pageable pageable);
-
+    Page<Announcement> findByRecuitmentTypeAndIsVisibleTrue(String recruitmentType, Pageable pageable);
 }

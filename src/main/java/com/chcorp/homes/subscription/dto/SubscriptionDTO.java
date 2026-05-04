@@ -1,36 +1,37 @@
-package com.chcorp.homes.announcement.dto;
-import com.chcorp.homes.announcement.entity.Announcement;
+package com.chcorp.homes.subscription.dto;
+
+import com.chcorp.homes.announcements.entity.Announcement;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDate;
+
 @Getter
 @Builder
-public class AnnouncementListDTO {
+public class SubscriptionDTO {
 
     private Long id;
     private String type;
     private String title;
     private String region;
-    private String date;
+    private LocalDate applyStartDate;
+    private LocalDate applyEndDate;
     private String status;
     private String address;
     private String recruitmentType;
     private String sourceType;
 
-    public static AnnouncementListDTO from(Announcement announcement) {
-        return AnnouncementListDTO.builder()
+    public static SubscriptionDTO from(Announcement announcement) {
+        return SubscriptionDTO.builder()
                 .id(announcement.getAnnouncementId())
                 .type(announcement.getTargetType())
                 .title(announcement.getTitle())
                 .region(announcement.getRegion())
-                .date(
-                        announcement.getApplyStartDate() != null
-                                ? announcement.getApplyStartDate().toString()
-                                : null
-                )
+                .applyStartDate(announcement.getApplyStartDate())
+                .applyEndDate(announcement.getApplyEndDate())
                 .status(announcement.getStatus())
                 .address(announcement.getAddress())
-                .recruitmentType(announcement.getRecruitmentType())
+                .recruitmentType(announcement.getRecuitmentType())
                 .sourceType(announcement.getSourceType())
                 .build();
     }

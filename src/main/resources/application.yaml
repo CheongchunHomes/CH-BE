@@ -22,3 +22,7 @@ spring:
 api:
   public:
     service-key: ${API_PUBLIC_SERVICE_KEY}
+
+external:
+  lh:
+    API_PUBLIC_SERVICE_KEY=b951bdde8630a80ec19994c36b3e9abe8aebcc482c55b810670ecc07180d3a81
