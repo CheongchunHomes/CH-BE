@@ -18,3 +18,7 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+api:
+  public:
+    service-key: ${API_PUBLIC_SERVICE_KEY}
+
