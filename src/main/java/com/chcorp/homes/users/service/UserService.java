@@ -2,6 +2,7 @@ package com.chcorp.homes.users.service;
 
 import com.chcorp.homes.users.dto.request.LoginDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
+import com.chcorp.homes.users.dto.response.MyProfileDTO;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.entity.UserStatus;
 import com.chcorp.homes.users.repository.UserRepository;
@@ -31,5 +32,14 @@ public class UserService {
                 .build();
         user = userRepository.save(user);
         return user.getNickname();
+    }
+
+    public MyProfileDTO mypage(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElse(null);
+        MyProfileDTO myProfileDTO = new MyProfileDTO(
+                user.getEmail(),
+                user.getNickname()
+        );
+        return myProfileDTO;
     }
 }
