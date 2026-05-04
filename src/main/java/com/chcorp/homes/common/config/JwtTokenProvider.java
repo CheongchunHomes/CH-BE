@@ -23,6 +23,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtTokenProvider {
 
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+
     private final JwtProperties jwtProperties;
 
     private SecretKey secretKey;
@@ -41,34 +44,18 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("role", role)
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(expiration))
-                .signWith(secretKey)
-                .compact();
-    }
-    public String createRefreshToken(Long userId, String role) {
-        Instant now = Instant.now();
-        Instant expiration = now.plus(jwtProperties.refreshTokenExpiration());
-
-        return Jwts.builder()
-                .subject(String.valueOf(userId))
-                .claim("role", role)
+                .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
                 .signWith(secretKey)
                 .compact();
     }
 
-
-
-    public boolean validateToken(String token) {
+    public boolean validateAccessToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(secretKey)
-                    .build()
-                    .parseSignedClaims(token);
+            Claims claims = getClaims(token);
 
-            return true;
+            return ACCESS_TOKEN_TYPE.equals(claims.get(TOKEN_TYPE_CLAIM, String.class));
         } catch (JwtException | IllegalArgumentException e) {
             log.warn("Invalid JWT token: {}", e.getMessage());
             return false;
@@ -97,5 +84,9 @@ public class JwtTokenProvider {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public long getAccessTokenExpirationMs() {
+        return jwtProperties.accessTokenExpiration().toMillis();
     }
 }

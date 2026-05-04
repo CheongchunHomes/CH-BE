@@ -1,6 +1,6 @@
-package com.chcorp.homes.users.dto.request;
+package com.chcorp.homes.auth.dto.request;
 
-public record RegisterDTO(
+public record AuthSignupRequest(
         String email,
         String password,
         String nickname

@@ -43,7 +43,7 @@ public class User extends BaseEntity {
     private UserStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, columnDefinition = "varchar(20) default 'User'")
+    @Column(nullable = false)
     private UserRole role;
 
 }
