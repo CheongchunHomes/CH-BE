@@ -4,6 +4,7 @@ import com.chcorp.homes.users.dto.request.LoginDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
 import com.chcorp.homes.users.dto.response.MyProfileDTO;
 import com.chcorp.homes.users.entity.User;
+import com.chcorp.homes.users.entity.UserRole;
 import com.chcorp.homes.users.entity.UserStatus;
 import com.chcorp.homes.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class UserService {
                 .password(registerDTO.password())
                 .nickname("default nickname")
                 .status(UserStatus.enabled)
+                .role(UserRole.USER)
                 .build();
         user = userRepository.save(user);
         return user.getNickname();
