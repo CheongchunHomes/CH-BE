@@ -3,7 +3,6 @@ package com.chcorp.homes.recommend_test.controller;
 import com.chcorp.homes.diagnosis.entity.DiagnosisResult;
 import com.chcorp.homes.recommend_test.entity.Recoentity;
 import com.chcorp.homes.recommend_test.service.RecoService;
-import com.chcorp.homes.users.entity.UserProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

@@ -4,8 +4,6 @@ import com.chcorp.homes.diagnosis.entity.DiagnosisResult;
 import com.chcorp.homes.diagnosis.repository.DiagnosisRepository;
 import com.chcorp.homes.recommend_test.entity.Recoentity;
 import com.chcorp.homes.recommend_test.repository.Recorepository;
-import com.chcorp.homes.users.entity.UserProfile;
-import com.chcorp.homes.users.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +12,6 @@ import java.time.Period;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
