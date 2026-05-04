@@ -4,6 +4,7 @@ package com.chcorp.homes.announcements.controller;
 import com.chcorp.homes.announcements.dto.AnnouncementListDTO;
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.service.AnnouncementService;
+import com.chcorp.homes.announcements.service.ApplyhomeAnnouncementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class AnnouncementController {
 
     private final AnnouncementService announcementService;
+    private final ApplyhomeAnnouncementService applyhomeService;
 
     @PostMapping("/fetch")
     public ResponseEntity<?> fetchAnnouncements(@RequestParam("brtcCode") String brtcCode) {
@@ -30,6 +32,13 @@ public class AnnouncementController {
     public ResponseEntity<String> fetchAllRegions() {
         announcementService.fetchAllRegions();
         return ResponseEntity.ok("전체 지역 데이터 수집 완료");
+    }
+
+    // 청약홈 api 추가
+    @PostMapping("/fetch/applyhome")
+    public ResponseEntity<String> fetchApplyhome() {
+        applyhomeService.fetchApplyhome();
+        return ResponseEntity.ok("청약홈 데이터 수집 완료");
     }
 
     // DTO에 있는 정보만 받고 싶을때

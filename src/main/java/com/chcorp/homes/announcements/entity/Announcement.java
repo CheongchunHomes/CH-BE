@@ -73,6 +73,7 @@ public class Announcement extends MutableBaseEntity {
     @Column(precision = 10, scale = 7)
     private BigDecimal latitude;    // 공고 위치의 위도 정보
 
+    // 추가
     @Column(name = "supply_institution")
     private String supplyInstitution;    // 공급 기관 (예: "LH", "SH", "서울주택도시공사" 등)
 
@@ -96,5 +97,17 @@ public class Announcement extends MutableBaseEntity {
 
     @Column(name = "longitude", precision = 10, scale = 7)
     private BigDecimal longitude;   // 공고 위치의 경도 정보
+
+    @Column(name = "cntrct_cncls_bgnde")
+    private LocalDate cntrctCnclsBgnde;     // 계약 시작일
+
+    @Column(name = "cntrct_cncls_endde")
+    private LocalDate cntrctCnclsEndde;     // 계약 종료일
+
+    @Column(name = "mvn_prearnge_ym")
+    private String mvnPrearngeYm;           // 입주 예정월 (예: "202606")
+
+    @Column(name = "przwner_presnatn_de")
+    private LocalDate przwnerPresnatnDe;    // 당첨자 발표일
 
 }

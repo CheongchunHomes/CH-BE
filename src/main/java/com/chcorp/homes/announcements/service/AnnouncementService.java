@@ -24,7 +24,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-// 공고 관련 Service
 public class AnnouncementService {
 
     private final RestTemplate restTemplate;
@@ -50,68 +49,66 @@ public class AnnouncementService {
                         + "&numOfRows=" + NUM_OF_ROWS
                         + "&brtcCode=" + brtcCode;
 
-            ResponseEntity<RentalHouseApiResponse> response =
-                    restTemplate.getForEntity(url, RentalHouseApiResponse.class);
+                ResponseEntity<RentalHouseApiResponse> response =
+                        restTemplate.getForEntity(url, RentalHouseApiResponse.class);
 
-            RentalHouseApiResponse apiResponse = response.getBody();
+                RentalHouseApiResponse apiResponse = response.getBody();
 
-            if (apiResponse == null || apiResponse.getBody() == null) {
-                log.warn("[{}] {}페이지 응답 body 없음", brtcCode, pageNo);
-                break;
-            }
+                if (apiResponse == null || apiResponse.getResponse() == null || apiResponse.getResponse().getBody() == null) {
+                    log.warn("[{}] {}페이지 응답 body 없음", brtcCode, pageNo);
+                    break;
+                }
 
-            RentalHouseApiResponse.Body body = apiResponse.getBody();
+                RentalHouseApiResponse.Body body = apiResponse.getResponse().getBody();
 
-            if (pageNo == 1) {
-                totalCount = parseIntOrZero(body.getTotalCount());
-                log.info("[{}] 전체 {}건 수집 시작", brtcCode, totalCount);
-            }
+                if (pageNo == 1) {
+                    totalCount = parseIntOrZero(body.getTotalCount());
+                    log.info("[{}] 전체 {}건 수집 시작", brtcCode, totalCount);
+                }
 
-            List<RentalHouseApiResponse.Item> items = body.getItem();
+                List<RentalHouseApiResponse.Item> items = body.getItem();
 
-                // 데이터가 없을 때 종료되는 조건
                 if (items == null || items.isEmpty()) {
-                log.info("[{}] {}페이지 수집 종료 - 데이터 없음", brtcCode, pageNo);
+                    log.info("[{}] {}페이지 수집 종료 - 데이터 없음", brtcCode, pageNo);
+                    break;
+                }
+
+                for (RentalHouseApiResponse.Item item : items) {
+                    String externalId = item.getPblancId();
+
+                    if (externalId == null || externalId.isBlank()) {
+                        log.warn("[{}] {}페이지 pblancId 없음 - 저장 건너뜀", brtcCode, pageNo);
+                        continue;
+                    }
+
+//                    if (repository.existsByExternalId(externalId)) {
+//                        continue;
+//                    }
+
+                    repository.save(toEntity(item));
+                }
+
+                log.info("[{}] {}페이지 완료", brtcCode, pageNo);
+                pageNo++;
+
+            } catch (Exception e) {
+                log.error("[{}] {}페이지 실패: {}", brtcCode, pageNo, e.getMessage(), e);
                 break;
             }
 
-            for (RentalHouseApiResponse.Item item : items) {
-                String externalId = item.getPblancId();
-
-                if (externalId == null || externalId.isBlank()) {
-                    log.warn("[{}] {}페이지 pblancId 없음 - 저장 건너뜀", brtcCode, pageNo);
-                    continue;
-                }
-
-                if (repository.existsByExternalId(externalId)) {
-                    continue;
-                }
-
-                repository.save(toEntity(item));
-            }
-
-            log.info("[{}] {}페이지 완료", brtcCode, pageNo);
-            pageNo++;
-
-        } catch (Exception e) {
-            log.error("[{}] {}페이지 실패: {}", brtcCode, pageNo, e.getMessage(), e);
-            break;
-        }
-
-    } while ((pageNo - 1) * NUM_OF_ROWS < totalCount);
-}
+        } while ((pageNo - 1) * NUM_OF_ROWS < totalCount);
+    }
 
     private int parseIntOrZero(String value) {
         if (value == null || value.isBlank()) {
-        return 0;
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
-
-    try {
-        return Integer.parseInt(value);
-           } catch (NumberFormatException e) {
-        return 0;
-       }
-}
 
     @Transactional
     public void fetchAllRegions() {
@@ -140,58 +137,71 @@ public class AnnouncementService {
         });
     }
 
-    // API 응답 -> ERD 컬럼 매핑
     private Announcement toEntity(RentalHouseApiResponse.Item item) {
-       return Announcement.builder()
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = parseDate(item.getRcritPblancDe()); // 접수 시작일
+        LocalDate endDate = parseDate(item.getPrzwnerPresnatnDe()); // 접수 종료일(당첨자 발표일 등)
+
+        // 상태 판별 로직
+        String finalStatus = item.getSttusNm(); // 기본값은 API 제공값
+
+        if (endDate != null) {
+            if (endDate.isBefore(today)) {
+                finalStatus = "마감";
+            } else if (startDate != null && !startDate.isAfter(today)) {
+                finalStatus = "접수중";
+            } else if (startDate != null && startDate.isAfter(today)) {
+                finalStatus = "접수예정";
+            }
+        }
+
+        return Announcement.builder()
                 .externalId(item.getPblancId())
-                .sourceType("청약홈")
+                .sourceType("마이홈포털")
                 .title(item.getPblancNm())
                 .region(item.getBrtcNm())
                 .address(item.getFullAdres())
-                .status(item.getSttusNm())
+                .status(finalStatus)
                 .recuitmentType(item.getHouseTyNm())
-               .targetType(item.getHouseTyNm())
-               .sourceUrl(item.getUrl())
-               .supplyInstitution(item.getSuplyInsttNm())
-               .totHshldCo(item.getTotHshldCo())
-               .rentGtn(item.getRentGtn())
-               .mtRntchrg(item.getMtRntchrg())
-               .heatMthdNm(item.getHeatMthdNm())
-               .beginDe(parseDate(item.getBeginDe()))
-               .endDe(parseDate(item.getEndDe()))
-               .content(item.getRefrnc())
-               .isVisible(true)
-               .applyStartDate(parseDate(item.getRcritPblancDe()))
-               .applyEndDate(parseDate(item.getPrzwnerPresnatnDe()))
-               .build();
+                .targetType(item.getHouseTyNm())
+                .sourceUrl(item.getUrl())
+                .supplyInstitution(item.getSuplyInsttNm())
+                .totHshldCo(item.getTotHshldCo())
+                .rentGtn(item.getRentGtn())
+                .mtRntchrg(item.getMtRntchrg())
+                .heatMthdNm(item.getHeatMthdNm())
+                .beginDe(parseDate(item.getBeginDe()))
+                .endDe(endDate)
+                .content(item.getRefrnc())
+                .isVisible(true)
+                .applyStartDate(startDate)
+                .applyEndDate(endDate)
+                .build();
     }
 
-    // "20260421" -> LocalDate
     private LocalDate parseDate(String dateStr) {
-        if(dateStr == null || dateStr.isBlank()) return null;
+        if (dateStr == null || dateStr.isBlank()) return null;
         try {
             return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
-        } catch(Exception e) {
+        } catch (Exception e) {
             return null;
         }
     }
 
-    // 프린트 요청용
     @Transactional(readOnly = true)
     public Page<Announcement> getList(String region, String status, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
-        if(region != null && status != null)
+        if (region != null && status != null)
             return repository.findByRegionAndStatus(region, status, pageable);
-        if(region != null)
+        if (region != null)
             return repository.findByRegion(region, pageable);
-        if(status != null)
+        if (status != null)
             return repository.findByStatus(status, pageable);
 
         return repository.findAll(pageable);
     }
 
-    // api 단건 조회 (공고 상세페이지 용) - 아직
     @Transactional(readOnly = true)
     public Announcement getOne(Long id) {
         return repository.findById(id).orElseThrow(() -> new RuntimeException("공고를 찾을 수 없습니다."));
