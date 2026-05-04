@@ -6,7 +6,7 @@ spring:
     name: homes
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -22,3 +22,7 @@ jwt:
   secret: ${SECRET_KEY}
   access-token-expiration: ${ACCESS_TOKEN_EXPIRATION}
   refresh-token-expiration: ${REFRESH_TOKEN_EXPIRATION}
+
+api:
+  public:
+    service-key: ${API_PUBLIC_SERVICE_KEY}
