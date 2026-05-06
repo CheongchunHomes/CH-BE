@@ -1,7 +1,7 @@
-package com.chcorp.homes.recommend_test.controller;
+package com.chcorp.homes.recommend.controller;
 
-import com.chcorp.homes.recommend_test.entity.Recoentity;
-import com.chcorp.homes.recommend_test.service.RecoService;
+import com.chcorp.homes.recommend.entity.Recoentity;
+import com.chcorp.homes.recommend.service.RecoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -57,6 +57,8 @@ public class RecController {
 
     @GetMapping("/summary")
     public Map<String, Object> getSummary() {
-        return recoService.getSummary(1L);
+        //TODO: 인증 연결 후 실제 userId로 교체 (JWT or Session)
+        //Long userId = ((UserDetails) authentication.getPrincipal()).getId();
+        return recoService.getSummary(1L); //1L 더미사용자임
     }
 }

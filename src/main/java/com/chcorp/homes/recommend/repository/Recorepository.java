@@ -1,6 +1,6 @@
-package com.chcorp.homes.recommend_test.repository;
+package com.chcorp.homes.recommend.repository;
 
-import com.chcorp.homes.recommend_test.entity.Recoentity;
+import com.chcorp.homes.recommend.entity.Recoentity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

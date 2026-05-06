@@ -1,4 +1,4 @@
-package com.chcorp.homes.recommend_test.entity;
+package com.chcorp.homes.recommend.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

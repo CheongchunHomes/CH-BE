@@ -1,7 +1,7 @@
-package com.chcorp.homes.recommend_test.service;
+package com.chcorp.homes.recommend.service;
 
-import com.chcorp.homes.recommend_test.entity.Recoentity;
-import com.chcorp.homes.recommend_test.repository.Recorepository;
+import com.chcorp.homes.recommend.entity.Recoentity;
+import com.chcorp.homes.recommend.repository.Recorepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -58,8 +58,22 @@ public class RecoService {
 //        오류방지
     public Map<String, Object> getSummary(Long userId) {
             Map<String, Object> result = new HashMap<>();
+
+        // TODO: Step 1 - user_diagnosis_results 테이블 연결 후 교체
+        // UserDiagnosisResult diagnosis = diagnosisRepository.findByUserId(userId)
+        // RecommendCondition cond = RecommendCondition.builder()
+        //         .homelessStatus(diagnosis.getHomelessStatus())
+        //         .ageStatus(diagnosis.getAgeStatus())
+        //         .incomeStatus(diagnosis.getIncomeStatus())
+        //         .subscriptionStatus(diagnosis.getSubscriptionStatus())
+        //         .build();
+
+        // TODO: Step 2 - announcement 테이블 연결 후 교체
+        // List<Announcement> matched = announcementFilterService.filterAnnouncements(cond);
+        // result.put("policies", matched);
             result.put("profile", null);
             result.put("diagnosis", null);
+            //밑 부분 나중에 리스트 메서드 받으면 여기 넣어서 뿌리면됨
             result.put("policies", recorepository.findByActiveTrue());
             return result;
 
