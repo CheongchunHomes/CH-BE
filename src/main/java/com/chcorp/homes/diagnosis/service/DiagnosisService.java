@@ -89,6 +89,12 @@ public class DiagnosisService {
                 .desiredDistrict(dto.getDesiredDistrict())
                 .desiredArea(dto.getDesiredArea())
                 .desiredType(dto.getDesiredType())
+                .employmentStatus(dto.getEmploymentStatus())
+                .employmentPeriod(dto.getEmploymentPeriod())
+                .marriagePlan(dto.getMarriagePlan())
+                .marriagePeriod(dto.getMarriagePeriod())
+                .hasYoungChild(dto.getHasYoungChild())
+                .singleParent(dto.getSingleParent())
                 .build();
     }
 

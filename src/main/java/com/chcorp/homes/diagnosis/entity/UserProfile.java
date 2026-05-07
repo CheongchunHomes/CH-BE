@@ -115,6 +115,33 @@ public class UserProfile extends MutableBaseEntity {
     @Column(name = "desired_type")
     private String desiredType;
 
+    /* 고용 상태 (대학생/취업준비생/사회초년생/직장인/기타) */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "employment_status")
+    private EmploymentStatus employmentStatus;
+
+    /* 소득활동기간 구간 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "employment_period")
+    private EmploymentPeriod employmentPeriod;
+
+    /* 결혼 예정 여부 */
+    @Column(name = "marriage_plan")
+    private Boolean marriagePlan;
+
+    /* 혼인기간 구간 */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "marriage_period")
+    private MarriagePeriod marriagePeriod;
+
+    /* 만 6세 이하 자녀 여부 */
+    @Column(name = "has_young_child")
+    private Boolean hasYoungChild;
+
+    /* 한부모 여부 */
+    @Column(name = "is_single_parent")
+    private Boolean singleParent;
+
     /**
      * Dirty Checking 업데이트 메서드
      * - @Transactional 안에서 호출 시 자동 UPDATE
@@ -137,5 +164,12 @@ public class UserProfile extends MutableBaseEntity {
         this.desiredDistrict = dto.getDesiredDistrict();
         this.desiredArea = dto.getDesiredArea();
         this.desiredType = dto.getDesiredType();
+        this.employmentStatus = dto.getEmploymentStatus();
+        this.employmentPeriod = dto.getEmploymentPeriod();
+        this.marriagePlan = dto.getMarriagePlan();
+        this.marriagePeriod = dto.getMarriagePeriod();
+        this.hasYoungChild = dto.getHasYoungChild();
+        this.singleParent = dto.getSingleParent();
+
     }
 }

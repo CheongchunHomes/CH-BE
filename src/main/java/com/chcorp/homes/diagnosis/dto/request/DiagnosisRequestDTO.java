@@ -1,5 +1,8 @@
 package com.chcorp.homes.diagnosis.dto.request;
 
+import com.chcorp.homes.diagnosis.entity.EmploymentPeriod;
+import com.chcorp.homes.diagnosis.entity.EmploymentStatus;
+import com.chcorp.homes.diagnosis.entity.MarriagePeriod;
 import lombok.Getter;
 import java.time.LocalDate;
 
@@ -63,4 +66,23 @@ public class DiagnosisRequestDTO {
 
     /* 희망 주택 유형 */
     private String desiredType;
+
+    /* 고용 상태 */
+    private EmploymentStatus employmentStatus;
+
+    /* 소득활동기간 구간 */
+    private EmploymentPeriod employmentPeriod;
+
+    /* 결혼 예정 여부 */
+    private Boolean marriagePlan;
+
+    /* 혼인기간 구간 */
+    private MarriagePeriod marriagePeriod;
+
+    /* 만 6세 이하 자녀 여부 */
+    private Boolean hasYoungChild;
+
+    /* 한부모 여부 */
+    private Boolean singleParent;
+
 }
