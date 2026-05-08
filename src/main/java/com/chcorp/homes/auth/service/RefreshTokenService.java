@@ -1,183 +1,155 @@
 package com.chcorp.homes.auth.service;
 
-import com.chcorp.homes.auth.dto.RefreshTokenRotationDTO;
 import com.chcorp.homes.auth.entity.RefreshToken;
+import com.chcorp.homes.auth.exception.RefreshExpiredException;
+import com.chcorp.homes.auth.exception.ReauthRequiredException;
 import com.chcorp.homes.auth.repository.RefreshTokenRepository;
 import com.chcorp.homes.common.config.JwtProperties;
 import com.chcorp.homes.users.entity.User;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
 
 @RequiredArgsConstructor
 @Service
 public class RefreshTokenService {
 
-    private static final int TOKEN_BYTES = 64;
-    private static final String REFRESH_COOKIE_NAME = "refreshToken";
-    private static final String REFRESH_COOKIE_PATH = "/auth";
-    private static final String REFRESH_COOKIE_SAME_SITE = "Lax";
-    private static final boolean REFRESH_COOKIE_SECURE = true;
+    /**
+     * Refresh token 수명의 70%가 지나면 재인증이 필요하다.
+     * threshold = issuedAt + (expiresAt - issuedAt) * 0.7
+     */
+    private static final double REAUTH_THRESHOLD = 0.7;
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProperties jwtProperties;
-    private final SecureRandom secureRandom = new SecureRandom();
+    private final RefreshTokenGenerator refreshTokenGenerator;
 
+    /**
+     * 로그인 성공 후 refresh token을 발급하고 raw token 문자열을 반환한다.
+     * BFF가 이 값을 HttpOnly cookie로 저장한다.
+     */
     @Transactional
-    public ResponseCookie issueCookie(User user, String deviceName, HttpServletRequest request) {
-        String refreshToken = generateToken();
-        String refreshTokenHash = hash(refreshToken);
+    public String issue(User user, HttpServletRequest request) {
+        String rawToken = refreshTokenGenerator.generateToken();
+        String tokenHash = refreshTokenGenerator.hash(rawToken);
         Instant now = Instant.now();
 
-        refreshTokenRepository.save(buildRefreshToken(
-                user,
-                refreshTokenHash,
-                deviceName,
-                request.getHeader(HttpHeaders.USER_AGENT),
-                request.getRemoteAddr(),
-                now
-        ));
+        refreshTokenRepository.save(buildRefreshToken(user, tokenHash, request, now));
 
-        return createRefreshCookie(refreshToken);
+        return rawToken;
     }
 
-    @Transactional
-    public RefreshTokenRotationDTO rotate(HttpServletRequest request) {
-        String refreshToken = resolveRefreshToken(request);
-        if (isBlank(refreshToken)) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is required");
-        }
-
+    /**
+     * /auth/refresh 처리.
+     * - 만료: RefreshExpiredException → 401 REFRESH_EXPIRED
+     * - 70% 초과: ReauthRequiredException → 401 REAUTH_REQUIRED
+     * - 정상: 토큰 소유 User 반환 (rotation 없음)
+     */
+    @Transactional(readOnly = true)
+    public User validateForRefresh(String rawToken) {
+        RefreshToken savedToken = findByRawToken(rawToken);
         Instant now = Instant.now();
-        RefreshToken savedToken = refreshTokenRepository.findByTokenHash(hash(refreshToken))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
 
         if (savedToken.isExpired(now)) {
-            refreshTokenRepository.delete(savedToken);
+            throw new RefreshExpiredException();
+        }
+
+        if (isPastReauthThreshold(savedToken, now)) {
+            throw new ReauthRequiredException();
+        }
+
+        return savedToken.getUser();
+    }
+
+    /**
+     * /auth/reauth 처리.
+     * 재인증 성공 시 기존 row의 reauthedAt과 expiresAt을 갱신한다. row는 삭제하지 않는다.
+     * 갱신된 expiresAt을 반환한다 (BFF가 cookie maxAge 갱신에 사용).
+     */
+    @Transactional
+    public Instant reauth(User user, String rawToken) {
+        RefreshToken savedToken = findByRawToken(rawToken);
+
+        if (!savedToken.getUser().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
         }
 
-        User user = savedToken.getUser();
-        String deviceName = savedToken.getDeviceName();
-        refreshTokenRepository.delete(savedToken);
+        Instant now = Instant.now();
+        Instant newExpiresAt = now.plus(jwtProperties.refreshTokenExpiration());
+        savedToken.updateForReauth(now, newExpiresAt);
 
-        ResponseCookie refreshCookie = issueCookie(user, deviceName, request);
-
-        return new RefreshTokenRotationDTO(user, refreshCookie);
+        return newExpiresAt;
     }
 
+    /**
+     * /auth/logout 처리. 현재 기기 세션만 삭제한다.
+     */
     @Transactional
-    public ResponseCookie logout(Long authenticatedUserId, HttpServletRequest request) {
-        String refreshToken = resolveRefreshToken(request);
-        if (isBlank(refreshToken)) {
+    public void logout(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is required");
         }
 
-        RefreshToken savedToken = refreshTokenRepository.findByTokenHash(hash(refreshToken))
+        RefreshToken savedToken = refreshTokenRepository.findByTokenHash(refreshTokenGenerator.hash(rawToken))
                 .orElse(null);
 
         if (savedToken != null) {
-            if (!savedToken.getUser().getId().equals(authenticatedUserId)) {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token");
-            }
-
             refreshTokenRepository.delete(savedToken);
         }
-
-        return deleteRefreshCookie();
     }
 
-    private RefreshToken buildRefreshToken(
-            User user,
-            String refreshTokenHash,
-            String deviceName,
-            String userAgent,
-            String ipAddress,
-            Instant now
-    ) {
+    /**
+     * /auth/reauth 에서 세션 소유 user를 식별한다.
+     * 만료된 token은 재인증으로 되살릴 수 없다. 요구사항: "만료 시 다시 로그인".
+     * 70% 임계치 초과 여부는 검사하지 않는다 (재인증 목적이 갱신이므로).
+     */
+    @Transactional(readOnly = true)
+    public User findUserByRefreshToken(String rawToken) {
+        RefreshToken savedToken = findByRawToken(rawToken);
+        if (savedToken.isExpired(Instant.now())) {
+            throw new RefreshExpiredException();
+        }
+        return savedToken.getUser();
+    }
+
+    // ── private helpers ──────────────────────────────────────────────────────
+
+    private RefreshToken findByRawToken(String rawToken) {
+        if (rawToken == null || rawToken.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is required");
+        }
+        return refreshTokenRepository.findByTokenHash(refreshTokenGenerator.hash(rawToken))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+    }
+
+    /**
+     * 70% 임계치 초과 여부를 판단한다.
+     * 재인증 성공 후에는 reauthedAt이 새 세션 시작점이 되므로 reauthedAt을 기준으로 한다.
+     * reauthedAt이 없으면 최초 발급 시각인 createdAt을 기준으로 한다.
+     * threshold = startAt + (expiresAt - startAt) * 0.7
+     */
+    private boolean isPastReauthThreshold(RefreshToken token, Instant now) {
+        Instant startAt = token.getReauthedAt() != null ? token.getReauthedAt() : token.getCreatedAt();
+        long totalSeconds = token.getExpiresAt().getEpochSecond() - startAt.getEpochSecond();
+        long thresholdSeconds = (long) (totalSeconds * REAUTH_THRESHOLD);
+        Instant threshold = startAt.plusSeconds(thresholdSeconds);
+        return now.isAfter(threshold);
+    }
+
+    private RefreshToken buildRefreshToken(User user, String tokenHash, HttpServletRequest request, Instant now) {
+        String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
         return RefreshToken.builder()
                 .user(user)
-                .tokenHash(refreshTokenHash)
+                .tokenHash(tokenHash)
                 .expiresAt(now.plus(jwtProperties.refreshTokenExpiration()))
-                .deviceName(defaultDeviceName(deviceName, userAgent))
                 .userAgent(truncate(userAgent, 512))
-                .ipAddress(ipAddress)
                 .build();
-    }
-
-    private String resolveRefreshToken(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            return null;
-        }
-
-        for (Cookie cookie : cookies) {
-            if (REFRESH_COOKIE_NAME.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-
-        return null;
-    }
-
-    private ResponseCookie createRefreshCookie(String refreshToken) {
-        return ResponseCookie.from(REFRESH_COOKIE_NAME, refreshToken)
-                .httpOnly(true)
-                .secure(REFRESH_COOKIE_SECURE)
-                .sameSite(REFRESH_COOKIE_SAME_SITE)
-                .path(REFRESH_COOKIE_PATH)
-                .maxAge(jwtProperties.refreshTokenExpiration())
-                .build();
-    }
-
-    private ResponseCookie deleteRefreshCookie() {
-        return ResponseCookie.from(REFRESH_COOKIE_NAME, "")
-                .httpOnly(true)
-                .secure(REFRESH_COOKIE_SECURE)
-                .sameSite(REFRESH_COOKIE_SAME_SITE)
-                .path(REFRESH_COOKIE_PATH)
-                .maxAge(0)
-                .build();
-    }
-
-    private String generateToken() {
-        byte[] bytes = new byte[TOKEN_BYTES];
-        secureRandom.nextBytes(bytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private String hash(String token) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 algorithm is not available", e);
-        }
-    }
-
-    private String defaultDeviceName(String deviceName, String userAgent) {
-        if (!isBlank(deviceName)) {
-            return deviceName;
-        }
-        if (!isBlank(userAgent)) {
-            return truncate(userAgent, 120);
-        }
-        return "Unknown device";
     }
 
     private String truncate(String value, int maxLength) {
@@ -185,9 +157,5 @@ public class RefreshTokenService {
             return value;
         }
         return value.substring(0, maxLength);
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.isBlank();
     }
 }

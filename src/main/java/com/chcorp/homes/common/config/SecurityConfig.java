@@ -20,6 +20,8 @@ public class SecurityConfig {
     private final String[] WHITE_LIST = {
             "/auth/login",
             "/auth/refresh",
+            "/auth/reauth",
+            "/auth/logout",
             "/users/register",
             "/swagger-ui/**",
             "/v3/api-docs/**",

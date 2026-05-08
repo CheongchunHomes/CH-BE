@@ -1,21 +1,23 @@
 package com.chcorp.homes.auth.service;
 
-import com.chcorp.homes.auth.dto.AuthResponseWithCookieDTO;
-import com.chcorp.homes.auth.dto.RefreshTokenRotationDTO;
 import com.chcorp.homes.auth.dto.request.AuthLoginDTO;
+import com.chcorp.homes.auth.dto.request.AuthReauthRequestDTO;
 import com.chcorp.homes.auth.dto.response.AccessTokenResponseDTO;
+import com.chcorp.homes.auth.dto.response.AuthLoginResponseDTO;
+import com.chcorp.homes.auth.dto.response.AuthUserResponse;
+import com.chcorp.homes.auth.dto.response.ReauthResponseDTO;
 import com.chcorp.homes.common.config.JwtTokenProvider;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import jakarta.servlet.http.HttpServletRequest;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -27,24 +29,77 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
 
+    /**
+     * 로그인 성공 시 access token과 refresh token을 body로 반환한다.
+     * cookie 발급은 BFF가 담당한다.
+     */
     @Transactional
-    public AuthResponseWithCookieDTO login(AuthLoginDTO request, HttpServletRequest servletRequest) {
+    public AuthLoginResponseDTO login(AuthLoginDTO request, HttpServletRequest servletRequest) {
         User user = authenticate(request);
-        ResponseCookie refreshCookie = refreshTokenService.issueCookie(user, request.deviceName(), servletRequest);
+        String refreshToken = refreshTokenService.issue(user, servletRequest);
 
-        return new AuthResponseWithCookieDTO(createTokenResponse(user), refreshCookie);
+        return new AuthLoginResponseDTO(createAccessToken(user), refreshToken);
     }
 
-    @Transactional
-    public AuthResponseWithCookieDTO refresh(HttpServletRequest servletRequest) {
-        RefreshTokenRotationDTO rotation = refreshTokenService.rotate(servletRequest);
-
-        return new AuthResponseWithCookieDTO(createTokenResponse(rotation.user()), rotation.refreshCookie());
+    /**
+     * /auth/refresh.
+     * 70% 임계치 및 만료 판단은 RefreshTokenService에서 예외로 처리한다.
+     * 정상이면 access token만 재발급한다 (rotation 없음).
+     */
+    @Transactional(readOnly = true)
+    public AccessTokenResponseDTO refresh(String rawRefreshToken) {
+        User user = refreshTokenService.validateForRefresh(rawRefreshToken);
+        return new AccessTokenResponseDTO(createAccessToken(user));
     }
 
+    /**
+     * /auth/reauth.
+     * refresh token으로 세션 사용자를 식별하고 password를 검증한다.
+     * 성공 시 access token을 재발급하고 refresh token 세션의 reauthedAt/expiresAt을 갱신한다.
+     * refreshExpiresAt은 BFF가 refresh cookie maxAge 갱신에 사용한다.
+     */
     @Transactional
-    public ResponseCookie logout(Long authenticatedUserId, HttpServletRequest servletRequest) {
-        return refreshTokenService.logout(authenticatedUserId, servletRequest);
+    public ReauthResponseDTO reauth(AuthReauthRequestDTO request) {
+        if (request == null || isBlank(request.password())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
+        }
+        if (isBlank(request.refreshToken())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Refresh token is required");
+        }
+
+        User sessionUser = refreshTokenService.findUserByRefreshToken(request.refreshToken());
+
+        User user = userRepository.findById(sessionUser.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+
+        if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
+
+        Instant newRefreshExpiresAt = refreshTokenService.reauth(user, request.refreshToken());
+
+        return new ReauthResponseDTO(createAccessToken(user), newRefreshExpiresAt);
+    }
+
+    /**
+     * /auth/me.
+     * 인증된 사용자 정보를 반환한다.
+     * BFF 로그인 상태 초기화와 Navbar 표시 기준으로 사용된다.
+     */
+    @Transactional(readOnly = true)
+    public AuthUserResponse me(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        return AuthUserResponse.from(user);
+    }
+
+    /**
+     * /auth/logout. refresh token row 삭제만 수행한다.
+     * cookie 삭제는 BFF가 담당한다.
+     */
+    @Transactional
+    public void logout(String rawRefreshToken) {
+        refreshTokenService.logout(rawRefreshToken);
     }
 
     private User authenticate(AuthLoginDTO request) {
@@ -60,10 +115,8 @@ public class AuthService {
         return user;
     }
 
-    private AccessTokenResponseDTO createTokenResponse(User user) {
-        String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
-
-        return new AccessTokenResponseDTO(accessToken);
+    private String createAccessToken(User user) {
+        return jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
     }
 
     private void validateLoginRequest(AuthLoginDTO request) {

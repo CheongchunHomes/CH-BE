@@ -1,7 +1,7 @@
 package com.chcorp.homes.auth.dto.request;
 
-public record AuthLoginDTO(
-        String email,
+public record AuthReauthRequestDTO(
+        String refreshToken,
         String password
 ) {
 }
