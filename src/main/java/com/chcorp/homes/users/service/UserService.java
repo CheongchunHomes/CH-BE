@@ -1,6 +1,7 @@
 package com.chcorp.homes.users.service;
 
 import com.chcorp.homes.users.dto.request.RegisterDTO;
+import com.chcorp.homes.users.dto.response.MyProfileDTO;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.entity.UserRole;
 import com.chcorp.homes.users.entity.UserStatus;
@@ -52,5 +53,14 @@ public class UserService {
     public User findById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    }
+
+    public MyProfileDTO mypage(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElse(null);
+        MyProfileDTO myProfileDTO = new MyProfileDTO(
+                user.getEmail(),
+                user.getNickname()
+        );
+        return myProfileDTO;
     }
 }

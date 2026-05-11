@@ -26,3 +26,4 @@ jwt:
 api:
   public:
     service-key: ${API_PUBLIC_SERVICE_KEY}
+
