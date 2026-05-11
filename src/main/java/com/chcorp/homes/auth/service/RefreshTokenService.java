@@ -25,6 +25,7 @@ public class RefreshTokenService {
      * threshold = issuedAt + (expiresAt - issuedAt) * 0.7
      */
     private static final double REAUTH_THRESHOLD = 0.7;
+    private static final String UNKNOWN_USER_AGENT = "UNKNOWN";
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtProperties jwtProperties;
@@ -43,6 +44,15 @@ public class RefreshTokenService {
         refreshTokenRepository.save(buildRefreshToken(user, tokenHash, request, now));
 
         return rawToken;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasActiveSession(User user, HttpServletRequest request) {
+        return refreshTokenRepository.existsActiveSession(
+                user,
+                resolveUserAgent(request),
+                Instant.now()
+        );
     }
 
     /**
@@ -143,13 +153,20 @@ public class RefreshTokenService {
     }
 
     private RefreshToken buildRefreshToken(User user, String tokenHash, HttpServletRequest request, Instant now) {
-        String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
         return RefreshToken.builder()
                 .user(user)
                 .tokenHash(tokenHash)
                 .expiresAt(now.plus(jwtProperties.refreshTokenExpiration()))
-                .userAgent(truncate(userAgent, 512))
+                .userAgent(resolveUserAgent(request))
                 .build();
+    }
+
+    private String resolveUserAgent(HttpServletRequest request) {
+        String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
+        if (userAgent == null || userAgent.isBlank()) {
+            return UNKNOWN_USER_AGENT;
+        }
+        return truncate(userAgent, 512);
     }
 
     private String truncate(String value, int maxLength) {

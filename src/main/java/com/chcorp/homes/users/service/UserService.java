@@ -1,6 +1,5 @@
 package com.chcorp.homes.users.service;
 
-import com.chcorp.homes.users.dto.request.LoginDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.entity.UserRole;
@@ -19,7 +18,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
 
     @Transactional
     public void register(RegisterDTO registerDTO) {
@@ -48,5 +46,11 @@ public class UserService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    @Transactional(readOnly = true)
+    public User findById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 }

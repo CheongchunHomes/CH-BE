@@ -9,8 +9,10 @@ import com.chcorp.homes.auth.dto.response.ReauthResponseDTO;
 import com.chcorp.homes.common.config.JwtTokenProvider;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.repository.UserRepository;
+import com.chcorp.homes.users.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
@@ -34,11 +37,16 @@ public class AuthService {
      * cookie 발급은 BFF가 담당한다.
      */
     @Transactional
-    public AuthLoginResponseDTO login(AuthLoginDTO request, HttpServletRequest servletRequest) {
+    public Optional<AuthLoginResponseDTO> login(AuthLoginDTO request, HttpServletRequest servletRequest) {
         User user = authenticate(request);
+
+        if (refreshTokenService.hasActiveSession(user, servletRequest)) {
+            return Optional.empty();
+        }
+
         String refreshToken = refreshTokenService.issue(user, servletRequest);
 
-        return new AuthLoginResponseDTO(createAccessToken(user), refreshToken);
+        return Optional.of(new AuthLoginResponseDTO(createAccessToken(user), refreshToken));
     }
 
     /**
@@ -69,8 +77,7 @@ public class AuthService {
 
         User sessionUser = refreshTokenService.findUserByRefreshToken(request.refreshToken());
 
-        User user = userRepository.findById(sessionUser.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+        User user = userService.findById(sessionUser.getId());
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
@@ -88,8 +95,7 @@ public class AuthService {
      */
     @Transactional(readOnly = true)
     public AuthUserResponse me(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        User user = userService.findById(userId);
         return AuthUserResponse.from(user);
     }
 

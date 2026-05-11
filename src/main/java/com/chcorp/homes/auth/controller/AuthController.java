@@ -32,7 +32,9 @@ public class AuthController {
             @RequestBody AuthLoginDTO request,
             HttpServletRequest servletRequest
     ) {
-        return ResponseEntity.ok(authService.login(request, servletRequest));
+        return authService.login(request, servletRequest)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.ok().build());
     }
 
     /**

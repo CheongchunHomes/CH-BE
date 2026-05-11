@@ -32,7 +32,7 @@ public class RefreshToken extends MutableBaseEntity {
     @Column(name = "reauthed_at")
     private Instant reauthedAt;
 
-    @Column(name = "user_agent", length = 512)
+    @Column(name = "user_agent", nullable = false, length = 512)
     private String userAgent;
 
     public boolean isExpired(Instant now) {
