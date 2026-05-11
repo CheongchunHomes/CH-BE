@@ -189,17 +189,128 @@ public class AnnouncementService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Announcement> getList(String region, String status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    public Page<Announcement> getList(
+            String region,
+            String status,
+            String keyword,
+            boolean deadlineSoon,
+            int page,
+            int size
+    ) {
 
-        if (region != null && status != null)
-            return repository.findByRegionAndStatus(region, status, pageable);
-        if (region != null)
-            return repository.findByRegion(region, pageable);
-        if (status != null)
+        Pageable pageable = PageRequest.of(page, size, Sort.by("applyEndDate").descending());
+
+        region = normalize(region);
+        status = normalize(status);
+        keyword = normalize(keyword);
+
+        LocalDate today = LocalDate.now();
+        LocalDate deadlineEnd = today.plusDays(30);
+
+        // 마감일 임박 + 검색어 + 지역 + 상태
+        if (deadlineSoon && keyword != null && region != null && status != null) {
+            return repository.searchByKeywordAndRegionAndStatusAndDeadline(
+                    keyword, region, status, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 검색어 + 지역
+        if (deadlineSoon && keyword != null && region != null) {
+            return repository.searchByKeywordAndRegionAndDeadline(
+                    keyword, region, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 검색어 + 상태
+        if (deadlineSoon && keyword != null && status != null) {
+            return repository.searchByKeywordAndStatusAndDeadline(
+                    keyword, status, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 검색어
+        if (deadlineSoon && keyword != null) {
+            return repository.searchByKeywordAndDeadline(
+                    keyword, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 지역 + 상태
+        if (deadlineSoon && region != null && status != null) {
+            return repository.findByRegionContainingIgnoreCaseAndStatusAndApplyEndDateBetween(
+                    region, status, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 지역
+        if (deadlineSoon && region != null) {
+            return repository.findByRegionContainingIgnoreCaseAndApplyEndDateBetween(
+                    region, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 상태
+        if (deadlineSoon && status != null) {
+            return repository.findByStatusAndApplyEndDateBetween(
+                    status, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박만
+        if (deadlineSoon) {
+            return repository.findByApplyEndDateBetween(today, deadlineEnd, pageable);
+        }
+
+        // 검색어 + 지역 + 상태
+        if (keyword != null && region != null && status != null) {
+            return repository.searchByKeywordAndRegionAndStatus(keyword, region, status, pageable);
+        }
+
+        // 검색어 + 지역
+        if (keyword != null && region != null) {
+            return repository.searchByKeywordAndRegion(keyword, region, pageable);
+        }
+
+        // 검색어 + 상태
+        if (keyword != null && status != null) {
+            return repository.searchByKeywordAndStatus(keyword, status, pageable);
+        }
+
+        // 검색어만
+        if (keyword != null) {
+            return repository.searchByKeyword(keyword, pageable);
+        }
+
+        // 지역 + 상태
+        if (region != null && status != null) {
+            return repository.findByRegionContainingIgnoreCaseAndStatus(region, status, pageable);
+        }
+
+        // 지역
+        if (region != null) {
+            return repository.findByRegionContainingIgnoreCase(region, pageable);
+        }
+
+        // 상태
+        if (status != null) {
             return repository.findByStatus(status, pageable);
+        }
 
         return repository.findAll(pageable);
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        value = value.trim();
+
+        if (value.isBlank()) {
+            return null;
+        }
+
+        return value;
     }
 
     @Transactional(readOnly = true)

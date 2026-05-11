@@ -46,11 +46,13 @@ public class AnnouncementController {
     public ResponseEntity<Page<AnnouncementListDTO>> getList(
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false, defaultValue = "false") boolean deadlineSoon,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         //1. 서비스에서 DB 데이터를 Page 형태로 가져옴
-        Page<Announcement> announcements = announcementService.getList(region, status, page, size);
+        Page<Announcement> announcements = announcementService.getList(region, status, keyword, deadlineSoon, page, size);
 
         //2. 가져온 데이터 (announcements)를 DTO로 변환
         Page<AnnouncementListDTO> dto = announcements.map(AnnouncementListDTO::new);
