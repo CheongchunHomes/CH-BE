@@ -55,12 +55,12 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
     }
 
-    public MyProfileDTO mypage(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElse(null);
-        MyProfileDTO myProfileDTO = new MyProfileDTO(
+    @Transactional(readOnly = true)
+    public MyProfileDTO mypage(Long userId) {
+        User user = findById(userId);
+        return new MyProfileDTO(
                 user.getEmail(),
                 user.getNickname()
         );
-        return myProfileDTO;
     }
 }
