@@ -33,7 +33,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
 
     /**
-     * 로그인 성공 시 access token과 refresh token을 body로 반환한다.
+     * 로그인 성공 시 access token, access token 만료 시각, refresh token, refresh token 만료 시각을 body로 반환한다.
      * cookie 발급은 BFF가 담당한다.
      */
     @Transactional
@@ -44,27 +44,35 @@ public class AuthService {
             return Optional.empty();
         }
 
-        String refreshToken = refreshTokenService.issue(user, servletRequest);
+        RefreshTokenService.IssuedRefreshToken refreshToken = refreshTokenService.issue(user, servletRequest);
 
-        return Optional.of(new AuthLoginResponseDTO(createAccessToken(user), refreshToken));
+        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user);
+
+        return Optional.of(new AuthLoginResponseDTO(
+                accessToken.token(),
+                accessToken.expiresAt(),
+                refreshToken.token(),
+                refreshToken.expiresAt()
+        ));
     }
 
     /**
      * /auth/refresh.
      * 70% 임계치 및 만료 판단은 RefreshTokenService에서 예외로 처리한다.
-     * 정상이면 access token만 재발급한다 (rotation 없음).
+     * 정상이면 access token과 access token 만료 시각만 재발급한다 (refresh rotation 없음).
      */
     @Transactional(readOnly = true)
     public AccessTokenResponseDTO refresh(String rawRefreshToken) {
         User user = refreshTokenService.validateForRefresh(rawRefreshToken);
-        return new AccessTokenResponseDTO(createAccessToken(user));
+        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user);
+        return new AccessTokenResponseDTO(accessToken.token(), accessToken.expiresAt());
     }
 
     /**
      * /auth/reauth.
      * refresh token으로 세션 사용자를 식별하고 password를 검증한다.
      * 성공 시 access token을 재발급하고 refresh token 세션의 reauthedAt/expiresAt을 갱신한다.
-     * refreshExpiresAt은 BFF가 refresh cookie maxAge 갱신에 사용한다.
+     * accessExpiresAt/refreshExpiresAt은 BFF가 cookie maxAge 갱신에 사용한다.
      */
     @Transactional
     public ReauthResponseDTO reauth(AuthReauthRequestDTO request) {
@@ -85,7 +93,8 @@ public class AuthService {
 
         Instant newRefreshExpiresAt = refreshTokenService.reauth(user, request.refreshToken());
 
-        return new ReauthResponseDTO(createAccessToken(user), newRefreshExpiresAt);
+        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user);
+        return new ReauthResponseDTO(accessToken.token(), accessToken.expiresAt(), newRefreshExpiresAt);
     }
 
     /**
@@ -121,7 +130,7 @@ public class AuthService {
         return user;
     }
 
-    private String createAccessToken(User user) {
+    private JwtTokenProvider.IssuedAccessToken createAccessToken(User user) {
         return jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
     }
 

@@ -4,6 +4,7 @@ import java.time.Instant;
 
 public record ReauthResponseDTO(
         String accessToken,
+        Instant accessExpiresAt,
         Instant refreshExpiresAt
 ) {
 }

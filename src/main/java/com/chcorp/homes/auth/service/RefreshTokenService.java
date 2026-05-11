@@ -7,14 +7,13 @@ import com.chcorp.homes.auth.repository.RefreshTokenRepository;
 import com.chcorp.homes.common.config.JwtProperties;
 import com.chcorp.homes.users.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.time.Instant;
 
 @RequiredArgsConstructor
 @Service
@@ -32,26 +31,35 @@ public class RefreshTokenService {
     private final RefreshTokenGenerator refreshTokenGenerator;
 
     /**
-     * 로그인 성공 후 refresh token을 발급하고 raw token 문자열을 반환한다.
+     * 로그인 성공 후 refresh token을 발급하고 raw token과 만료 시각을 반환한다.
      * BFF가 이 값을 HttpOnly cookie로 저장한다.
      */
     @Transactional
-    public String issue(User user, HttpServletRequest request) {
+    public IssuedRefreshToken issue(User user, HttpServletRequest request) {
         String rawToken = refreshTokenGenerator.generateToken();
         String tokenHash = refreshTokenGenerator.hash(rawToken);
         Instant now = Instant.now();
+        Instant expiresAt = now.plus(jwtProperties.refreshTokenExpiration());
 
-        refreshTokenRepository.save(buildRefreshToken(user, tokenHash, request, now));
+        refreshTokenRepository.save(buildRefreshToken(user, tokenHash, request, expiresAt));
 
-        return rawToken;
+        return new IssuedRefreshToken(rawToken, expiresAt);
     }
 
-    @Transactional(readOnly = true)
+    public record IssuedRefreshToken(String token, Instant expiresAt) {
+    }
+
+    @Transactional
     public boolean hasActiveSession(User user, HttpServletRequest request) {
+        String userAgent = resolveUserAgent(request);
+        Instant now = Instant.now();
+
+        refreshTokenRepository.deleteExpiredSessions(user, userAgent, now);
+
         return refreshTokenRepository.existsActiveSession(
                 user,
-                resolveUserAgent(request),
-                Instant.now()
+                userAgent,
+                now
         );
     }
 
@@ -61,14 +69,12 @@ public class RefreshTokenService {
      * - 70% 초과: ReauthRequiredException → 401 REAUTH_REQUIRED
      * - 정상: 토큰 소유 User 반환 (rotation 없음)
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public User validateForRefresh(String rawToken) {
         RefreshToken savedToken = findByRawToken(rawToken);
         Instant now = Instant.now();
 
-        if (savedToken.isExpired(now)) {
-            throw new RefreshExpiredException();
-        }
+        deleteAndRejectIfExpired(savedToken, now);
 
         if (isPastReauthThreshold(savedToken, now)) {
             throw new ReauthRequiredException();
@@ -119,12 +125,10 @@ public class RefreshTokenService {
      * 만료된 token은 재인증으로 되살릴 수 없다. 요구사항: "만료 시 다시 로그인".
      * 70% 임계치 초과 여부는 검사하지 않는다 (재인증 목적이 갱신이므로).
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public User findUserByRefreshToken(String rawToken) {
         RefreshToken savedToken = findByRawToken(rawToken);
-        if (savedToken.isExpired(Instant.now())) {
-            throw new RefreshExpiredException();
-        }
+        deleteAndRejectIfExpired(savedToken, Instant.now());
         return savedToken.getUser();
     }
 
@@ -136,6 +140,13 @@ public class RefreshTokenService {
         }
         return refreshTokenRepository.findByTokenHash(refreshTokenGenerator.hash(rawToken))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid refresh token"));
+    }
+
+    private void deleteAndRejectIfExpired(RefreshToken token, Instant now) {
+        if (token.isExpired(now)) {
+            refreshTokenRepository.delete(token);
+            throw new RefreshExpiredException();
+        }
     }
 
     /**
@@ -152,11 +163,11 @@ public class RefreshTokenService {
         return now.isAfter(threshold);
     }
 
-    private RefreshToken buildRefreshToken(User user, String tokenHash, HttpServletRequest request, Instant now) {
+    private RefreshToken buildRefreshToken(User user, String tokenHash, HttpServletRequest request, Instant expiresAt) {
         return RefreshToken.builder()
                 .user(user)
                 .tokenHash(tokenHash)
-                .expiresAt(now.plus(jwtProperties.refreshTokenExpiration()))
+                .expiresAt(expiresAt)
                 .userAgent(resolveUserAgent(request))
                 .build();
     }

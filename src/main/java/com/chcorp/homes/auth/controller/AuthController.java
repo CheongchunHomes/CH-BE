@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -68,6 +69,16 @@ public class AuthController {
         } catch (RefreshExpiredException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new AuthErrorResponseDTO("REFRESH_EXPIRED"));
+        } catch (ResponseStatusException e) {
+            if (e.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value() && "Invalid credentials".equals(e.getReason())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new AuthErrorResponseDTO("INVALID_CREDENTIALS"));
+            }
+            if (e.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new AuthErrorResponseDTO("UNAUTHENTICATED"));
+            }
+            throw e;
         }
     }
 

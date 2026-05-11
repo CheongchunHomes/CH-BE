@@ -37,11 +37,11 @@ public class JwtTokenProvider {
         );
     }
 
-    public String createAccessToken(Long userId, String role) {
+    public IssuedAccessToken createAccessToken(Long userId, String role) {
         Instant now = Instant.now();
         Instant expiration = now.plus(jwtProperties.accessTokenExpiration());
 
-        return Jwts.builder()
+        String token = Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("role", role)
                 .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
@@ -49,6 +49,11 @@ public class JwtTokenProvider {
                 .expiration(Date.from(expiration))
                 .signWith(secretKey)
                 .compact();
+
+        return new IssuedAccessToken(token, expiration);
+    }
+
+    public record IssuedAccessToken(String token, Instant expiresAt) {
     }
 
     public boolean validateAccessToken(String token) {
