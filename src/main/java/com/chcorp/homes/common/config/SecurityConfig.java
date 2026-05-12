@@ -3,6 +3,7 @@ package com.chcorp.homes.common.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -27,7 +28,9 @@ public class SecurityConfig {
             "/users/register",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/diagnosis/simulate"
+            "/diagnosis/simulate",
+            "/announcements",
+            "/announcements/**"
 //            ,"/**"   // 임시
     };
 
@@ -45,6 +48,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITE_LIST).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/announcements/fetch/*").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
