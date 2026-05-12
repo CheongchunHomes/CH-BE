@@ -122,7 +122,7 @@ public class ApplyhomeAnnouncementService {
                 .region(item.getSubscrptAreaCodeNm())
                 .address(item.getHssplyAdres())
                 .recuitmentType(item.getHouseSecdNm())
-                .targetType(item.getHouseSecdNm())
+                .targetType("공공임대주택")
                 .sourceUrl(item.getPblancUrl())
                 .supplyInstitution(item.getBsnsMbyNm())
                 .totHshldCo(item.getTotSuplyHshldco() != null

@@ -13,6 +13,9 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
 
     boolean existsByExternalId(String externalId);
 
+    // targetType으로 조회
+    Page<Announcement> findByTargetType(String targetType, Pageable pageable);
+
     // 기존 정확 일치 조회(유지)
     Page<Announcement> findByRegion(String region, Pageable pageable);
 

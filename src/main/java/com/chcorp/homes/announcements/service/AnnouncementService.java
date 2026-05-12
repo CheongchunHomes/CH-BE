@@ -232,7 +232,7 @@ public class AnnouncementService {
         }
 
         return Announcement.builder()
-                .externalId(item.getPblancId())
+                .externalId("Rental=" + item.getPblancId() + "-" + item.getHouseSn())
                 .sourceType("마이홈포털-공공임대주택")
                 .title(item.getPblancNm())
                 .region(item.getBrtcNm())
@@ -340,6 +340,8 @@ public class AnnouncementService {
             String region,
             String status,
             String keyword,
+            String sourceType,
+            String targetType,
             boolean deadlineSoon,
             int page,
             int size
@@ -350,9 +352,20 @@ public class AnnouncementService {
         region = normalize(region);
         status = normalize(status);
         keyword = normalize(keyword);
+        sourceType = normalize(sourceType);
+        targetType = normalize(targetType);
 
         LocalDate today = LocalDate.now();
         LocalDate deadlineEnd = today.plusDays(30);
+
+       // 공공임대주택 / 공공분양주택 첫 진입 분리용
+        if (targetType != null
+                && region == null
+                && status == null
+                && keyword == null
+                && !deadlineSoon) {
+            return repository.findByTargetType(targetType, pageable);
+        }
 
         // 마감일 임박 + 검색어 + 지역 + 상태
         if (deadlineSoon && keyword != null && region != null && status != null) {
