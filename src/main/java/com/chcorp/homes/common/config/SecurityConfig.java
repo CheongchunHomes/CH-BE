@@ -29,7 +29,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/announcements",
-            "/announcements/**"
+            "/announcements/**",
+            "/properties/**"
 //            ,"/**"   // 임시
     };
 
