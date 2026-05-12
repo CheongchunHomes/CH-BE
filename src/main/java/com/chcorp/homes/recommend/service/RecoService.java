@@ -32,7 +32,7 @@ public class RecoService {
 
     // announcements 테이블 기반 제도 필터링
     private List<RecommendItemDTO> recommendPolicies(String region) {
-        Pageable pageable = PageRequest.of(0, 200);
+        Pageable pageable = PageRequest.of(0, 200); // 첫페이지 부터, 한 페이지에 200개까지 가져옴, 추후 DB쿼리 단에서 필터링으로 개선
         List<Announcement> visible = announcementRepository.findByIsVisibleTrue(pageable).getContent();
 
         // 지역 필터 공통 적용
