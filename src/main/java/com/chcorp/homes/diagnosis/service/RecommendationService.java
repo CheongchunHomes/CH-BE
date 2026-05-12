@@ -221,7 +221,7 @@ public class RecommendationService {
     /* 혼인기간 7년 이내 여부 */
     private boolean isWithinMarriageLimit(MarriagePeriod period) {
         if (period == null) return false;
-        return period == MarriagePeriod.OVER_7;
+        return period == MarriagePeriod.WITHIN_7; // 7년 이내면 true
     }
 
     /* 추천 등급 계산 */
