@@ -3,11 +3,13 @@ package com.chcorp.homes.announcements.repository;
 import com.chcorp.homes.announcements.entity.Announcement;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
 
@@ -15,6 +17,8 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
 
     // targetType으로 조회
     Page<Announcement> findByTargetType(String targetType, Pageable pageable);
+
+    List<Announcement> findAllByTargetType(String targetType, Sort sort);
 
     // 기존 정확 일치 조회(유지)
     Page<Announcement> findByRegion(String region, Pageable pageable);

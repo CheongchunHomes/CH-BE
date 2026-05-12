@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.data.domain.PageImpl;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -358,13 +359,35 @@ public class AnnouncementService {
         LocalDate today = LocalDate.now();
         LocalDate deadlineEnd = today.plusDays(30);
 
-       // 공공임대주택 / 공공분양주택 첫 진입 분리용
-        if (targetType != null
-                && region == null
-                && status == null
-                && keyword == null
-                && !deadlineSoon) {
-            return repository.findByTargetType(targetType, pageable);
+        // 람다식에서 쓰기 위한 final 복사본
+        String finalRegion = region;
+        String finalStatus = status;
+        String finalKeyword = keyword;
+        String finalTargetType = targetType;
+        boolean finalDeadlineSoon = deadlineSoon;
+        LocalDate finalToday = today;
+        LocalDate finalDeadlineEnd = deadlineEnd;
+
+        // 공공임대주택 / 공공분양주택 분리 조회
+        // targetType이 있으면 먼저 해당 분류만 가져오고,
+        // 그 안에서 지역/상태/검색어/마감임박을 Java에서 필터링
+        if (finalTargetType != null) {
+            List<Announcement> filtered = repository
+                    .findAllByTargetType(finalTargetType, Sort.by("applyEndDate").descending())
+                    .stream()
+                    .filter(a -> finalRegion == null || containsIgnoreCase(a.getRegion(), finalRegion))
+                    .filter(a -> finalStatus == null || finalStatus.equals(a.getStatus()))
+                    .filter(a -> finalKeyword == null || matchesKeyword(a, finalKeyword))
+                    .filter(a -> !finalDeadlineSoon || isDeadlineSoon(a.getApplyEndDate(), finalToday, finalDeadlineEnd))
+                    .toList();
+
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), filtered.size());
+
+            List<Announcement> pageContent =
+                    start >= filtered.size() ? List.of() : filtered.subList(start, end);
+
+            return new PageImpl<>(pageContent, pageable, filtered.size());
         }
 
         // 마감일 임박 + 검색어 + 지역 + 상태
@@ -494,6 +517,35 @@ public class AnnouncementService {
         }
 
         return value;
+    }
+
+    private boolean containsIgnoreCase(String value, String keyword) {
+        if (value == null || keyword == null) {
+            return false;
+        }
+
+        return value.toLowerCase().contains(keyword.toLowerCase());
+    }
+
+    private boolean matchesKeyword(Announcement announcement, String keyword) {
+        if (keyword == null) {
+            return true;
+        }
+
+        return containsIgnoreCase(announcement.getTitle(), keyword)
+                || containsIgnoreCase(announcement.getRegion(), keyword)
+                || containsIgnoreCase(announcement.getAddress(), keyword)
+                || containsIgnoreCase(announcement.getSupplyInstitution(), keyword)
+                || containsIgnoreCase(announcement.getRecuitmentType(), keyword)
+                || containsIgnoreCase(announcement.getTargetType(), keyword);
+    }
+
+    private boolean isDeadlineSoon(LocalDate applyEndDate, LocalDate today, LocalDate deadlineEnd) {
+        if (applyEndDate == null) {
+            return false;
+        }
+
+        return !applyEndDate.isBefore(today) && !applyEndDate.isAfter(deadlineEnd);
     }
 
     // ==============
