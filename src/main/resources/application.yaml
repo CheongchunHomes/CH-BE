@@ -18,6 +18,11 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+jwt:
+  secret: ${SECRET_KEY}
+  access-token-expiration: ${ACCESS_TOKEN_EXPIRATION}
+  refresh-token-expiration: ${REFRESH_TOKEN_EXPIRATION}
+
 api:
   public:
     service-key: ${API_PUBLIC_SERVICE_KEY}

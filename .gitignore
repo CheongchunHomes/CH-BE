@@ -41,3 +41,7 @@ out/
 
 # db data
 data/
+
+# logs
+log/*
+!log/.gitkeep
