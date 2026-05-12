@@ -30,7 +30,8 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/diagnosis/simulate",
             "/announcements",
-            "/announcements/**"
+            "/announcements/**",
+            "/properties/**"
 //            ,"/**"   // 임시
     };
 
