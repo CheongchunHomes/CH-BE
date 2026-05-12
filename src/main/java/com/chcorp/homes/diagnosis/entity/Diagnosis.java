@@ -94,4 +94,31 @@ public class Diagnosis extends BaseEntity {
     /* 희망 주택 유형 */
     @Column(nullable = false)
     private String desiredType;
+
+    /* 고용 상태 */
+    @Enumerated(EnumType.STRING)
+    @Column
+    private EmploymentStatus employmentStatus;
+
+    /* 소득활동기간 구간 */
+    @Enumerated(EnumType.STRING)
+    @Column
+    private EmploymentPeriod employmentPeriod;
+
+    /* 결혼 예정 여부 */
+    @Column
+    private Boolean marriagePlan;
+
+    /* 혼인기간 구간 */
+    @Enumerated(EnumType.STRING)
+    @Column
+    private MarriagePeriod marriagePeriod;
+
+    /* 만 6세 이하 자녀 여부 */
+    @Column
+    private Boolean hasYoungChild;
+
+    /* 한부모 여부 */
+    @Column
+    private Boolean singleParent;
 }

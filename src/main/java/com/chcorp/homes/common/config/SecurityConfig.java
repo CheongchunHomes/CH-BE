@@ -28,6 +28,7 @@ public class SecurityConfig {
             "/users/register",
             "/swagger-ui/**",
             "/v3/api-docs/**",
+            "/diagnosis/simulate",
             "/announcements",
             "/announcements/**"
 //            ,"/**"   // 임시
