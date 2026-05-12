@@ -12,7 +12,14 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RentalHouseApiResponse {
 
-    private Body body;
+    private Response response;
+
+    @Getter
+    @Setter
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Response {
+        private Body body;
+    }
 
     @Getter
     @Setter
