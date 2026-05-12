@@ -24,7 +24,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-// 공고 관련 Service
 public class AnnouncementService {
 
     private final RestTemplate restTemplate;
@@ -33,10 +32,19 @@ public class AnnouncementService {
     @Value("${api.public.service-key}")
     private String serviceKey;
 
+    // 마이홈포털 임대주택 API
     private static final String BASE_URL =
             "https://apis.data.go.kr/1613000/HWSPR02/rsdtRcritNtcList";
+
+    // 마이홈포털 공공분양주택 API
+    private static final String SALE_BASE_URL =
+            "https://apis.data.go.kr/1613000/HWSPR02/ltRsdtRcritNtcList";
+
     private static final int NUM_OF_ROWS = 100;
 
+    // ===================
+    // 마이홈포털 임대주택 수집
+    // ===================
     @Transactional
     public void fetchAll(String brtcCode) {
         int pageNo = 1;
@@ -50,68 +58,60 @@ public class AnnouncementService {
                         + "&numOfRows=" + NUM_OF_ROWS
                         + "&brtcCode=" + brtcCode;
 
-            ResponseEntity<RentalHouseApiResponse> response =
-                    restTemplate.getForEntity(url, RentalHouseApiResponse.class);
+                ResponseEntity<RentalHouseApiResponse> response =
+                        restTemplate.getForEntity(url, RentalHouseApiResponse.class);
 
-            RentalHouseApiResponse apiResponse = response.getBody();
+                RentalHouseApiResponse apiResponse = response.getBody();
 
-            if (apiResponse == null || apiResponse.getBody() == null) {
-                log.warn("[{}] {}페이지 응답 body 없음", brtcCode, pageNo);
-                break;
-            }
+                if (apiResponse == null
+                        || apiResponse.getResponse() == null
+                        || apiResponse.getResponse().getBody() == null) {
+                    log.warn("[임대주택][{}] {}페이지 응답 body 없음", brtcCode, pageNo);
+                    break;
+                }
 
-            RentalHouseApiResponse.Body body = apiResponse.getBody();
+                RentalHouseApiResponse.Body body = apiResponse.getResponse().getBody();
 
-            if (pageNo == 1) {
-                totalCount = parseIntOrZero(body.getTotalCount());
-                log.info("[{}] 전체 {}건 수집 시작", brtcCode, totalCount);
-            }
+                if (pageNo == 1) {
+                    totalCount = parseIntOrZero(body.getTotalCount());
+                    log.info("[임대주택][{}] 전체 {}건 수집 시작", brtcCode, totalCount);
+                }
 
-            List<RentalHouseApiResponse.Item> items = body.getItem();
+                List<RentalHouseApiResponse.Item> items = body.getItem();
 
-                // 데이터가 없을 때 종료되는 조건
                 if (items == null || items.isEmpty()) {
-                log.info("[{}] {}페이지 수집 종료 - 데이터 없음", brtcCode, pageNo);
+                    log.info("[임대주택][{}] {}페이지 수집 종료 - 데이터 없음", brtcCode, pageNo);
+                    break;
+                }
+
+                for (RentalHouseApiResponse.Item item : items) {
+                    String pblancId = item.getPblancId();
+                    Integer houseSn = item.getHouseSn();
+
+                    if (pblancId == null || pblancId.isBlank()) {
+                        log.warn("[임대주택][{}] {}페이지 pblancId 또는 houseSn 없음 - 저장 건너뜀", brtcCode, pageNo);
+                        continue;
+                    }
+
+                    String externalId = "RENTAL-" + pblancId + "-" + houseSn;
+
+                    if (repository.existsByExternalId(externalId)) {
+                        continue;
+                    }
+
+                    repository.save(toEntity(item));
+                }
+
+                log.info("[임대주택][{}] {}페이지 완료", brtcCode, pageNo);
+                pageNo++;
+
+            } catch (Exception e) {
+                log.error("[임대주택][{}] {}페이지 실패: {}", brtcCode, pageNo, e.getMessage(), e);
                 break;
             }
 
-            for (RentalHouseApiResponse.Item item : items) {
-                String externalId = item.getPblancId();
-
-                if (externalId == null || externalId.isBlank()) {
-                    log.warn("[{}] {}페이지 pblancId 없음 - 저장 건너뜀", brtcCode, pageNo);
-                    continue;
-                }
-
-                if (repository.existsByExternalId(externalId)) {
-                    continue;
-                }
-
-                repository.save(toEntity(item));
-            }
-
-            log.info("[{}] {}페이지 완료", brtcCode, pageNo);
-            pageNo++;
-
-        } catch (Exception e) {
-            log.error("[{}] {}페이지 실패: {}", brtcCode, pageNo, e.getMessage(), e);
-            break;
-        }
-
-    } while ((pageNo - 1) * NUM_OF_ROWS < totalCount);
-}
-
-    private int parseIntOrZero(String value) {
-        if (value == null || value.isBlank()) {
-        return 0;
+        } while ((pageNo - 1) * NUM_OF_ROWS < totalCount);
     }
-
-    try {
-        return Integer.parseInt(value);
-           } catch (NumberFormatException e) {
-        return 0;
-       }
-}
 
     @Transactional
     public void fetchAllRegions() {
@@ -140,58 +140,365 @@ public class AnnouncementService {
         });
     }
 
-    // API 응답 -> ERD 컬럼 매핑
+    // =======================
+    // 마이홈포털 공공분양주택 수집
+    // =======================
+
+    @Transactional
+    public void fetchSaleAnnouncements() {
+        int pageNo = 1;
+        int totalCount = 0;
+
+        do {
+            try {
+                String url = SALE_BASE_URL
+                        + "?serviceKey=" + serviceKey
+                        + "&pageNo=" + pageNo
+                        + "&numOfRows=" + NUM_OF_ROWS;
+
+                ResponseEntity<RentalHouseApiResponse> response =
+                        restTemplate.getForEntity(url, RentalHouseApiResponse.class);
+
+                RentalHouseApiResponse apiResponse = response.getBody();
+
+                if (apiResponse == null
+                        || apiResponse.getResponse() == null
+                        || apiResponse.getResponse().getBody() == null) {
+                    log.warn("[공공분양주택] {}페이지 응답 body 없음", pageNo);
+                    break;
+                }
+
+                RentalHouseApiResponse.Body body = apiResponse.getResponse().getBody();
+
+                if (pageNo == 1) {
+                    totalCount = parseIntOrZero(body.getTotalCount());
+                    log.info("[공공분양주택] 전체 {}건 수집 시작", totalCount);
+                }
+
+                List<RentalHouseApiResponse.Item> items = body.getItem();
+
+                if (items == null || items.isEmpty()) {
+                    log.info("[공공분양주택] {} 페이지 수집 종료 - 데이터 없음", pageNo);
+                    break;
+                }
+
+                for (RentalHouseApiResponse.Item item : items) {
+                    String pblancId = item.getPblancId();
+                    Integer houseSn = item.getHouseSn();
+
+                    if (pblancId == null || pblancId.isBlank() || houseSn == null) {
+                        log.warn("[공공분양주택] {} 페이지 pblancId 또는 houseSn 없음 - 저장 건너뜀", pageNo);
+                        continue;
+                    }
+
+                    String externalId = "SALE-" + pblancId + "-" + houseSn;
+
+                    if (repository.existsByExternalId(externalId)) {
+                        continue;
+                    }
+
+                    repository.save(toSaleEntity(item));
+                }
+
+                log.info("[공공분양주택] {}페이지 완료", pageNo);
+                pageNo++;
+
+            } catch (Exception e) {
+                log.error("[공공분양주택] {}페이지 실패: {}", pageNo, e.getMessage(), e);
+                break;
+            }
+        } while ((pageNo - 1) * NUM_OF_ROWS < totalCount);
+    }
+
+    // ================
+    // Entity 변환 메서드
+    // ================
     private Announcement toEntity(RentalHouseApiResponse.Item item) {
-       return Announcement.builder()
-                .externalId(item.getPblancId())
-                .sourceType("청약홈")
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = parseDate(item.getRcritPblancDe()); // 접수 시작일
+        LocalDate endDate = parseDate(item.getPrzwnerPresnatnDe()); // 접수 종료일(당첨자 발표일 등)
+
+        // 상태 판별 로직
+        String finalStatus = item.getSttusNm(); // 기본값은 API 제공값
+
+        if (endDate != null) {
+            if (endDate.isBefore(today)) {
+                finalStatus = "마감";
+            } else if (startDate != null && !startDate.isAfter(today)) {
+                finalStatus = "접수중";
+            } else if (startDate != null && startDate.isAfter(today)) {
+                finalStatus = "접수예정";
+            }
+        }
+
+        return Announcement.builder()
+                .externalId("Rental=" + item.getPblancId() + "-" + item.getHouseSn())
+                .sourceType("마이홈포털-공공임대주택")
                 .title(item.getPblancNm())
                 .region(item.getBrtcNm())
                 .address(item.getFullAdres())
-                .status(item.getSttusNm())
+                .status(finalStatus)
                 .recuitmentType(item.getHouseTyNm())
-               .targetType(item.getHouseTyNm())
-               .sourceUrl(item.getUrl())
-               .supplyInstitution(item.getSuplyInsttNm())
-               .totHshldCo(item.getTotHshldCo())
-               .rentGtn(item.getRentGtn())
-               .mtRntchrg(item.getMtRntchrg())
-               .heatMthdNm(item.getHeatMthdNm())
-               .beginDe(parseDate(item.getBeginDe()))
-               .endDe(parseDate(item.getEndDe()))
-               .content(item.getRefrnc())
-               .isVisible(true)
-               .applyStartDate(parseDate(item.getRcritPblancDe()))
-               .applyEndDate(parseDate(item.getPrzwnerPresnatnDe()))
-               .build();
+                .targetType("공공임대주택")
+                .sourceUrl(item.getUrl())
+                .supplyInstitution(item.getSuplyInsttNm())
+                .totHshldCo(item.getTotHshldCo())
+                .rentGtn(item.getRentGtn())
+                .mtRntchrg(item.getMtRntchrg())
+                .heatMthdNm(item.getHeatMthdNm())
+                .beginDe(parseDate(item.getBeginDe()))
+                .endDe(endDate)
+                .content(item.getRefrnc())
+                .isVisible(true)
+                .applyStartDate(startDate)
+                .applyEndDate(endDate)
+                .build();
     }
 
-    // "20260421" -> LocalDate
-    private LocalDate parseDate(String dateStr) {
-        if(dateStr == null || dateStr.isBlank()) return null;
-        try {
-            return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
-        } catch(Exception e) {
-            return null;
+    private Announcement toSaleEntity(RentalHouseApiResponse.Item item) {
+        LocalDate today = LocalDate.now();
+
+        LocalDate noticeDate = parseDate(item.getRcritPblancDe()); //공고일
+        LocalDate startDate = parseDate(item.getBeginDe()); //접수 시작일
+        LocalDate endDate = parseDate(item.getEndDe()); //접수 종료일
+
+        String finalStatus = item.getSttusNm(); //기본값은 API 제공값
+
+        if (endDate != null) {
+            if(endDate.isBefore(today)) {
+                finalStatus = "마감";
+            } else if (startDate != null && !startDate.isAfter(today)) {
+                finalStatus = "접수중";
+            } else if (startDate != null && startDate.isAfter(today)) {
+                finalStatus = "접수예정";
+            }
         }
+
+        String externalId = "SALE-" + item.getPblancId() + "-" + item.getHouseSn();
+
+        return Announcement.builder()
+                .externalId(externalId)
+                .sourceType("마이홈포털-공공분양주택")
+                .title(item.getPblancNm())
+                .region(item.getBrtcNm())
+                .address(item.getFullAdres())
+                .status(finalStatus)
+                .recuitmentType(item.getHouseTyNm())
+                .targetType("공공분양주택")
+                .sourceUrl(item.getPcUrl() != null && !item.getPcUrl().isBlank()
+                        ? item.getPcUrl()
+                        : item.getUrl())
+                .supplyInstitution(item.getSuplyInsttNm())
+                .totHshldCo(item.getSumSuplyCo() == null ? null : String.valueOf(item.getSumSuplyCo()))
+                .rentGtn(item.getEnty())
+                .mtRntchrg(item.getPrtpay())
+                .heatMthdNm(item.getHeatMthdNm())
+                .beginDe(noticeDate)
+                .endDe(endDate)
+                .content(buildSaleContent(item))
+                .isVisible(true)
+                .applyStartDate(startDate)
+                .applyEndDate(endDate)
+                .przwnerPresnatnDe(parseDate(item.getPrzwnerPresnatnDe()))
+                .build();
     }
 
-    // 프린트 요청용
-    @Transactional(readOnly = true)
-    public Page<Announcement> getList(String region, String status, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+    private String buildSaleContent(RentalHouseApiResponse.Item item) {
+        StringBuilder sb = new StringBuilder();
 
-        if(region != null && status != null)
-            return repository.findByRegionAndStatus(region, status, pageable);
-        if(region != null)
-            return repository.findByRegion(region, pageable);
-        if(status != null)
+        if (item.getHsmpNm() != null && !item.getHsmpNm().isBlank()) {
+            sb.append("단지명: ").append(item.getHsmpNm()).append("\n");
+        }
+
+        if (item.getRefrnc() != null && !item.getRefrnc().isBlank()) {
+            sb.append("문의처: ").append(item.getRefrnc()).append("\n");
+        }
+
+        if (item.getEnty() != null) {
+            sb.append("계약금: ").append(item.getEnty()).append("원\n");
+        }
+
+        if (item.getPrtpay() != null) {
+            sb.append("중도금: ").append(item.getPrtpay()).append("원\n");
+        }
+
+        if (item.getSurlus() != null) {
+            sb.append("잔금: ").append(item.getSurlus()).append("원\n");
+        }
+
+        if (item.getUrl() != null && !item.getUrl().isBlank()) {
+            sb.append("상세 정보: ").append(item.getUrl()).append("\n");
+        }
+        return sb.toString().trim();
+    }
+
+    // ================
+    // 목록조회
+    // ================
+    @Transactional(readOnly = true)
+    public Page<Announcement> getList(
+            String region,
+            String status,
+            String keyword,
+            String sourceType,
+            String targetType,
+            boolean deadlineSoon,
+            int page,
+            int size
+    ) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("applyEndDate").descending());
+
+        region = normalize(region);
+        status = normalize(status);
+        keyword = normalize(keyword);
+        sourceType = normalize(sourceType);
+        targetType = normalize(targetType);
+
+        LocalDate today = LocalDate.now();
+        LocalDate deadlineEnd = today.plusDays(30);
+
+       // 공공임대주택 / 공공분양주택 첫 진입 분리용
+        if (targetType != null
+                && region == null
+                && status == null
+                && keyword == null
+                && !deadlineSoon) {
+            return repository.findByTargetType(targetType, pageable);
+        }
+
+        // 마감일 임박 + 검색어 + 지역 + 상태
+        if (deadlineSoon && keyword != null && region != null && status != null) {
+            return repository.searchByKeywordAndRegionAndStatusAndDeadline(
+                    keyword, region, status, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 검색어 + 지역
+        if (deadlineSoon && keyword != null && region != null) {
+            return repository.searchByKeywordAndRegionAndDeadline(
+                    keyword, region, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 검색어 + 상태
+        if (deadlineSoon && keyword != null && status != null) {
+            return repository.searchByKeywordAndStatusAndDeadline(
+                    keyword, status, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 검색어
+        if (deadlineSoon && keyword != null) {
+            return repository.searchByKeywordAndDeadline(
+                    keyword, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 지역 + 상태
+        if (deadlineSoon && region != null && status != null) {
+            return repository.findByRegionContainingIgnoreCaseAndStatusAndApplyEndDateBetween(
+                    region, status, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 지역
+        if (deadlineSoon && region != null) {
+            return repository.findByRegionContainingIgnoreCaseAndApplyEndDateBetween(
+                    region, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박 + 상태
+        if (deadlineSoon && status != null) {
+            return repository.findByStatusAndApplyEndDateBetween(
+                    status, today, deadlineEnd, pageable
+            );
+        }
+
+        // 마감일 임박만
+        if (deadlineSoon) {
+            return repository.findByApplyEndDateBetween(today, deadlineEnd, pageable);
+        }
+
+        // 검색어 + 지역 + 상태
+        if (keyword != null && region != null && status != null) {
+            return repository.searchByKeywordAndRegionAndStatus(keyword, region, status, pageable);
+        }
+
+        // 검색어 + 지역
+        if (keyword != null && region != null) {
+            return repository.searchByKeywordAndRegion(keyword, region, pageable);
+        }
+
+        // 검색어 + 상태
+        if (keyword != null && status != null) {
+            return repository.searchByKeywordAndStatus(keyword, status, pageable);
+        }
+
+        // 검색어만
+        if (keyword != null) {
+            return repository.searchByKeyword(keyword, pageable);
+        }
+
+        // 지역 + 상태
+        if (region != null && status != null) {
+            return repository.findByRegionContainingIgnoreCaseAndStatus(region, status, pageable);
+        }
+
+        // 지역
+        if (region != null) {
+            return repository.findByRegionContainingIgnoreCase(region, pageable);
+        }
+
+        // 상태
+        if (status != null) {
             return repository.findByStatus(status, pageable);
+        }
 
         return repository.findAll(pageable);
     }
 
-    // api 단건 조회 (공고 상세페이지 용) - 아직
+    // ===============
+    // 공통 유틸 메서드
+    // ===============
+    private LocalDate parseDate(String dateStr) {
+        if (dateStr == null || dateStr.isBlank()) return null;
+        try {
+            return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private int parseIntOrZero(String value) {
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        value = value.trim();
+
+        if (value.isBlank()) {
+            return null;
+        }
+
+        return value;
+    }
+
+    // ==============
+    // 단건 조회
+    // ==============
     @Transactional(readOnly = true)
     public Announcement getOne(Long id) {
         return repository.findById(id).orElseThrow(() -> new RuntimeException("공고를 찾을 수 없습니다."));
