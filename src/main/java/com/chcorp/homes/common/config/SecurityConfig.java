@@ -26,7 +26,8 @@ public class SecurityConfig {
             "/auth/logout",
             "/users/register",
             "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+            "/diagnosis/simulate"
 //            ,"/**"   // 임시
     };
 
