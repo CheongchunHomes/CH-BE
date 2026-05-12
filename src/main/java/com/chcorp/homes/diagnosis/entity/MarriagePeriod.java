@@ -1,8 +1,7 @@
 package com.chcorp.homes.diagnosis.entity;
 
 public enum MarriagePeriod {
-    UNDER_1,    // 1년 미만
-    YEAR_1_3,   // 1~3년
-    YEAR_3_7,   // 3~7년
+    WITHIN_7,   // 7년 이내 (신혼부부 자격 충족)
     OVER_7      // 7년 초과
+    // 추후 세분화 시 UNDER_1 / YEAR_1_3 / YEAR_3_7 등으로 분리 가능
 }

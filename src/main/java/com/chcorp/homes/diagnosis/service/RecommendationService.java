@@ -1,4 +1,3 @@
-// diagnosis/service/RecommendationService.java
 package com.chcorp.homes.diagnosis.service;
 
 import com.chcorp.homes.diagnosis.dto.request.DiagnosisRequestDTO;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * ─────────────────────────────────────────────
  * 제도 추천 채점 서비스
  *
  * [역할]
@@ -35,7 +33,6 @@ import java.util.stream.Stream;
  * [의존]
  * - HousingUtil: 나이계산, 소득기준, 자산기준 공통 계산
  * - Recorepository: 제도 상세정보 조회 (description, applyUrl)
- * ─────────────────────────────────────────────
  */
 @Service
 @RequiredArgsConstructor
@@ -55,7 +52,6 @@ public class RecommendationService {
 
     /**
      * 메인 채점 메서드
-     *
      * 1. HousingUtil로 나이/소득/자산 공통 계산
      * 2. 9개 제도 각각 채점
      * 3. 점수 내림차순 정렬 후 반환
@@ -65,8 +61,10 @@ public class RecommendationService {
      */
     public RecommendationResponseDTO calculate(DiagnosisRequestDTO dto) {
         int age            = housingUtil.calcAge(dto.getBirthDate());
-        boolean incomePass = housingUtil.checkIncome(dto.getAnnualIncome(), dto.getDependentCount());
-        boolean assetPass  = housingUtil.checkAsset(dto.getTotalAsset());
+        boolean incomePass        = housingUtil.checkIncome(dto.getAnnualIncome(), dto.getDependentCount());
+        boolean assetPassStudent  = housingUtil.checkAsset(dto.getTotalAsset(), HousingUtil.ASSET_LIMIT_STUDENT);
+        boolean assetPassYouth    = housingUtil.checkAsset(dto.getTotalAsset(), HousingUtil.ASSET_LIMIT_YOUTH);
+        boolean assetPassNational = housingUtil.checkAsset(dto.getTotalAsset(), HousingUtil.ASSET_LIMIT_NATIONAL);
 
         // DB에서 활성 제도 전체 조회 → name 기준 Map 캐싱 (N+1 제거)
         Map<String, Recoentity> recoMap = recorepository.findByActiveTrue()
@@ -74,15 +72,15 @@ public class RecommendationService {
                 .collect(Collectors.toMap(Recoentity::getName, r -> r));
 
         List<PolicyResultDTO> sorted = Stream.of(
-                        scoreYouthPurchase(dto, age, incomePass, assetPass, recoMap),
-                        scoreYouthJeonse(dto, age, incomePass, assetPass, recoMap),
-                        scoreHappyStudent(dto, incomePass, assetPass, recoMap),
-                        scoreHappyJobSeeker(dto, incomePass, assetPass, recoMap),
-                        scoreHappyYouth(dto, age, incomePass, assetPass, recoMap),
-                        scoreHappyNewcomer(dto, incomePass, assetPass, recoMap),
-                        scoreHappyNewlywed(dto, incomePass, assetPass, recoMap),
-                        scoreHappyPreNewlywed(dto, incomePass, assetPass, recoMap),
-                        scoreHappySingleParent(dto, incomePass, assetPass, recoMap)
+                        scoreYouthPurchase(dto, age, incomePass, assetPassNational, recoMap),
+                        scoreYouthJeonse(dto, age, incomePass, assetPassNational, recoMap),
+                        scoreHappyStudent(dto, incomePass, assetPassStudent, recoMap),
+                        scoreHappyJobSeeker(dto, incomePass, assetPassYouth, recoMap),
+                        scoreHappyYouth(dto, age, incomePass, assetPassYouth, recoMap),
+                        scoreHappyNewcomer(dto, incomePass, assetPassYouth, recoMap),
+                        scoreHappyNewlywed(dto, incomePass, assetPassNational, recoMap),
+                        scoreHappyPreNewlywed(dto, incomePass, assetPassNational, recoMap),
+                        scoreHappySingleParent(dto, incomePass, assetPassNational, recoMap)
                 )
                 .sorted(Comparator.comparingInt(PolicyResultDTO::getScore).reversed())
                 .toList();
@@ -203,16 +201,16 @@ public class RecommendationService {
                 "자녀 연령과 무주택 조건을 기준으로 한부모가족 계층을 검토할 수 있습니다.", recoMap);
     }
 
-    // ── 공통 유틸 ───────────────────────────────────
+    /** ── 공통 유틸 ─────────────────────────────────── */
 
-    /** 청년/대학생/취업준비생 해당 여부 */
+    /* 청년/대학생/취업준비생 해당 여부 */
     private boolean isYouthTarget(DiagnosisRequestDTO dto, int age) {
         if (age >= AGE_MIN && age <= AGE_MAX) return true;
         return dto.getEmploymentStatus() == EmploymentStatus.STUDENT
                 || dto.getEmploymentStatus() == EmploymentStatus.JOB_SEEKER;
     }
 
-    /** 소득활동기간 5년 이내 여부 */
+    /* 소득활동기간 5년 이내 여부 */
     private boolean isWithinEmploymentLimit(EmploymentPeriod period) {
         if (period == null) return false;
         return period == EmploymentPeriod.UNDER_1
@@ -220,15 +218,13 @@ public class RecommendationService {
                 || period == EmploymentPeriod.YEAR_3_5;
     }
 
-    /** 혼인기간 7년 이내 여부 */
+    /* 혼인기간 7년 이내 여부 */
     private boolean isWithinMarriageLimit(MarriagePeriod period) {
         if (period == null) return false;
-        return period == MarriagePeriod.UNDER_1
-                || period == MarriagePeriod.YEAR_1_3
-                || period == MarriagePeriod.YEAR_3_7;
+        return period == MarriagePeriod.OVER_7;
     }
 
-    /** 추천 등급 계산 */
+    /* 추천 등급 계산 */
     private String calcGrade(int score) {
         if (score >= GRADE_ACTIVE)   return "적극추천";
         if (score >= GRADE_POSSIBLE) return "추천가능";

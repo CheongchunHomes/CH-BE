@@ -7,17 +7,15 @@ import lombok.Getter;
 import java.time.LocalDate;
 
 /**
- * ─────────────────────────────────────────────
  * 자가진단 요청 DTO (공통)
  * - 프로필 진단 / 가상 진단 둘 다 사용
  * - isProfileDiagnosis: true → DB 저장, false → 계산만
- * ─────────────────────────────────────────────
  */
 @Getter
 public class DiagnosisRequestDTO {
 
     /* 프로필 저장 여부 (true: 실제진단, false: 가상진단) */
-    private Boolean isProfileDiagnosis;
+    private Boolean profileDiagnosis;
 
     /* 생년월일 */
     private LocalDate birthDate;

@@ -23,6 +23,7 @@ import java.time.LocalDate;
  * [BaseEntity]
  * - created_at / updated_at 자동 관리
  */
+
 @Entity
 @Table(name = "user_profiles")
 @Getter
@@ -76,12 +77,6 @@ public class UserProfile extends MutableBaseEntity {
     /* 연소득 (청약 소득 기준 판단) */
     @Column(name = "annual_income")
     private Long annualIncome;
-
-    /*
-     * monthlyIncome 제거
-     * - 연소득 기준 정책이 대부분
-     * - 필요 시 계산으로 처리
-     */
 
     /* 현금성 자산 (예금 등) */
     @Column(name = "cash_asset")

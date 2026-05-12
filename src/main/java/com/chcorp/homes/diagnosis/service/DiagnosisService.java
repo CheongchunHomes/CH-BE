@@ -2,6 +2,7 @@ package com.chcorp.homes.diagnosis.service;
 
 import com.chcorp.homes.diagnosis.dto.request.DiagnosisRequestDTO;
 import com.chcorp.homes.diagnosis.dto.response.DiagnosisResponseDTO;
+import com.chcorp.homes.diagnosis.dto.response.UserProfileResponseDTO;
 import com.chcorp.homes.diagnosis.entity.Diagnosis;
 import com.chcorp.homes.diagnosis.entity.UserProfile;
 import com.chcorp.homes.diagnosis.repository.DiagnosisRepository;
@@ -15,11 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Optional;
 
 /**
- * ─────────────────────────────────────────────
  * DiagnosisService
  * - 프로필 진단: DB 저장 + 계산
  * - 가상 진단:  계산만 (DB 저장 없음)
- * ─────────────────────────────────────────────
  */
 @Service
 @RequiredArgsConstructor
@@ -121,5 +120,13 @@ public class DiagnosisService {
                 .desiredType(dto.getDesiredType())
                 .build();
         }
+
+
+    // ── 프로필 조회 ──────────────────────────────
+    public UserProfileResponseDTO getMyProfile(Long userId) {
+        UserProfile profile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("프로필이 없습니다."));
+        return UserProfileResponseDTO.from(profile);
     }
 
+}
