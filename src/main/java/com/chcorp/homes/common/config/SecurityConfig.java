@@ -26,6 +26,8 @@ public class SecurityConfig {
             "/auth/reauth",
             "/auth/logout",
             "/users/register",
+            "/admin",
+            "/admin/**",
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/diagnosis/simulate",
