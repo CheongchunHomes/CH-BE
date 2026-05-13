@@ -293,6 +293,7 @@ public class AnnouncementService {
                 .totHshldCo(item.getSumSuplyCo() == null ? null : String.valueOf(item.getSumSuplyCo()))
                 .rentGtn(item.getEnty())
                 .mtRntchrg(item.getPrtpay())
+                .surlus(item.getSurlus())
                 .heatMthdNm(item.getHeatMthdNm())
                 .beginDe(noticeDate)
                 .endDe(endDate)
@@ -313,18 +314,6 @@ public class AnnouncementService {
 
         if (item.getRefrnc() != null && !item.getRefrnc().isBlank()) {
             sb.append("문의처: ").append(item.getRefrnc()).append("\n");
-        }
-
-        if (item.getEnty() != null) {
-            sb.append("계약금: ").append(item.getEnty()).append("원\n");
-        }
-
-        if (item.getPrtpay() != null) {
-            sb.append("중도금: ").append(item.getPrtpay()).append("원\n");
-        }
-
-        if (item.getSurlus() != null) {
-            sb.append("잔금: ").append(item.getSurlus()).append("원\n");
         }
 
         if (item.getUrl() != null && !item.getUrl().isBlank()) {
