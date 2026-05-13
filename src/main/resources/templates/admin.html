@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청년주거원스텝 관리자</title>
+    <style>
+        :root {
+            --bg: #eef3ff;
+            --card: #ffffff;
+            --line: #d9e3f6;
+            --text: #0f172a;
+            --muted: #64748b;
+            --blue: #2563eb;
+            --blue-soft: #eaf1ff;
+            --green: #10b981;
+            --green-soft: #e7fbf2;
+            --shadow: 0 14px 42px rgba(15, 23, 42, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+            color: var(--text);
+            background:
+                    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 28%),
+                    linear-gradient(180deg, #f7f9ff 0%, var(--bg) 100%);
+            min-height: 100vh;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 24px;
+            padding: 24px;
+            min-height: 100vh;
+        }
+
+        .sidebar,
+        .card,
+        .hero,
+        .table-panel {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar {
+            padding: 22px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            align-self: start;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+        }
+
+        .brand-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, #dbeafe, #eff6ff);
+            color: var(--blue);
+            font-weight: 900;
+            font-size: 18px;
+        }
+
+        .brand h1 {
+            margin: 0;
+            font-size: 19px;
+            line-height: 1.2;
+        }
+
+        .brand p {
+            margin: 6px 0 0;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .menu-title {
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .menu-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .menu-item {
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid #dbe5ff;
+            background: linear-gradient(180deg, #f7fbff 0%, #eef6ff 100%);
+            transition: 0.2s ease;
+            display: grid;
+            gap: 4px;
+        }
+
+        .menu-item strong {
+            font-size: 15px;
+        }
+
+        .menu-item span {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .menu-item.active {
+            background: linear-gradient(135deg, var(--blue), #4f7cff);
+            color: white;
+            border-color: transparent;
+        }
+
+        .menu-item.active span {
+            color: rgba(255, 255, 255, 0.86);
+        }
+
+        .content {
+            display: grid;
+            gap: 18px;
+            align-content: start;
+        }
+
+        .hero {
+            padding: 24px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: var(--blue-soft);
+            color: var(--blue);
+            font-weight: 800;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .hero h2 {
+            margin: 0;
+            font-size: 30px;
+            line-height: 1.15;
+        }
+
+        .hero p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .pill {
+            padding: 10px 14px;
+            border-radius: 999px;
+            background: var(--green-soft);
+            color: #059669;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--blue), #4f7cff);
+            color: white;
+            font-weight: 800;
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .kpi {
+            padding: 20px 22px;
+            min-height: 132px;
+        }
+
+        .kpi .label {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .kpi .value {
+            font-size: 34px;
+            line-height: 1;
+            font-weight: 900;
+            margin-bottom: 12px;
+        }
+
+        .kpi .meta {
+            color: var(--green);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 16px;
+        }
+
+        .panel {
+            padding: 22px;
+        }
+
+        .panel h3 {
+            margin: 0 0 8px;
+            font-size: 22px;
+        }
+
+        .panel p {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.7;
+            font-size: 14px;
+        }
+
+        .quick-grid {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .quick-card {
+            padding: 18px;
+            border-radius: 18px;
+            border: 1px solid #e3eaf7;
+            background: linear-gradient(180deg, #ffffff, #f7fbff);
+            display: grid;
+            gap: 10px;
+        }
+
+        .quick-card strong {
+            font-size: 16px;
+        }
+
+        .quick-card small {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .list-card {
+            display: grid;
+            gap: 12px;
+        }
+
+        .recent {
+            display: grid;
+            gap: 10px;
+        }
+
+        .recent-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px;
+            border-radius: 16px;
+            background: #f8fbff;
+            border: 1px solid #e3eaf7;
+            align-items: center;
+        }
+
+        .recent-item strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 15px;
+        }
+
+        .recent-item span {
+            display: block;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .status-chip {
+            padding: 10px 14px;
+            border-radius: 14px;
+            background: var(--green-soft);
+            color: #059669;
+            font-weight: 800;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .table-panel {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .table-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 22px 24px 16px;
+        }
+
+        .table-head h3 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .table-head p {
+            margin: 6px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 720px;
+        }
+
+        th, td {
+            padding: 16px 18px;
+            border-top: 1px solid var(--line);
+            text-align: left;
+            vertical-align: middle;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f8fbff;
+            color: #334155;
+            font-weight: 800;
+        }
+
+        tbody tr:nth-child(even) td {
+            background: #fcfdff;
+        }
+
+        .empty-state {
+            padding: 36px 20px;
+            text-align: center;
+            color: var(--muted);
+            border-top: 1px solid var(--line);
+        }
+
+        .row-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: var(--blue-soft);
+            color: var(--blue);
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        @media (max-width: 1200px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-grid,
+            .overview-grid,
+            .quick-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .hero-actions {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-badge">H</div>
+            <div>
+                <h1>관리자 메인</h1>
+                <p>청년 주거 통합 관리</p>
+            </div>
+        </div>
+
+        <div>
+            <div class="menu-title">메뉴 리스트</div>
+            <div class="menu-list">
+                <a class="menu-item"
+                   th:each="item : ${menuItems}"
+                   th:classappend="${item.active} ? ' active' : ''"
+                   th:href="${item.href}">
+                    <strong th:text="${item.label}">메뉴</strong>
+                    <span th:text="${item.description}">설명</span>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow" th:text="${sectionBadge}">관리자 메인</div>
+                <h2 th:text="${sectionTitle}">관리자 메인</h2>
+                <p th:text="${sectionDescription}">
+                    청약, 대출, 공고, 유저 현황을 한눈에 확인하는 관리자 홈입니다.
+                </p>
+            </div>
+            <div class="hero-actions">
+                <span class="pill">실시간 반영</span>
+                <a class="button" th:href="@{/admin(section=${section})}">새로고침</a>
+            </div>
+        </section>
+
+        <section class="kpi-grid">
+            <article class="card kpi" th:each="card : ${stats}">
+                <div class="label" th:text="${card.label}">지표</div>
+                <div class="value" th:text="${card.value}">0</div>
+                <div class="meta" th:text="${card.meta}">전체</div>
+            </article>
+        </section>
+
+        <section th:if="${isOverview}" class="overview-grid">
+            <article class="panel card">
+                <h3>운영 요약</h3>
+                <p>유저, 청약, 공고, 대출 현황을 빠르게 확인할 수 있는 관리자 메인입니다.</p>
+                <div class="quick-grid">
+                    <a class="quick-card" th:each="action : ${overviewActions}" th:href="${action.href}">
+                        <strong th:text="${action.title}">유저 리스트</strong>
+                        <small th:text="${action.description}">설명</small>
+                    </a>
+                </div>
+            </article>
+
+            <article class="panel card list-card">
+                <h3>최근 작업</h3>
+                <p>최근 상태 변경과 저장 내역을 간단히 확인합니다.</p>
+                <div class="recent">
+                    <div class="recent-item" th:each="item : ${recentLogs}">
+                        <div>
+                            <strong th:text="${item.title}">항목</strong>
+                            <span th:text="${item.detail}">상세</span>
+                            <span th:text="${item.time}">방금 전</span>
+                        </div>
+                        <div class="status-chip">확인</div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section th:unless="${isOverview}" class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3 th:text="${sectionTitle}">리스트</h3>
+                    <p th:text="${sectionDescription}">설명</p>
+                </div>
+                <span class="pill">총 <span th:text="${#lists.size(tableRows)}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!#lists.isEmpty(tableRows)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th th:each="header : ${tableHeaders}" th:text="${header}">헤더</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${tableRows}">
+                        <td th:each="cell : ${row.columns}">
+                            <span th:text="${cell}">값</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${#lists.isEmpty(tableRows)}">
+                표시할 데이터가 아직 없습니다.
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>
