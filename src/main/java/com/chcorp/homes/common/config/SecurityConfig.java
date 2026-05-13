@@ -31,7 +31,8 @@ public class SecurityConfig {
             "/diagnosis/simulate",
             "/announcements",
             "/announcements/**",
-            "/properties/**"
+            "/properties/**",
+            "/subscription"
 //            ,"/**"   // 임시
     };
 
