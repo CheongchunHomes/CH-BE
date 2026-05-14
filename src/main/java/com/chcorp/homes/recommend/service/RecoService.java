@@ -2,8 +2,11 @@ package com.chcorp.homes.recommend.service;
 
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
+import com.chcorp.homes.diagnosis.repository.DiagnosisRepository;
+import com.chcorp.homes.diagnosis.repository.UserProfileRepository;
 import com.chcorp.homes.recommend.dto.RecommendItemDTO;
 import com.chcorp.homes.recommend.dto.RecommendSummaryResponse;
+import jdk.jshell.Diag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +21,8 @@ import java.util.stream.Collectors;
 public class RecoService {
 
     private final AnnouncementRepository announcementRepository;
+    private final UserProfileRepository userProfileRepository;
+    private final DiagnosisRepository diagnosisRepository;
 
     private static final List<String> KEYWORDS_HAENGBOK = List.of("행복주택");
 
@@ -49,7 +54,21 @@ public class RecoService {
         List<RecommendItemDTO> haengbok = regionFiltered.stream()
                 .filter(a -> KEYWORDS_HAENGBOK.stream()
                         .anyMatch(k -> a.getTitle() != null && a.getTitle().contains(k)))
-                .limit(3)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(
+                                Announcement::getTitle,
+                                a -> a,
+                                (a1, a2) ->a1 //중복 공고 노출 시 첫번째만 유지
+                        ),
+                        map -> new ArrayList<>(map.values())
+                ))
+                .stream()
+                .sorted((a1, a2) -> {
+                    if (a1.getApplyEndDate() == null) return 1;
+                    if (a2.getApplyEndDate() == null) return -1;
+                    return a2.getApplyEndDate().compareTo(a1.getApplyEndDate());
+        })
+                .limit(5)
                 .map(a -> toDTO(a, "행복주택"))
                 .toList();
 
@@ -57,7 +76,21 @@ public class RecoService {
         List<RecommendItemDTO> publicRental = regionFiltered.stream()
                 .filter(a -> KEYWORDS_PUBLIC_RENTAL.stream()
                         .anyMatch(k -> a.getTitle() !=null && a.getTitle().contains(k)))
-                .limit(3)
+                .collect(Collectors.collectingAndThen(
+                        Collectors.toMap(
+                                Announcement::getTitle,
+                                a -> a,
+                                (a1,a2) -> a1
+                        ),
+                        map -> new ArrayList<>(map.values())
+                ))
+                .stream()
+                .sorted((a1, a2) -> {
+                    if (a1.getApplyEndDate() == null) return 1;
+                    if (a2.getApplyEndDate() == null) return -1;
+                    return a2.getApplyEndDate().compareTo(a1.getApplyEndDate());
+        })
+                .limit(5)
                 .map(a -> toDTO(a, "공공임대"))
                 .toList();
 
@@ -94,8 +127,9 @@ public class RecoService {
                 .saleSubscriptionGrade("C")
                 .build();
 
-        // TODO: user_profiles 연결 후 실제 지역으로 교체
-        String region = "경기도";
+        String region = userProfileRepository.findByUserId(userId)
+                .map(p -> p.getDesiredCity() != null ? p.getDesiredCity() : "전국")
+                .orElse("전국");
 
         // announcements 테이블에서 제도 조회
         List<RecommendItemDTO> policies = recommendPolicies(region);
@@ -107,42 +141,42 @@ public class RecoService {
                         .category("대출")
                         .description("신생아 가구 대상, 최대 3억원, 금리 1%대")
                         .matchScore(92)
-                        .applyUrl("https://nhuf.molit.go.kr")
+                        .applyUrl("")
                         .build(),
                 RecommendItemDTO.builder()
                         .name("청년전용 버팀목전세자금대출")
                         .category("대출")
                         .description("만 19~34세 청년, 최대 2억원, 금리 2%대")
                         .matchScore(88)
-                        .applyUrl("https://nhuf.molit.go.kr")
+                        .applyUrl("")
                         .build(),
                 RecommendItemDTO.builder()
                         .name("중소기업취업청년 전월세보증금대출")
                         .category("대출")
                         .description("중소기업 재직 청년, 최대 1억원, 금리 1%대")
                         .matchScore(85)
-                        .applyUrl("https://nhuf.molit.go.kr")
+                        .applyUrl("")
                         .build(),
                 RecommendItemDTO.builder()
                         .name("신혼부부전용 전세자금대출")
                         .category("대출")
                         .description("신혼부부 대상, 최대 2억원")
                         .matchScore(80)
-                        .applyUrl("https://nhuf.molit.go.kr")
+                        .applyUrl("")
                         .build(),
                 RecommendItemDTO.builder()
                         .name("청년전용 보증부월세대출")
                         .category("대출")
                         .description("보증금 최대 3500만원, 월세 최대 40만원")
                         .matchScore(75)
-                        .applyUrl("https://nhuf.molit.go.kr")
+                        .applyUrl("")
                         .build(),
                 RecommendItemDTO.builder()
                         .name("일반 버팀목 전세자금대출")
                         .category("대출")
                         .description("무주택 세대주 대상 전세자금 지원")
                         .matchScore(70)
-                        .applyUrl("https://nhuf.molit.go.kr")
+                        .applyUrl("")
                         .build()
         );
 
@@ -155,4 +189,5 @@ public class RecoService {
                 .diagnosis(diagnosis)
                 .build();
     }
+
 }
