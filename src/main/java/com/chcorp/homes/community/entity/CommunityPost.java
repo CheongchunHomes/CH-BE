@@ -1,16 +1,16 @@
 package com.chcorp.homes.community.entity;
 
+import com.chcorp.homes.common.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "community_posts")
 @Getter
-@Setter
-public class CommunityPost {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
+public class CommunityPost extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,17 +20,26 @@ public class CommunityPost {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(nullable = false, length = 50)
     private String region;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 200)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "view_count")
-    private Long viewCount = 0L;
+    @Column(name = "view_count", nullable = false)
+    @Builder.Default
+    private Integer viewCount = 0;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    public void increaseViewCount() {
+        this.viewCount++;
+    }
+
+    public void update(String region, String title, String content) {
+        this.region = region;
+        this.title = title;
+        this.content = content;
+    }
 }
