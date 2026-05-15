@@ -26,12 +26,15 @@ public class SecurityConfig {
             "/auth/reauth",
             "/auth/logout",
             "/users/register",
+            "/admin",
+            "/admin/**",
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/diagnosis/simulate",
             "/announcements",
             "/announcements/**",
-            "/properties/**"
+            "/properties/**",
+            "/subscription"
 //            ,"/**"   // 임시
     };
 
