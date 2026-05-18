@@ -30,6 +30,11 @@ public class Property extends BaseEntity {
     @Column(length = 50)
     private String region;
 
+    // 매물 등록자 userId
+    // User 엔티티와 직접 연관관계를 걸지 않고 Long 값만 저장합니다.
+    @Column(name = "landlord_user_id")
+    private Long landlordUserId;
+
     @Column(nullable = false)
     private Double latitude;
 
@@ -120,4 +125,6 @@ public class Property extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+
 }
