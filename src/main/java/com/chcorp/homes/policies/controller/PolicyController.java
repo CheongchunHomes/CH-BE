@@ -36,12 +36,16 @@ public class PolicyController {
     public ResponseEntity<Page<PolicyListDTO>> getList(
             @RequestParam(required = false) String mainCategory,
             @RequestParam(required = false) String subCategory,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String supportType,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         // 1. 서비스에서 DB 데이터를 page 형태로 가져옴
-        Page<Policy> policies = policyService.getList(mainCategory, subCategory, keyword, page, size);
+        Page<Policy> policies = policyService.getList(
+                mainCategory, subCategory, region, status, supportType, keyword, page, size);
 
         // 2. 가져온 데이터를 DTO로 반환
         Page<PolicyListDTO> dto = policies.map(PolicyListDTO::new);

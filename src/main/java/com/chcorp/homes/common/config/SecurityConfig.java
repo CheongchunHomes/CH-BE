@@ -35,6 +35,10 @@ public class SecurityConfig {
             "/announcements/**",
             "/properties/**",
             "/subscription",
+            "/map",
+            "/ws/map-chat",
+            "/ws/map-chat/**",
+            "/policies",
             "/policies/**"
 //            ,"/**"   // 임시
     };

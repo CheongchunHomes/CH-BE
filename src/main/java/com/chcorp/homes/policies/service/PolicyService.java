@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -382,6 +384,9 @@ public class PolicyService {
     public Page<Policy> getList(
             String mainCategory,
             String subCategory,
+            String region,
+            String status,
+            String supportType,
             String keyword,
             int page,
             int size
@@ -390,10 +395,16 @@ public class PolicyService {
 
         mainCategory = normalize(mainCategory);
         subCategory = normalize(subCategory);
+        region = normalize(region);
+        status = normalize(status);
+        supportType = normalize(supportType);
         keyword = normalize(keyword);
 
         String finalMainCategory = mainCategory;
         String finalSubCategory = subCategory;
+        String finalRegion = region;
+        String finalStatus = status;
+        String finalSupportType = supportType;
         String finalKeyword = keyword;
 
         List<Policy> filtered = repository
@@ -401,6 +412,9 @@ public class PolicyService {
                 .stream()
                 .filter(p -> finalMainCategory == null || finalMainCategory.equals(p.getMainCategory()))
                 .filter(p -> finalSubCategory == null || finalSubCategory.equals(p.getSubCategory()))
+                .filter(p -> finalRegion == null || finalRegion.equals(p.getRegion()))
+                .filter(p -> finalStatus == null || finalStatus.equals(p.getStatus()))
+                .filter(p -> finalSupportType == null || containsIgnoreCase(p.getSupportType(), finalSupportType))
                 .filter(p -> finalKeyword == null || matchesKeyword(p, finalKeyword))
                 .toList();
 
@@ -524,15 +538,43 @@ public class PolicyService {
             return "확인필요";
         }
 
+        // 상시 신청은 날짜 비교 업시 상시 신청 처리
         if (value.contains("상시")) {
             return "상시신청";
         }
 
-        if (value.contains("공고에 따름") || value.contains("수시")) {
+        // 날짜가 명확하지 않은 경우
+        if (value.contains("공고에 따름")
+                || value.contains("별도 공지")
+                || value.contains("별도 안내")
+                || value.contains("수시")
+                || value.contains("문의")) {
             return "확인필요";
         }
 
-        return "신청가능";
+        // 신청 기간에서 날짜 2개 추출
+        // 예: 20241218 ~ 20250205
+        List<LocalDate> dates = extractDates(value);
+
+        // 시작일/종료일 둘 다 있는 경우
+        if (dates.size() >= 2) {
+            LocalDate today = LocalDate.now();
+            LocalDate startDate = dates.get(0);
+            LocalDate endDate = dates.get(1);
+
+            if (endDate.isBefore(today)) {
+                return "마감";
+            }
+
+            if (startDate.isAfter(today)) {
+                return "신청예정";
+            }
+
+            return "신청가능";
+        }
+
+        // 날짜가 1개만 있는 경우는 판단 애매하므로 확인 필요
+        return "확인필요";
     }
 
     // =========================
@@ -688,5 +730,33 @@ public class PolicyService {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private List<LocalDate> extractDates(String value) {
+        List<LocalDate> dates = new java.util.ArrayList<>();
+
+        if (value == null || value.isBlank()) {
+            return dates;
+        }
+
+        // 숫자만 남겨서 8자리 날짜를 찾음
+        // 예: 2024.12.18 ~ 2025.02.05
+        // 예: 20241218~20250205
+        // 둘 다 처리 가능
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\d{8}");
+        java.util.regex.Matcher matcher = pattern.matcher(value.replace(".", "").replace("-", ""));
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+
+        while (matcher.find()) {
+            try {
+                dates.add(LocalDate.parse(matcher.group(), formatter));
+            } catch (Exception e) {
+                // 날짜 변환 실패 시 무시
+            }
+        }
+
+        return dates;
+
     }
 }
