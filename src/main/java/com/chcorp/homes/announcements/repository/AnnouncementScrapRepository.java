@@ -19,4 +19,6 @@ public interface AnnouncementScrapRepository extends JpaRepository<AnnouncementS
     );
 
     List<AnnouncementScrap> findAllByUserIdOrderByCreatedAtDesc(Long userId);
+
+    boolean existsByAnnouncement_AnnouncementId(Long announcementId);
 }

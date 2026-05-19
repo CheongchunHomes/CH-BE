@@ -113,4 +113,30 @@ public class Announcement extends MutableBaseEntity {
     @Column(name = "surlus")
     private Integer surlus;
 
+    // =======================
+    // 관리자 도메인 메서드
+    // =======================
+
+    public void updateVisibility(Boolean isVisible) {
+        this.isVisible = isVisible;
+    }
+
+    public void updateAdminFields(String title, String region,
+                                  String recuitmentType, String targetType,
+                                  String status, String address,
+                                  String content, String sourceUrl,
+                                  Boolean isVisible, LocalDate applyStartDate, LocalDate applyEndDate) {
+        this.title = title;
+        this.region = region;
+        this.recuitmentType = recuitmentType;
+        this.targetType = targetType;
+        this.status = status;
+        this.address = address;
+        this.content = content;
+        this.sourceUrl = sourceUrl;
+        this.isVisible = isVisible;
+        this.applyStartDate = applyStartDate;
+        this.applyEndDate = applyEndDate;
+    }
+
 }

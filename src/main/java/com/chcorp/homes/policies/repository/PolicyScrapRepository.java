@@ -20,4 +20,6 @@ public interface PolicyScrapRepository extends JpaRepository<PolicyScrap, Long> 
     // 로그인한 사용자의 제도 스크랩 목록 조회
     // 마이페이지에서 사용
     List<PolicyScrap> findAllByUserId(Long userId);
+
+    boolean existsByPolicy_PolicyId(Long policyId);
 }
