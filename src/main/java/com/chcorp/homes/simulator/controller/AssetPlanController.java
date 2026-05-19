@@ -13,7 +13,7 @@ import com.chcorp.homes.simulator.exception.PlanNotFoundException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/simulator/asset-plans")
+@RequestMapping("/simulator/asset-plans")
 @RequiredArgsConstructor
 public class AssetPlanController {
 
