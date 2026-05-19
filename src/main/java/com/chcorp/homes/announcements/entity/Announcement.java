@@ -110,4 +110,7 @@ public class Announcement extends MutableBaseEntity {
     @Column(name = "przwner_presnatn_de")
     private LocalDate przwnerPresnatnDe;    // 당첨자 발표일
 
+    @Column(name = "surlus")
+    private Integer surlus;
+
 }
