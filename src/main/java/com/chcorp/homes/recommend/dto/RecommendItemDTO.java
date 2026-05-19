@@ -19,4 +19,6 @@ public class RecommendItemDTO {
     private int minAge;
     private int maxAge;
     private int maxIncome;
+    private Long announcementId;
+
 }

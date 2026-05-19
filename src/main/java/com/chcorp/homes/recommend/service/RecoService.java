@@ -103,6 +103,7 @@ public class RecoService {
 
     private RecommendItemDTO toDTO(Announcement a, String category) {
         return RecommendItemDTO.builder()
+                .announcementId(a.getAnnouncementId())
                 .name(a.getTitle())
                 .category(category)
                 .description(a.getContent() != null
