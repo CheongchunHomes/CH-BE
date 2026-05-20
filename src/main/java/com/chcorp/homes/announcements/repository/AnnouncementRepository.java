@@ -20,18 +20,23 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
 
     List<Announcement> findAllByTargetType(String targetType, Sort sort);
 
-    // 기존 정확 일치 조회(유지)
+    // 기존 정확 일치 조회
     Page<Announcement> findByRegion(String region, Pageable pageable);
 
     Page<Announcement> findByStatus(String status, Pageable pageable);
 
     Page<Announcement> findByRegionAndStatus(String region, String status, Pageable pageable);
 
-    // 필터 부분 일치(contains) 및 대소문자 무시 조회 - 프론트에서 '서울'과 같이 일부 키워드로도 매칭되게 하기 위함
+    // 지역 부분 일치 조회
     Page<Announcement> findByRegionContainingIgnoreCase(String region, Pageable pageable);
 
-    Page<Announcement> findByRegionContainingIgnoreCaseAndStatus(String region, String status, Pageable pageable);
+    Page<Announcement> findByRegionContainingIgnoreCaseAndStatus(
+            String region,
+            String status,
+            Pageable pageable
+    );
 
+    // 사용자 화면 기본 목록용
     Page<Announcement> findByIsVisibleTrue(Pageable pageable);
 
     Page<Announcement> findByRecuitmentTypeAndIsVisibleTrue(
@@ -39,8 +44,25 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
             Pageable pageable
     );
 
+    Page<Announcement> findByRegionContainingIgnoreCaseAndIsVisibleTrue(
+            String region,
+            Pageable pageable
+    );
+
+    Page<Announcement> findByStatusAndIsVisibleTrue(
+            String status,
+            Pageable pageable
+    );
+
+    Page<Announcement> findByRegionContainingIgnoreCaseAndStatusAndIsVisibleTrue(
+            String region,
+            String status,
+            Pageable pageable
+    );
+
     // =========================
-    // 기존 통합검색
+    // 관리자용 통합검색
+    // isVisible 여부와 상관없이 전체 공고 조회
     // =========================
 
     @Query("""
@@ -114,64 +136,126 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     );
 
     // =========================
-    // 마감일 임박 기본 필터
-    // =========================
-
-    Page<Announcement> findByApplyEndDateBetween(
-            LocalDate today,
-            LocalDate deadlineEnd,
-            Pageable pageable
-    );
-
-    Page<Announcement> findByRegionContainingIgnoreCaseAndApplyEndDateBetween(
-            String region,
-            LocalDate today,
-            LocalDate deadlineEnd,
-            Pageable pageable
-    );
-
-    Page<Announcement> findByStatusAndApplyEndDateBetween(
-            String status,
-            LocalDate today,
-            LocalDate deadlineEnd,
-            Pageable pageable
-    );
-
-    Page<Announcement> findByRegionContainingIgnoreCaseAndStatusAndApplyEndDateBetween(
-            String region,
-            String status,
-            LocalDate today,
-            LocalDate deadlineEnd,
-            Pageable pageable
-    );
-
-    // =========================
-    // 마감일 임박 + 통합검색
+    // 사용자용 통합검색
+    // 사용자 화면에는 isVisible = true인 공고만 노출
     // =========================
 
     @Query("""
         SELECT a
         FROM Announcement a
-        WHERE (
+        WHERE a.isVisible = true
+          AND (
                 LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
              OR LOWER(a.region) LIKE LOWER(CONCAT('%', :keyword, '%'))
              OR LOWER(a.address) LIKE LOWER(CONCAT('%', :keyword, '%'))
              OR LOWER(a.supplyInstitution) LIKE LOWER(CONCAT('%', :keyword, '%'))
              OR LOWER(a.recuitmentType) LIKE LOWER(CONCAT('%', :keyword, '%'))
-        )
-          AND a.applyEndDate BETWEEN :today AND :deadlineEnd
+          )
     """)
-    Page<Announcement> searchByKeywordAndDeadline(
+    Page<Announcement> searchVisibleByKeyword(
             @Param("keyword") String keyword,
-            @Param("today") LocalDate today,
-            @Param("deadlineEnd") LocalDate deadlineEnd,
             Pageable pageable
     );
 
     @Query("""
         SELECT a
         FROM Announcement a
-        WHERE LOWER(a.region) LIKE LOWER(CONCAT('%', :region, '%'))
+        WHERE a.isVisible = true
+          AND LOWER(a.region) LIKE LOWER(CONCAT('%', :region, '%'))
+          AND (
+                LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.region) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.address) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.supplyInstitution) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.recuitmentType) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          )
+    """)
+    Page<Announcement> searchVisibleByKeywordAndRegion(
+            @Param("keyword") String keyword,
+            @Param("region") String region,
+            Pageable pageable
+    );
+
+    @Query("""
+        SELECT a
+        FROM Announcement a
+        WHERE a.isVisible = true
+          AND a.status = :status
+          AND (
+                LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.region) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.address) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.supplyInstitution) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.recuitmentType) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          )
+    """)
+    Page<Announcement> searchVisibleByKeywordAndStatus(
+            @Param("keyword") String keyword,
+            @Param("status") String status,
+            Pageable pageable
+    );
+
+    @Query("""
+        SELECT a
+        FROM Announcement a
+        WHERE a.isVisible = true
+          AND LOWER(a.region) LIKE LOWER(CONCAT('%', :region, '%'))
+          AND a.status = :status
+          AND (
+                LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.region) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.address) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.supplyInstitution) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.recuitmentType) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          )
+    """)
+    Page<Announcement> searchVisibleByKeywordAndRegionAndStatus(
+            @Param("keyword") String keyword,
+            @Param("region") String region,
+            @Param("status") String status,
+            Pageable pageable
+    );
+
+    // =========================
+    // 사용자용 마감일 임박 기본 필터
+    // =========================
+
+    Page<Announcement> findByApplyEndDateBetweenAndIsVisibleTrue(
+            LocalDate today,
+            LocalDate deadlineEnd,
+            Pageable pageable
+    );
+
+    Page<Announcement> findByRegionContainingIgnoreCaseAndApplyEndDateBetweenAndIsVisibleTrue(
+            String region,
+            LocalDate today,
+            LocalDate deadlineEnd,
+            Pageable pageable
+    );
+
+    Page<Announcement> findByStatusAndApplyEndDateBetweenAndIsVisibleTrue(
+            String status,
+            LocalDate today,
+            LocalDate deadlineEnd,
+            Pageable pageable
+    );
+
+    Page<Announcement> findByRegionContainingIgnoreCaseAndStatusAndApplyEndDateBetweenAndIsVisibleTrue(
+            String region,
+            String status,
+            LocalDate today,
+            LocalDate deadlineEnd,
+            Pageable pageable
+    );
+
+    // =========================
+    // 사용자용 마감일 임박 + 통합검색
+    // =========================
+
+    @Query("""
+        SELECT a
+        FROM Announcement a
+        WHERE a.isVisible = true
           AND (
                 LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
              OR LOWER(a.region) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -181,7 +265,28 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
           )
           AND a.applyEndDate BETWEEN :today AND :deadlineEnd
     """)
-    Page<Announcement> searchByKeywordAndRegionAndDeadline(
+    Page<Announcement> searchVisibleByKeywordAndDeadline(
+            @Param("keyword") String keyword,
+            @Param("today") LocalDate today,
+            @Param("deadlineEnd") LocalDate deadlineEnd,
+            Pageable pageable
+    );
+
+    @Query("""
+        SELECT a
+        FROM Announcement a
+        WHERE a.isVisible = true
+          AND LOWER(a.region) LIKE LOWER(CONCAT('%', :region, '%'))
+          AND (
+                LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.region) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.address) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.supplyInstitution) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.recuitmentType) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          )
+          AND a.applyEndDate BETWEEN :today AND :deadlineEnd
+    """)
+    Page<Announcement> searchVisibleByKeywordAndRegionAndDeadline(
             @Param("keyword") String keyword,
             @Param("region") String region,
             @Param("today") LocalDate today,
@@ -192,28 +297,7 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     @Query("""
         SELECT a
         FROM Announcement a
-        WHERE a.status = :status
-          AND (
-                LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-             OR LOWER(a.region) LIKE LOWER(CONCAT('%', :keyword, '%'))
-             OR LOWER(a.address) LIKE LOWER(CONCAT('%', :keyword, '%'))
-             OR LOWER(a.supplyInstitution) LIKE LOWER(CONCAT('%', :keyword, '%'))
-             OR LOWER(a.recuitmentType) LIKE LOWER(CONCAT('%', :keyword, '%'))
-          )
-          AND a.applyEndDate BETWEEN :today AND :deadlineEnd
-    """)
-    Page<Announcement> searchByKeywordAndStatusAndDeadline(
-            @Param("keyword") String keyword,
-            @Param("status") String status,
-            @Param("today") LocalDate today,
-            @Param("deadlineEnd") LocalDate deadlineEnd,
-            Pageable pageable
-    );
-
-    @Query("""
-        SELECT a
-        FROM Announcement a
-        WHERE LOWER(a.region) LIKE LOWER(CONCAT('%', :region, '%'))
+        WHERE a.isVisible = true
           AND a.status = :status
           AND (
                 LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -224,7 +308,30 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
           )
           AND a.applyEndDate BETWEEN :today AND :deadlineEnd
     """)
-    Page<Announcement> searchByKeywordAndRegionAndStatusAndDeadline(
+    Page<Announcement> searchVisibleByKeywordAndStatusAndDeadline(
+            @Param("keyword") String keyword,
+            @Param("status") String status,
+            @Param("today") LocalDate today,
+            @Param("deadlineEnd") LocalDate deadlineEnd,
+            Pageable pageable
+    );
+
+    @Query("""
+        SELECT a
+        FROM Announcement a
+        WHERE a.isVisible = true
+          AND LOWER(a.region) LIKE LOWER(CONCAT('%', :region, '%'))
+          AND a.status = :status
+          AND (
+                LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.region) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.address) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.supplyInstitution) LIKE LOWER(CONCAT('%', :keyword, '%'))
+             OR LOWER(a.recuitmentType) LIKE LOWER(CONCAT('%', :keyword, '%'))
+          )
+          AND a.applyEndDate BETWEEN :today AND :deadlineEnd
+    """)
+    Page<Announcement> searchVisibleByKeywordAndRegionAndStatusAndDeadline(
             @Param("keyword") String keyword,
             @Param("region") String region,
             @Param("status") String status,

@@ -34,7 +34,12 @@ public class SecurityConfig {
             "/announcements",
             "/announcements/**",
             "/properties/**",
-            "/subscription"
+            "/subscription",
+            "/map",
+            "/ws/map-chat",
+            "/ws/map-chat/**",
+            "/policies",
+            "/policies/**"
 //            ,"/**"   // 임시
     };
 
@@ -53,6 +58,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WHITE_LIST).permitAll()
                         .requestMatchers(HttpMethod.POST, "/announcements/fetch/*").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/policies/fetch/*").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(
