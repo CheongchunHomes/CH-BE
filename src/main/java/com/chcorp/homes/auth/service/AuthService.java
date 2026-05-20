@@ -105,7 +105,8 @@ public class AuthService {
     @Transactional(readOnly = true)
     public AuthUserResponse me(Long userId) {
         User user = userService.findById(userId);
-        return AuthUserResponse.from(user);
+        boolean hasPersonalInfo = userService.hasPersonalInfo(userId);
+        return AuthUserResponse.from(user, hasPersonalInfo);
     }
 
     /**
