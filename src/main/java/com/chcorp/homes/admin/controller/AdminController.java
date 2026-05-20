@@ -2,7 +2,7 @@ package com.chcorp.homes.admin.controller;
 
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
-import com.chcorp.homes.subscription.entity.Announcem;
+import com.chcorp.homes.policies.repository.PolicyRepository;
 import com.chcorp.homes.subscription.repository.SubscriptionRepository;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.entity.UserRole;
@@ -39,6 +39,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final AnnouncementRepository announcementRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final PolicyRepository policyRepository;
     private final SubscriptionApplicationRepository subscriptionApplicationRepository;
 
     @GetMapping
@@ -98,6 +99,13 @@ public class AdminController {
                     "청약 신청 후 결과",
                     "유저별 청약 당첨 · 낙첨 결과를 확인하고 관리합니다.",
                     buildSubscriptionApplicationTable()
+            );
+
+
+            case "policy" -> new SectionView(
+                    "지원제도 리스트",
+                    "노출 중인 지원제도의 유형, 상태를 관리합니다.",
+                    buildPolicyTable()
             );
 
             case "asset" -> new SectionView(
@@ -214,6 +222,20 @@ public class AdminController {
         return new TableView(List.of("제목", "지역", "모집유형", "상태"), rows);
     }
 
+    private TableView buildPolicyTable() {
+        List<TableRow> rows = policyRepository.findAll(Sort.by(Sort.Direction.DESC, "policyId"))
+                .stream()
+                .limit(8)
+                .map(item -> row(
+                        safe(item.getTitle()),
+                        safe(item.getMainCategory()),
+                        safe(item.getSubCategory()),
+                        safe(item.getStatus())
+                ))
+                .toList();
+        return new TableView(List.of("제목", "대분류", "소분류", "상태"), rows);
+    }
+
     private TableView buildLoanTable() {
         List<TableRow> rows = new ArrayList<>();
         rows.add(row("신생아 특례 버팀목대출", "계약서 작성 중", "전자서명 대기", "오늘"));
@@ -233,7 +255,8 @@ public class AdminController {
                 menu("유저", "/admin?section=users", "users".equals(section), "유저 리스트"),
                 menu("청약", "/admin?section=subscription", "subscription".equals(section), "청약 리스트"),
                 menu("대출", "/admin?section=loan", "loan".equals(section), "대출 리스트"),
-                menu("공고", "/admin?section=announcement", "announcement".equals(section), "공고 리스트"),
+                menu("공고", "/admin/announcements", "announcement".equals(section), "공고 리스트"),
+                menu("제도", "/admin/policies", "policy".equals(section), "지원제도 리스트"),
                 menu("자산", "/admin?section=asset", "asset".equals(section), "파일 관리"),
                 menu("커뮤니티", "/admin?section=community", "community".equals(section), "게시글 관리"),
                 menu("시뮬레이션", "/admin?section=simulation", "simulation".equals(section), "진단 / 계산"),
@@ -247,7 +270,8 @@ public class AdminController {
         return List.of(
                 new StatCard("등록 유저", String.valueOf(userRepository.count()), "전체"),
                 new StatCard("청약 공고", String.valueOf(subscriptionRepository.count()), "누적"),
-                new StatCard("노출 공고", String.valueOf(announcementRepository.count()), "활성"),
+                new StatCard("노출 공고", String.valueOf(announcementRepository.count()), "누적"),
+                new StatCard("노출 제도", String.valueOf(policyRepository.count()), "누적"),
                 new StatCard("계약 진행", "27", "오늘")
         );
     }
@@ -257,7 +281,8 @@ public class AdminController {
                 new OverviewAction("유저 리스트", "가입 유저의 권한과 상태를 확인합니다.", "/admin?section=users"),
                 new OverviewAction("청약 리스트", "청약 공고와 모집 기간을 확인합니다.", "/admin?section=subscription"),
                 new OverviewAction("대출 리스트", "대출 계약과 서명 진행 상태를 확인합니다.", "/admin?section=loan"),
-                new OverviewAction("공고 리스트", "노출 중인 공고와 모집 유형을 확인합니다.", "/admin?section=announcement")
+                new OverviewAction("공고 리스트", "노출 중인 공고와 모집 유형을 확인합니다.", "/admin?section=announcement"),
+                new OverviewAction("지원제도 리스트", "노출 중인 지원제도와 모집 유형을 확인합니다.", "/admin?section=policy")
         );
     }
 
@@ -275,7 +300,7 @@ public class AdminController {
             return "overview";
         }
         return switch (section) {
-            case "overview", "users", "subscription", "subscription_result","loan", "announcement", "asset", "community", "simulation", "settings" -> section;
+            case "overview", "users", "subscription", "subscription_result","loan", "announcement",  "policy","asset", "community", "simulation", "settings" -> section;
             default -> "overview";
         };
     }
@@ -287,6 +312,7 @@ public class AdminController {
             case "subscription_result" -> "청약 결과";
             case "loan" -> "대출 리스트";
             case "announcement" -> "공고 리스트";
+            case "policy" -> "지원제도 리스트";
             case "asset" -> "자산 리스트";
             case "community" -> "커뮤니티 리스트";
             case "simulation" -> "시뮬레이션";

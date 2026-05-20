@@ -37,6 +37,10 @@ public class AnnouncementScrapService {
         Announcement announcement = announcementRepository.findById(announcementId)
                 .orElseThrow(() -> new RuntimeException("공고를 찾을 수 없습니다."));
 
+        // 숨김 처리된 공고는 새로 스크랩할 수 없도록 방지
+        if (Boolean.FALSE.equals(announcement.getIsVisible())) {
+            throw new RuntimeException("비공개 처리된 공고는 스크랩할 수 없습니다.");
+        }
 
         // 스크랩 엔티티 생성 후 저장
         AnnouncementScrap scrap = AnnouncementScrap.builder()

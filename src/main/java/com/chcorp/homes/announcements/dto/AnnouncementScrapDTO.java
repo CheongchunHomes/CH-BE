@@ -21,6 +21,7 @@ public class AnnouncementScrapDTO {
     private LocalDate applyStartDate;
     private LocalDate applyEndDate;
     private Instant scrapedAt;
+    private Boolean announcementVisible;
 
     public AnnouncementScrapDTO(AnnouncementScrap scrap) {
         Announcement announcement = scrap.getAnnouncement();
@@ -36,6 +37,6 @@ public class AnnouncementScrapDTO {
         this.applyStartDate = announcement.getApplyStartDate();
         this.applyEndDate = announcement.getApplyEndDate();
         this.scrapedAt = scrap.getCreatedAt();
-
+        this.announcementVisible = scrap.getAnnouncement().getIsVisible();
     }
 }
