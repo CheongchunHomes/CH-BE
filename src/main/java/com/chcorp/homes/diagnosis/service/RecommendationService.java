@@ -6,6 +6,8 @@ import com.chcorp.homes.diagnosis.dto.response.RecommendationResponseDTO;
 import com.chcorp.homes.diagnosis.entity.EmploymentPeriod;
 import com.chcorp.homes.diagnosis.entity.EmploymentStatus;
 import com.chcorp.homes.diagnosis.entity.MarriagePeriod;
+import com.chcorp.homes.diagnosis.entity.UserProfile;
+import com.chcorp.homes.diagnosis.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +29,7 @@ import java.util.stream.Stream;
 public class RecommendationService {
 
     private final HousingUtil housingUtil;
+    private final UserProfileRepository userProfileRepository;
 
     // ── 연령 기준 상수 ──────────────────────────────
     private static final int AGE_MIN = 19;  // 청년 최소 나이
@@ -61,6 +64,17 @@ public class RecommendationService {
         return RecommendationResponseDTO.builder()
                 .results(sorted)
                 .build();
+    }
+
+    /**
+     * 프로필 기반 추천 채점
+     * - 로그인 사용자의 저장된 프로필로 채점
+     * - GET /recommendation/calculate/me 에서 호출
+     */
+    public RecommendationResponseDTO calculateByProfile(Long userId) {
+        UserProfile profile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("프로필이 없습니다."));
+        return calculate(DiagnosisRequestDTO.fromProfile(profile));
     }
 
     // ── 1. 청년 매입임대 (국민임대 자산기준) ────────
