@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지원제도 등록/수정</title>
+  <style>
+    :root {
+        --bg: #eef3ff; --card: #ffffff; --line: #d9e3f6;
+        --text: #0f172a; --muted: #64748b;
+        --blue: #2563eb; --blue-soft: #eaf1ff;
+        --shadow: 0 14px 42px rgba(15,23,42,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+        color: var(--text);
+        background:
+            radial-gradient(circle at top left, rgba(37,99,235,0.08), transparent 28%),
+            linear-gradient(180deg, #f7f9ff 0%, var(--bg) 100%);
+        min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    .layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; padding: 24px; min-height: 100vh; }
+    .sidebar { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 22px 18px; display: flex; flex-direction: column; gap: 18px; align-self: start; }
+    .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148,163,184,0.25); }
+    .brand-badge { width: 44px; height: 44px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, #dbeafe, #eff6ff); color: var(--blue); font-weight: 900; font-size: 18px; }
+    .brand h1 { margin: 0; font-size: 19px; }
+    .brand p { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+    .menu-title { font-size: 12px; letter-spacing: 0.08em; color: var(--muted); font-weight: 800; text-transform: uppercase; }
+    .menu-list { display: grid; gap: 10px; }
+    .menu-item { padding: 14px 16px; border-radius: 16px; border: 1px solid #dbe5ff; background: linear-gradient(180deg, #f7fbff, #eef6ff); display: grid; gap: 4px; }
+    .menu-item strong { font-size: 15px; }
+    .menu-item span { font-size: 12px; color: var(--muted); }
+    .menu-item.active { background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; border-color: transparent; }
+    .menu-item.active span { color: rgba(255,255,255,0.86); }
+    .content { display: grid; gap: 18px; align-content: start; }
+    .form-panel { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 32px; }
+    .form-panel h2 { margin: 0 0 24px; font-size: 24px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { font-size: 13px; font-weight: 700; color: var(--muted); }
+    .form-group input, .form-group select, .form-group textarea { padding: 12px 16px; border-radius: 14px; border: 1px solid var(--line); font-size: 14px; background: #f8fbff; outline: none; font-family: inherit; }
+    .form-group textarea { resize: vertical; min-height: 120px; }
+    .form-actions { display: flex; gap: 12px; margin-top: 28px; justify-content: flex-end; }
+    .button { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 14px; background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; font-weight: 800; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 10px 24px rgba(37,99,235,0.18); text-decoration: none; }
+    .button.ghost { background: white; border: 1px solid var(--line); color: var(--text); box-shadow: none; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-badge">H</div>
+      <div>
+        <h1>관리자 메인</h1>
+        <p>청년 주거 통합 관리</p>
+      </div>
+    </div>
+    <div>
+      <div class="menu-title">메뉴 리스트</div>
+      <div class="menu-list">
+        <a class="menu-item" href="/admin"><strong>관리자 메인</strong><span>전체 현황</span></a>
+        <a class="menu-item" href="/admin?section=users"><strong>유저</strong><span>유저 리스트</span></a>
+        <a class="menu-item" href="/admin?section=subscription"><strong>청약</strong><span>청약 리스트</span></a>
+        <a class="menu-item" href="/admin?section=loan"><strong>대출</strong><span>대출 리스트</span></a>
+        <a class="menu-item" href="/admin/announcements"><strong>공고</strong><span>공고 리스트</span></a>
+        <a class="menu-item active" href="/admin/policies"><strong>제도</strong><span>지원제도 리스트</span></a>
+        <a class="menu-item" href="/admin?section=asset"><strong>자산</strong><span>파일 관리</span></a>
+        <a class="menu-item" href="/admin?section=community"><strong>커뮤니티</strong><span>게시글 관리</span></a>
+        <a class="menu-item" href="/admin?section=simulation"><strong>시뮬레이션</strong><span>진단 / 계산</span></a>
+        <a class="menu-item" href="/admin?section=settings"><strong>설정</strong><span>권한 / 시스템</span></a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="form-panel">
+      <h2 th:text="${isEdit} ? '지원제도 수정' : '지원제도 등록'">지원제도 등록</h2>
+
+      <form th:action="${isEdit} ? @{/admin/policies/{id}/edit(id=${policyId})} : @{/admin/policies}"
+            method="post"
+            th:object="${form}">
+
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>제목</label>
+            <input type="text" th:field="*{title}" placeholder="제도명">
+          </div>
+          <div class="form-group">
+            <label>대분류</label>
+            <select th:field="*{mainCategory}">
+              <option value="">선택</option>
+              <option value="주거비지원">주거비지원</option>
+              <option value="기타지원">기타지원</option>
+              <option value="기타사업">기타사업</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>소분류</label>
+            <select th:field="*{subCategory}">
+              <option value="">선택</option>
+              <option value="월세지원">월세지원</option>
+              <option value="보증금지원">보증금지원</option>
+              <option value="주거급여">주거급여</option>
+              <option value="이사비지원">이사비지원</option>
+              <option value="융자지원">융자지원</option>
+              <option value="주거교육">주거교육</option>
+              <option value="상담지원">상담지원</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>상태</label>
+            <select th:field="*{status}">
+              <option value="">선택</option>
+              <option value="상시신청">상시신청</option>
+              <option value="신청가능">신청가능</option>
+              <option value="신청예정">신청예정</option>
+              <option value="마감">마감</option>
+              <option value="확인필요">확인필요</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>노출여부</label>
+            <select th:field="*{isVisible}">
+              <option value="true">노출</option>
+              <option value="false">숨김</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>지원유형</label>
+            <input type="text" th:field="*{supportType}" placeholder="현금, 현물 등">
+          </div>
+          <div class="form-group">
+            <label>신청기간</label>
+            <input type="text" th:field="*{applyPeriod}" placeholder="상시 또는 날짜 범위">
+          </div>
+          <div class="form-group">
+            <label>주관기관</label>
+            <input type="text" th:field="*{supervisingInstitution}" placeholder="주관기관명">
+          </div>
+          <div class="form-group full">
+            <label>원문 URL</label>
+            <input type="text" th:field="*{sourceUrl}" placeholder="https://...">
+          </div>
+          <div class="form-group full">
+            <label>온라인 신청 URL</label>
+            <input type="text" th:field="*{onlineApplyUrl}" placeholder="https://...">
+          </div>
+          <div class="form-group full">
+            <label>요약</label>
+            <textarea th:field="*{summary}" placeholder="제도 요약"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>지원 내용</label>
+            <textarea th:field="*{content}" placeholder="지원 내용을 입력하세요"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>지원 대상</label>
+            <textarea th:field="*{targetDesc}" placeholder="지원 대상을 입력하세요"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>신청 방법</label>
+            <textarea th:field="*{applyMethod}" placeholder="신청 방법을 입력하세요"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>구비서류</label>
+            <textarea th:field="*{requiredDocuments}" placeholder="제출 서류를 입력하세요"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a class="button ghost" th:href="@{/admin/policies}">취소</a>
+          <button class="button" type="submit"
+                  th:text="${isEdit} ? '수정 완료' : '등록 완료'">등록 완료</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+</body>
+</html>
