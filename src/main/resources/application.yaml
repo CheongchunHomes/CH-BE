@@ -31,3 +31,6 @@ api:
   subscription:
     applyhome:
       service-key: ${API_SUBSCRIPTION_APPLYHOME_SERVICE_KEY}
+  policy:
+    youth:
+        service-key: ${API_POLICY_YOUTH_SERVICE_KEY}

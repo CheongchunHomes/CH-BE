@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지원제도 관리</title>
+  <style>
+    :root {
+        --bg: #eef3ff; --card: #ffffff; --line: #d9e3f6;
+        --text: #0f172a; --muted: #64748b;
+        --blue: #2563eb; --blue-soft: #eaf1ff;
+        --green: #10b981; --green-soft: #e7fbf2;
+        --red: #ef4444; --red-soft: #fef2f2;
+        --shadow: 0 14px 42px rgba(15,23,42,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+        color: var(--text);
+        background:
+            radial-gradient(circle at top left, rgba(37,99,235,0.08), transparent 28%),
+            linear-gradient(180deg, #f7f9ff 0%, var(--bg) 100%);
+        min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    .layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; padding: 24px; min-height: 100vh; }
+    .sidebar { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 22px 18px; display: flex; flex-direction: column; gap: 18px; align-self: start; }
+    .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148,163,184,0.25); }
+    .brand-badge { width: 44px; height: 44px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, #dbeafe, #eff6ff); color: var(--blue); font-weight: 900; font-size: 18px; }
+    .brand h1 { margin: 0; font-size: 19px; line-height: 1.2; }
+    .brand p { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+    .menu-title { font-size: 12px; letter-spacing: 0.08em; color: var(--muted); font-weight: 800; text-transform: uppercase; }
+    .menu-list { display: grid; gap: 10px; }
+    .menu-item { padding: 14px 16px; border-radius: 16px; border: 1px solid #dbe5ff; background: linear-gradient(180deg, #f7fbff, #eef6ff); display: grid; gap: 4px; }
+    .menu-item strong { font-size: 15px; }
+    .menu-item span { font-size: 12px; color: var(--muted); }
+    .menu-item.active { background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; border-color: transparent; }
+    .menu-item.active span { color: rgba(255,255,255,0.86); }
+    .content { display: grid; gap: 18px; align-content: start; }
+    .hero { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 24px 28px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-weight: 800; font-size: 13px; margin-bottom: 10px; }
+    .hero h2 { margin: 0; font-size: 30px; line-height: 1.15; }
+    .hero p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+    .hero-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .button { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 14px; background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; font-weight: 800; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 10px 24px rgba(37,99,235,0.18); text-decoration: none; }
+    .button.danger { background: linear-gradient(135deg, var(--red), #f87171); box-shadow: 0 10px 24px rgba(239,68,68,0.18); }
+    .button.ghost { background: white; border: 1px solid var(--line); color: var(--text); box-shadow: none; }
+    .button.sm { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+    .search-panel { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+    .search-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px; }
+    .search-group label { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .search-group input, .search-group select { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); font-size: 14px; background: #f8fbff; outline: none; }
+    .trigger-panel { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 20px 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+    .trigger-label { font-size: 13px; font-weight: 800; color: var(--muted); margin-right: 4px; }
+    .table-panel { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 0; overflow: hidden; }
+    .table-head { display: flex; justify-content: space-between; align-items: center; padding: 22px 24px 16px; }
+    .table-head h3 { margin: 0; font-size: 22px; }
+    .table-head p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+    .pill { padding: 10px 14px; border-radius: 999px; background: var(--green-soft); color: #059669; font-size: 13px; font-weight: 800; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 900px; }
+    th, td { padding: 14px 16px; border-top: 1px solid var(--line); text-align: left; vertical-align: middle; font-size: 14px; }
+    th { background: #f8fbff; color: #334155; font-weight: 800; }
+    tbody tr:nth-child(even) td { background: #fcfdff; }
+    .badge { display: inline-flex; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+    .badge.visible { background: var(--green-soft); color: #059669; }
+    .badge.hidden { background: var(--red-soft); color: var(--red); }
+    .action-group { display: flex; gap: 6px; }
+    .empty-state { padding: 36px 20px; text-align: center; color: var(--muted); border-top: 1px solid var(--line); }
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 20px; }
+    .page-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: white; font-size: 14px; cursor: pointer; font-weight: 700; color: var(--text); text-decoration: none; }
+    .page-btn.active { background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; border-color: transparent; }
+    .page-btn.disabled { opacity: 0.4; pointer-events: none; }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-badge">H</div>
+      <div>
+        <h1>관리자 메인</h1>
+        <p>청년 주거 통합 관리</p>
+      </div>
+    </div>
+    <div>
+      <div class="menu-title">메뉴 리스트</div>
+      <div class="menu-list">
+        <a class="menu-item" href="/admin"><strong>관리자 메인</strong><span>전체 현황</span></a>
+        <a class="menu-item" href="/admin?section=users"><strong>유저</strong><span>유저 리스트</span></a>
+        <a class="menu-item" href="/admin?section=subscription"><strong>청약</strong><span>청약 리스트</span></a>
+        <a class="menu-item" href="/admin?section=loan"><strong>대출</strong><span>대출 리스트</span></a>
+        <a class="menu-item" href="/admin/announcements"><strong>공고</strong><span>공고 리스트</span></a>
+        <a class="menu-item active" href="/admin/policies"><strong>제도</strong><span>지원제도 리스트</span></a>
+        <a class="menu-item" href="/admin?section=asset"><strong>자산</strong><span>파일 관리</span></a>
+        <a class="menu-item" href="/admin?section=community"><strong>커뮤니티</strong><span>게시글 관리</span></a>
+        <a class="menu-item" href="/admin?section=simulation"><strong>시뮬레이션</strong><span>진단 / 계산</span></a>
+        <a class="menu-item" href="/admin?section=settings"><strong>설정</strong><span>권한 / 시스템</span></a>
+      </div>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">지원제도 리스트</div>
+        <h2>지원제도 관리</h2>
+        <p>노출 중인 지원제도의 유형, 상태를 관리합니다.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="button" th:href="@{/admin/policies/new}">+ 제도 등록</a>
+      </div>
+    </section>
+
+    <!-- 검색 -->
+    <form class="search-panel" th:action="@{/admin/policies}" method="get">
+      <div class="search-group">
+        <label>검색어</label>
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="제목 검색">
+      </div>
+      <div class="search-group">
+        <label>대분류</label>
+        <select name="mainCategory">
+          <option value="" th:selected="${mainCategory == ''}">전체</option>
+          <option value="주거비지원" th:selected="${mainCategory == '주거비지원'}">주거비지원</option>
+          <option value="기타지원" th:selected="${mainCategory == '기타지원'}">기타지원</option>
+          <option value="기타사업" th:selected="${mainCategory == '기타사업'}">기타사업</option>
+        </select>
+      </div>
+      <div class="search-group">
+        <label>소분류</label>
+        <select name="subCategory">
+          <option value="" th:selected="${subCategory == ''}">전체</option>
+          <option value="월세지원" th:selected="${subCategory == '월세지원'}">월세지원</option>
+          <option value="보증금지원" th:selected="${subCategory == '보증금지원'}">보증금지원</option>
+          <option value="주거급여" th:selected="${subCategory == '주거급여'}">주거급여</option>
+          <option value="이사비지원" th:selected="${subCategory == '이사비지원'}">이사비지원</option>
+          <option value="융자지원" th:selected="${subCategory == '융자지원'}">융자지원</option>
+          <option value="주거교육" th:selected="${subCategory == '주거교육'}">주거교육</option>
+          <option value="상담지원" th:selected="${subCategory == '상담지원'}">상담지원</option>
+          <option value="기타" th:selected="${subCategory == '기타'}">기타</option>
+        </select>
+      </div>
+      <div class="search-group">
+        <label>상태</label>
+        <select name="status">
+          <option value="" th:selected="${status == ''}">전체</option>
+          <option value="상시신청" th:selected="${status == '상시신청'}">상시신청</option>
+          <option value="신청가능" th:selected="${status == '신청가능'}">신청가능</option>
+          <option value="신청예정" th:selected="${status == '신청예정'}">신청예정</option>
+          <option value="마감" th:selected="${status == '마감'}">마감</option>
+          <option value="확인필요" th:selected="${status == '확인필요'}">확인필요</option>
+        </select>
+      </div>
+      <button class="button" type="submit">검색</button>
+      <a class="button ghost" th:href="@{/admin/policies}">초기화</a>
+    </form>
+
+    <!-- API 트리거 -->
+    <div class="trigger-panel">
+      <span class="trigger-label">외부 API 수집</span>
+      <form th:action="@{/admin/policies/trigger/youth}" method="post">
+        <button class="button sm" type="submit">청년정책 수집</button>
+      </form>
+      <form th:action="@{/admin/policies/trigger/public}" method="post">
+        <button class="button sm" type="submit">공공서비스 수집</button>
+      </form>
+    </div>
+
+    <!-- 테이블 -->
+    <section class="table-panel">
+      <div class="table-head">
+        <div>
+          <h3>지원제도 리스트</h3>
+          <p>노출 중인 지원제도의 유형, 상태를 관리합니다.</p>
+        </div>
+        <span class="pill">총 <span th:text="${policies.totalElements}">0</span>건</span>
+      </div>
+
+      <div class="table-scroll" th:if="${!policies.content.isEmpty()}">
+        <table>
+          <thead>
+          <tr>
+            <th>제목</th>
+            <th>대분류</th>
+            <th>소분류</th>
+            <th>상태</th>
+            <th>노출여부</th>
+            <th>관리</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${policies.content}">
+            <td th:text="${item.title}">제목</td>
+            <td th:text="${item.mainCategory}">대분류</td>
+            <td th:text="${item.subCategory}">소분류</td>
+            <td th:text="${item.status}">상태</td>
+            <td>
+                            <span class="badge"
+                                  th:classappend="${item.isVisible} ? 'visible' : 'hidden'"
+                                  th:text="${item.isVisible} ? '노출' : '숨김'">노출</span>
+            </td>
+            <td>
+              <div class="action-group">
+                <a class="button sm ghost"
+                   th:href="@{/admin/policies/{id}/edit(id=${item.policyId})}">수정</a>
+                <form th:action="@{/admin/policies/{id}/visibility(id=${item.policyId})}"
+                      method="post">
+                  <input type="hidden" name="isVisible" th:value="${!item.isVisible}">
+                  <button class="button sm"
+                          th:classappend="${item.isVisible} ? 'danger' : ''"
+                          th:text="${item.isVisible} ? '숨김처리' : '노출처리'"
+                          type="submit">토글</button>
+                </form>
+
+                <!-- 관리자등록 제도만 실제 삭제 가능 -->
+                <form th:if="${item.sourceType == '관리자등록'}"
+                      th:action="@{/admin/policies/{id}/delete(id=${item.policyId})}"
+                      method="post"
+                      onsubmit="return confirm('스크랩된 제도는 실제 삭제되지 않고 숨김처리됩니다. 계속 진행하시겠습니까?')">
+                  <button class="button sm danger" type="submit">삭제</button>
+                </form>
+
+                <!-- 외부 API 제도는 삭제 불가, 숨김처리만 가능 -->
+                <span th:if="${item.sourceType != '관리자등록'}"
+                      style="font-size: 12px; color: #64748b; align-self: center;">
+                  API 제도
+                </span>
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" th:if="${policies.content.isEmpty()}">
+        표시할 지원제도가 없습니다.
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div class="pagination" th:if="${totalPages > 1}">
+
+        <!-- 이전 -->
+        <a class="page-btn"
+           th:classappend="${currentPage == 0} ? ' disabled'"
+           th:href="@{/admin/policies(
+        page=${currentPage - 1},
+        keyword=${keyword},
+        mainCategory=${mainCategory},
+        subCategory=${subCategory},
+        status=${status}
+     )}">
+          이전
+        </a>
+
+        <!-- 첫 페이지 -->
+        <a class="page-btn"
+           th:if="${currentPage > 4}"
+           th:href="@{/admin/policies(
+        page=0,
+        keyword=${keyword},
+        mainCategory=${mainCategory},
+        subCategory=${subCategory},
+        status=${status}
+     )}">
+          1
+        </a>
+
+        <span class="page-btn disabled" th:if="${currentPage > 5}">...</span>
+
+        <!-- 현재 페이지 기준 앞뒤 4개만 표시 -->
+        <th:block th:each="pageNum : ${#numbers.sequence(
+      T(java.lang.Math).max(0, currentPage - 4),
+      T(java.lang.Math).min(totalPages - 1, currentPage + 4)
+      )}">
+          <a class="page-btn"
+             th:classappend="${pageNum == currentPage} ? ' active'"
+             th:href="@{/admin/policies(
+          page=${pageNum},
+          keyword=${keyword},
+          mainCategory=${mainCategory},
+          subCategory=${subCategory},
+          status=${status}
+       )}"
+             th:text="${pageNum + 1}">
+          </a>
+        </th:block>
+
+        <span class="page-btn disabled" th:if="${currentPage < totalPages - 6}">...</span>
+
+        <!-- 마지막 페이지 -->
+        <a class="page-btn"
+           th:if="${currentPage < totalPages - 5}"
+           th:href="@{/admin/policies(
+        page=${totalPages - 1},
+        keyword=${keyword},
+        mainCategory=${mainCategory},
+        subCategory=${subCategory},
+        status=${status}
+     )}"
+           th:text="${totalPages}">
+        </a>
+
+        <!-- 다음 -->
+        <a class="page-btn"
+           th:classappend="${currentPage >= totalPages - 1} ? ' disabled'"
+           th:href="@{/admin/policies(
+        page=${currentPage + 1},
+        keyword=${keyword},
+        mainCategory=${mainCategory},
+        subCategory=${subCategory},
+        status=${status}
+     )}">
+          다음
+        </a>
+
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

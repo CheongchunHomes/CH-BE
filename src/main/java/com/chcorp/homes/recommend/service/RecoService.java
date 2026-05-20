@@ -23,16 +23,18 @@ public class RecoService {
 
     // 지정한 9개 제도로 변경해야함
     private static final List<String> KEYWORDS_PUBLIC_RENTAL = List.of(
-            "청년 매입임대",
-            "청년 전세임대",
-            "신혼·신생아 전세임대",
-            "청년신혼부부매입임대리츠주택",
-            "전세임대형 든든주택"
+            "매입임대",
+            "전세임대",
+            "신혼·신생아",
+            "다자녀",
+            "국민임대",
+            "영구임대",
+            "든든주택"
     );
 
     // announcements 테이블 기반 제도 필터링
     private List<RecommendItemDTO> recommendPolicies(String region) {
-        Pageable pageable = PageRequest.of(0, 200); // 첫페이지 부터, 한 페이지에 200개까지 가져옴, 추후 DB쿼리 단에서 필터링으로 개선
+        Pageable pageable = PageRequest.of(0, 1020); // 첫페이지 부터, 한 페이지에 200개까지 가져옴, 추후 DB쿼리 단에서 필터링으로 개선
         List<Announcement> visible = announcementRepository.findByIsVisibleTrue(pageable).getContent();
 
         // 지역 필터 공통 적용
@@ -40,7 +42,7 @@ public class RecoService {
                 .filter(a -> a.getRegion() == null
                         || a.getRegion().contains("전국")
                         || a.getRegion().contains(region))
-                .filter(a -> "일반공고".equals(a.getStatus()) || "모집중".equals(a.getStatus()))
+                .filter(a -> "접수중".equals(a.getStatus()) || "접수예정".equals(a.getStatus()))
                 .toList();
 
         // 행복주택
