@@ -196,4 +196,36 @@ public class Policy extends MutableBaseEntity {
     @Column
     private String status;
     // 예: "상시신청", "신청가능", "마감", "확인필요"
+
+    // =======================
+    // 관리자 도메인 메서드
+    // =======================
+    public void updateVisibility(Boolean isVisible) {
+        this.isVisible = isVisible;
+    }
+
+    public void updateAdminFields(String title, String mainCategory,
+                                  String subCategory, String status,
+                                  String content, String sourceUrl,
+                                  String onlineApplyUrl, String supervisingInstitution,
+                                  String summary, String targetDesc,
+                                  String applyMethod, String requiredDocuments,
+                                  String applyPeriod, String supportType,
+                                  Boolean isVisible) {
+        this.title = title;
+        this.mainCategory = mainCategory;
+        this.subCategory = subCategory;
+        this.status = status;
+        this.content = content;
+        this.sourceUrl = sourceUrl;
+        this.onlineApplyUrl = onlineApplyUrl;
+        this.supervisingInstitution = supervisingInstitution;
+        this.summary = summary;
+        this.targetDesc = targetDesc;
+        this.applyMethod = applyMethod;
+        this.requiredDocuments = requiredDocuments;
+        this.applyPeriod = applyPeriod;
+        this.supportType = supportType;
+        this.isVisible = isVisible;
+    }
 }

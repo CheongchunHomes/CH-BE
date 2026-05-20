@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.print.attribute.standard.RequestingUserName;
 import java.util.List;
 
 @Service
@@ -29,12 +30,20 @@ public class PolicyScrapService {
             return;
         }
 
+        // 현재 로그인한 사용자 조회
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
+        // 스크랩할 제도 조회
         Policy policy = policyRepository.findById(policyId)
                 .orElseThrow(() -> new RuntimeException("제도를 찾을 수 없습니다."));
 
+        // 숨김 처리된 제도는 새로 스크랩할 수 없도록 방지
+        if (Boolean.FALSE.equals(policy.getIsVisible())) {
+            throw new RuntimeException("비공개 처리된 제도는 스크랩할 수 없습니다.");
+        }
+
+        // 스크랩 엔티티 생성 후 저장
         PolicyScrap scrap = PolicyScrap.builder()
                 .user(user)
                 .policy(policy)

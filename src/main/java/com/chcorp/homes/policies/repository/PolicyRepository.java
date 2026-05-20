@@ -27,4 +27,25 @@ public interface PolicyRepository extends JpaRepository<Policy, Long> {
     Page<Policy> findByIsVisibleTrueAndMainCategoryAndSubCategory(String mainCategory, String subCategory, Pageable pageable);
 
     List<Policy> findByIsVisibleTrue(Sort sort);
+
+    // 관리자 전체 조회 (isVisible 여부 상관없이)
+    Page<Policy> findAll(Pageable pageable);
+
+    // 상태필터
+    Page<Policy> findByStatus(String status, Pageable pageable);
+
+    // 대분류 필터
+    Page<Policy> findByMainCategory(String mainCategory, Pageable pageable);
+
+    // 대분류 + 상태필터
+    Page<Policy> findByMainCategoryAndStatus(String mainCategory, String status, Pageable pageable);
+
+    // 대분류 + 소분류 필터
+    Page<Policy> findByMainCategoryAndSubCategory(String mainCategory, String subCategory, Pageable pageable);
+    
+    // 대분류 + 소분류 + 상태
+    Page<Policy> findByMainCategoryAndSubCategoryAndStatus(String mainCategory, String subCategory, String status, Pageable pageable);
+   
+    // 소분류
+    Page<Policy> findBySubCategory(String subCategory, Pageable pageable);
 }

@@ -54,9 +54,8 @@ public class PolicyService {
     @Transactional
     public void fetchYouthPolicies() {
         int pageNo = 1;
-        int totalCount = 0;
 
-        do {
+        while (true) {
             try {
                 String url = YOUTH_POLICY_BASE_URL
                         + "?apiKeyNm=" + youthPolicyServiceKey
@@ -64,7 +63,6 @@ public class PolicyService {
                         + "&pageSize=" + NUM_OF_ROWS
                         + "&pageType=1"
                         + "&rtnType=json";
-
 
                 ResponseEntity<YouthPolicyApiResponse> response =
                         restTemplate.getForEntity(url, YouthPolicyApiResponse.class);
@@ -79,21 +77,12 @@ public class PolicyService {
                     break;
                 }
 
-                YouthPolicyApiResponse.Result result = apiResponse.getResult();
+                List<YouthPolicyApiResponse.Item> items =
+                        apiResponse.getResult().getYouthPolicyList();
 
-                if (pageNo == 1 && result.getPagging() != null) {
-                    totalCount = result.getPagging().getTotCount() == null
-                            ? 0
-                            : result.getPagging().getTotCount();
-
+                if (pageNo == 1 && apiResponse.getResult().getPagging() != null) {
+                    Integer totalCount = apiResponse.getResult().getPagging().getTotCount();
                     log.info("[청년정책] 전체 {}건 수집 시작", totalCount);
-                }
-
-                List<YouthPolicyApiResponse.Item> items = result.getYouthPolicyList();
-
-                if (items == null || items.isEmpty()) {
-                    log.info("[청년정책] {}페이지 수집 종료 - 데이터 없음", pageNo);
-                    break;
                 }
 
                 for (YouthPolicyApiResponse.Item item : items) {
@@ -108,7 +97,6 @@ public class PolicyService {
                         continue;
                     }
 
-                    // 우리 서비스 주제와 관련 있는 정책만 저장
                     if (!isHousingRelatedYouthPolicy(item)) {
                         continue;
                     }
@@ -120,11 +108,14 @@ public class PolicyService {
                 pageNo++;
 
             } catch (Exception e) {
-                log.error("[청년정책] {}페이지 실패: {}", pageNo, e.getMessage(), e);
+                if (e.getMessage() != null && e.getMessage().contains("400")) {
+                    log.info("[청년정책] {}페이지 - 마지막 페이지 도달, 수집 완료", pageNo);
+                } else {
+                    log.error("[청년정책] {}페이지 실패: {}", pageNo, e.getMessage(), e);
+                }
                 break;
             }
-
-        } while ((pageNo - 1) * NUM_OF_ROWS < totalCount);
+        }
     }
 
     // =========================
@@ -429,11 +420,18 @@ public class PolicyService {
 
     // =========================
     // 단건 조회
+    // 사용자 화면에서는 isVisible = true인 제도만 조회
     // =========================
     @Transactional(readOnly = true)
     public Policy getOne(Long id) {
-        return repository.findById(id)
+        Policy policy = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("지원제도를 찾을 수 없습니다."));
+
+        if (Boolean.FALSE.equals(policy.getIsVisible())) {
+            throw new RuntimeException("비공개 처리된 지원제도입니다.");
+        }
+
+        return policy;
     }
 
     // =========================

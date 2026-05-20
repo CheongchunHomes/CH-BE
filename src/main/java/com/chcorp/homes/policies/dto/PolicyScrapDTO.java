@@ -27,6 +27,8 @@ public class PolicyScrapDTO {
 
     private Instant scrapedAt;
 
+    private Boolean policyVisible;
+
     public PolicyScrapDTO (PolicyScrap scrap) {
         Policy policy = scrap.getPolicy();
 
@@ -46,6 +48,8 @@ public class PolicyScrapDTO {
         this.status = policy.getStatus();
 
         this.scrapedAt = scrap.getCreatedAt();
+
+        this.policyVisible = policy.getIsVisible();
 
 
     }
