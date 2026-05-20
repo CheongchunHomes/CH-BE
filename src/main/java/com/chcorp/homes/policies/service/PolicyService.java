@@ -4,6 +4,7 @@ import com.chcorp.homes.policies.dto.PublicServiceApiResponse;
 import com.chcorp.homes.policies.dto.PublicServiceDetailApiResponse;
 import com.chcorp.homes.policies.dto.YouthPolicyApiResponse;
 import com.chcorp.homes.policies.entity.Policy;
+import com.chcorp.homes.policies.repository.PolicyQueryRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class PolicyService {
 
     private final RestTemplate restTemplate;
     private final PolicyRepository repository;
+    private final PolicyQueryRepository queryRepository;
 
     // 기존 공고 api와 행안부 공공서비스 api 인증키 동일
     @Value("${api.public.service-key}")
@@ -370,6 +372,8 @@ public class PolicyService {
 
     // =========================
     // 목록 조회
+    // 사용자 화면에서는 isVisible = true인 제도만 조회
+    // QueryDSL로 조건 검색 + 페이지네이션 처리
     // =========================
     @Transactional(readOnly = true)
     public Page<Policy> getList(
@@ -382,40 +386,16 @@ public class PolicyService {
             int page,
             int size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("policyId").descending());
-
-        mainCategory = normalize(mainCategory);
-        subCategory = normalize(subCategory);
-        region = normalize(region);
-        status = normalize(status);
-        supportType = normalize(supportType);
-        keyword = normalize(keyword);
-
-        String finalMainCategory = mainCategory;
-        String finalSubCategory = subCategory;
-        String finalRegion = region;
-        String finalStatus = status;
-        String finalSupportType = supportType;
-        String finalKeyword = keyword;
-
-        List<Policy> filtered = repository
-                .findByIsVisibleTrue(Sort.by("policyId").descending())
-                .stream()
-                .filter(p -> finalMainCategory == null || finalMainCategory.equals(p.getMainCategory()))
-                .filter(p -> finalSubCategory == null || finalSubCategory.equals(p.getSubCategory()))
-                .filter(p -> finalRegion == null || finalRegion.equals(p.getRegion()))
-                .filter(p -> finalStatus == null || finalStatus.equals(p.getStatus()))
-                .filter(p -> finalSupportType == null || containsIgnoreCase(p.getSupportType(), finalSupportType))
-                .filter(p -> finalKeyword == null || matchesKeyword(p, finalKeyword))
-                .toList();
-
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), filtered.size());
-
-        List<Policy> pageContent =
-                start >= filtered.size() ? List.of() : filtered.subList(start, end);
-
-        return new PageImpl<>(pageContent, pageable, filtered.size());
+        return queryRepository.search(
+                normalize(mainCategory),
+                normalize(subCategory),
+                normalize(region),
+                normalize(status),
+                normalize(supportType),
+                normalize(keyword),
+                page,
+                size
+        );
     }
 
     // =========================

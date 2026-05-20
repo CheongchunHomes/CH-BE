@@ -2,6 +2,7 @@ package com.chcorp.homes.announcements.service;
 
 import com.chcorp.homes.announcements.dto.RentalHouseApiResponse;
 import com.chcorp.homes.announcements.entity.Announcement;
+import com.chcorp.homes.announcements.repository.AnnouncementQueryRepository;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class AnnouncementService {
 
     private final RestTemplate restTemplate;
     private final AnnouncementRepository repository;
+    private final AnnouncementQueryRepository announcementQueryRepository;
 
     @Value("${api.public.service-key}")
     private String serviceKey;
@@ -326,6 +328,7 @@ public class AnnouncementService {
     // ================
     // 목록조회
     // 사용자 화면에는 isVisible = true인 공고만 조회
+    // QueryDSL로 조건 검색 + 페이지네이션 처리
     // ================
     @Transactional(readOnly = true)
     public Page<Announcement> getList(
@@ -338,139 +341,16 @@ public class AnnouncementService {
             int page,
             int size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("applyEndDate").descending());
-
-        region = normalize(region);
-        status = normalize(status);
-        keyword = normalize(keyword);
-        sourceType = normalize(sourceType);
-        targetType = normalize(targetType);
-
-        LocalDate today = LocalDate.now();
-        LocalDate deadlineEnd = today.plusDays(30);
-
-        String finalRegion = region;
-        String finalStatus = status;
-        String finalKeyword = keyword;
-        String finalSourceType = sourceType;
-        String finalTargetType = targetType;
-        boolean finalDeadlineSoon = deadlineSoon;
-        LocalDate finalToday = today;
-        LocalDate finalDeadlineEnd = deadlineEnd;
-
-        // targetType 또는 sourceType이 있으면 Java 필터링
-        // 이 경우에도 사용자 화면에서는 isVisible = true인 공고만 보여준다.
-        if (finalTargetType != null || finalSourceType != null) {
-            List<Announcement> filtered = repository
-                    .findByIsVisibleTrue(Pageable.unpaged())
-                    .stream()
-                    .filter(a -> finalTargetType == null || finalTargetType.equals(a.getTargetType()))
-                    .filter(a -> finalSourceType == null || finalSourceType.equals(a.getSourceType()))
-                    .filter(a -> finalRegion == null || containsIgnoreCase(a.getRegion(), finalRegion))
-                    .filter(a -> finalStatus == null || finalStatus.equals(a.getStatus()))
-                    .filter(a -> finalKeyword == null || matchesKeyword(a, finalKeyword))
-                    .filter(a -> !finalDeadlineSoon || isDeadlineSoon(a.getApplyEndDate(), finalToday, finalDeadlineEnd))
-                    .toList();
-
-            int start = (int) pageable.getOffset();
-            int end = Math.min(start + pageable.getPageSize(), filtered.size());
-
-            List<Announcement> pageContent =
-                    start >= filtered.size() ? List.of() : filtered.subList(start, end);
-
-            return new PageImpl<>(pageContent, pageable, filtered.size());
-        }
-
-        // 마감일 임박 + 검색어 + 지역 + 상태
-        if (deadlineSoon && keyword != null && region != null && status != null) {
-            return repository.searchVisibleByKeywordAndRegionAndStatusAndDeadline(
-                    keyword, region, status, today, deadlineEnd, pageable
-            );
-        }
-
-        // 마감일 임박 + 검색어 + 지역
-        if (deadlineSoon && keyword != null && region != null) {
-            return repository.searchVisibleByKeywordAndRegionAndDeadline(
-                    keyword, region, today, deadlineEnd, pageable
-            );
-        }
-
-        // 마감일 임박 + 검색어 + 상태
-        if (deadlineSoon && keyword != null && status != null) {
-            return repository.searchVisibleByKeywordAndStatusAndDeadline(
-                    keyword, status, today, deadlineEnd, pageable
-            );
-        }
-
-        // 마감일 임박 + 검색어
-        if (deadlineSoon && keyword != null) {
-            return repository.searchVisibleByKeywordAndDeadline(
-                    keyword, today, deadlineEnd, pageable
-            );
-        }
-
-        // 마감일 임박 + 지역 + 상태
-        if (deadlineSoon && region != null && status != null) {
-            return repository.findByRegionContainingIgnoreCaseAndStatusAndApplyEndDateBetweenAndIsVisibleTrue(
-                    region, status, today, deadlineEnd, pageable
-            );
-        }
-
-        // 마감일 임박 + 지역
-        if (deadlineSoon && region != null) {
-            return repository.findByRegionContainingIgnoreCaseAndApplyEndDateBetweenAndIsVisibleTrue(
-                    region, today, deadlineEnd, pageable
-            );
-        }
-
-        // 마감일 임박 + 상태
-        if (deadlineSoon && status != null) {
-            return repository.findByStatusAndApplyEndDateBetweenAndIsVisibleTrue(
-                    status, today, deadlineEnd, pageable
-            );
-        }
-
-        // 마감일 임박만
-        if (deadlineSoon) {
-            return repository.findByApplyEndDateBetweenAndIsVisibleTrue(today, deadlineEnd, pageable);
-        }
-
-        // 검색어 + 지역 + 상태
-        if (keyword != null && region != null && status != null) {
-            return repository.searchVisibleByKeywordAndRegionAndStatus(keyword, region, status, pageable);
-        }
-
-        // 검색어 + 지역
-        if (keyword != null && region != null) {
-            return repository.searchVisibleByKeywordAndRegion(keyword, region, pageable);
-        }
-
-        // 검색어 + 상태
-        if (keyword != null && status != null) {
-            return repository.searchVisibleByKeywordAndStatus(keyword, status, pageable);
-        }
-
-        // 검색어만
-        if (keyword != null) {
-            return repository.searchVisibleByKeyword(keyword, pageable);
-        }
-
-        // 지역 + 상태
-        if (region != null && status != null) {
-            return repository.findByRegionContainingIgnoreCaseAndStatusAndIsVisibleTrue(region, status, pageable);
-        }
-
-        // 지역
-        if (region != null) {
-            return repository.findByRegionContainingIgnoreCaseAndIsVisibleTrue(region, pageable);
-        }
-
-        // 상태
-        if (status != null) {
-            return repository.findByStatusAndIsVisibleTrue(status, pageable);
-        }
-
-        return repository.findByIsVisibleTrue(pageable);
+        return announcementQueryRepository.search(
+                normalize(region),
+                normalize(status),
+                normalize(keyword),
+                normalize(sourceType),
+                normalize(targetType),
+                deadlineSoon,
+                page,
+                size
+        );
     }
 
     // ===============
