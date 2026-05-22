@@ -21,7 +21,7 @@ public record CommunityResponseDTO(
                 post.getTitle(),
                 post.getContent(),
                 post.getViewCount()
-               // post.getCreateAt()
+                //post.getCreateAt()
         );
     }
 }

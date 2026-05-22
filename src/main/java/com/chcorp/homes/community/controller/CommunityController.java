@@ -26,10 +26,6 @@ public class CommunityController {
         return Long.valueOf(authentication.getName());
     }
 
-    //private Long resolveUserId(Authentication authentication) {
-    //    return Long.valueOf(authentication.getName());
-    //}
-
     @GetMapping
     public ResponseEntity<CommunityPageResponseDTO> getPosts(
             @RequestParam(required = false) String region,
