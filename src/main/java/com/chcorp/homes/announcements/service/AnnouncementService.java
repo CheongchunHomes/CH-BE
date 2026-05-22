@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -14,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.data.domain.PageImpl;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -89,7 +89,7 @@ public class AnnouncementService {
                     String pblancId = item.getPblancId();
                     Integer houseSn = item.getHouseSn();
 
-                    if (pblancId == null || pblancId.isBlank()) {
+                    if (pblancId == null || pblancId.isBlank() || houseSn == null) {
                         log.warn("[임대주택][{}] {}페이지 pblancId 또는 houseSn 없음 - 저장 건너뜀", brtcCode, pageNo);
                         continue;
                     }
@@ -144,7 +144,6 @@ public class AnnouncementService {
     // =======================
     // 마이홈포털 공공분양주택 수집
     // =======================
-
     @Transactional
     public void fetchSaleAnnouncements() {
         int pageNo = 1;
@@ -216,11 +215,10 @@ public class AnnouncementService {
     // ================
     private Announcement toEntity(RentalHouseApiResponse.Item item) {
         LocalDate today = LocalDate.now();
-        LocalDate startDate = parseDate(item.getRcritPblancDe()); // 접수 시작일
-        LocalDate endDate = parseDate(item.getPrzwnerPresnatnDe()); // 접수 종료일(당첨자 발표일 등)
+        LocalDate startDate = parseDate(item.getRcritPblancDe());
+        LocalDate endDate = parseDate(item.getPrzwnerPresnatnDe());
 
-        // 상태 판별 로직
-        String finalStatus = item.getSttusNm(); // 기본값은 API 제공값
+        String finalStatus = item.getSttusNm();
 
         if (endDate != null) {
             if (endDate.isBefore(today)) {
@@ -232,8 +230,10 @@ public class AnnouncementService {
             }
         }
 
+        String externalId = "RENTAL-" + item.getPblancId() + "-" + item.getHouseSn();
+
         return Announcement.builder()
-                .externalId("Rental=" + item.getPblancId() + "-" + item.getHouseSn())
+                .externalId(externalId)
                 .sourceType("마이홈포털-공공임대주택")
                 .title(item.getPblancNm())
                 .region(item.getBrtcNm())
@@ -259,14 +259,14 @@ public class AnnouncementService {
     private Announcement toSaleEntity(RentalHouseApiResponse.Item item) {
         LocalDate today = LocalDate.now();
 
-        LocalDate noticeDate = parseDate(item.getRcritPblancDe()); //공고일
-        LocalDate startDate = parseDate(item.getBeginDe()); //접수 시작일
-        LocalDate endDate = parseDate(item.getEndDe()); //접수 종료일
+        LocalDate noticeDate = parseDate(item.getRcritPblancDe());
+        LocalDate startDate = parseDate(item.getBeginDe());
+        LocalDate endDate = parseDate(item.getEndDe());
 
-        String finalStatus = item.getSttusNm(); //기본값은 API 제공값
+        String finalStatus = item.getSttusNm();
 
         if (endDate != null) {
-            if(endDate.isBefore(today)) {
+            if (endDate.isBefore(today)) {
                 finalStatus = "마감";
             } else if (startDate != null && !startDate.isAfter(today)) {
                 finalStatus = "접수중";
@@ -293,6 +293,7 @@ public class AnnouncementService {
                 .totHshldCo(item.getSumSuplyCo() == null ? null : String.valueOf(item.getSumSuplyCo()))
                 .rentGtn(item.getEnty())
                 .mtRntchrg(item.getPrtpay())
+                .surlus(item.getSurlus())
                 .heatMthdNm(item.getHeatMthdNm())
                 .beginDe(noticeDate)
                 .endDe(endDate)
@@ -315,26 +316,16 @@ public class AnnouncementService {
             sb.append("문의처: ").append(item.getRefrnc()).append("\n");
         }
 
-        if (item.getEnty() != null) {
-            sb.append("계약금: ").append(item.getEnty()).append("원\n");
-        }
-
-        if (item.getPrtpay() != null) {
-            sb.append("중도금: ").append(item.getPrtpay()).append("원\n");
-        }
-
-        if (item.getSurlus() != null) {
-            sb.append("잔금: ").append(item.getSurlus()).append("원\n");
-        }
-
         if (item.getUrl() != null && !item.getUrl().isBlank()) {
             sb.append("상세 정보: ").append(item.getUrl()).append("\n");
         }
+
         return sb.toString().trim();
     }
 
     // ================
     // 목록조회
+    // 사용자 화면에는 isVisible = true인 공고만 조회
     // ================
     @Transactional(readOnly = true)
     public Page<Announcement> getList(
@@ -347,7 +338,6 @@ public class AnnouncementService {
             int page,
             int size
     ) {
-
         Pageable pageable = PageRequest.of(page, size, Sort.by("applyEndDate").descending());
 
         region = normalize(region);
@@ -359,22 +349,23 @@ public class AnnouncementService {
         LocalDate today = LocalDate.now();
         LocalDate deadlineEnd = today.plusDays(30);
 
-        // 람다식에서 쓰기 위한 final 복사본
         String finalRegion = region;
         String finalStatus = status;
         String finalKeyword = keyword;
+        String finalSourceType = sourceType;
         String finalTargetType = targetType;
         boolean finalDeadlineSoon = deadlineSoon;
         LocalDate finalToday = today;
         LocalDate finalDeadlineEnd = deadlineEnd;
 
-        // 공공임대주택 / 공공분양주택 분리 조회
-        // targetType이 있으면 먼저 해당 분류만 가져오고,
-        // 그 안에서 지역/상태/검색어/마감임박을 Java에서 필터링
-        if (finalTargetType != null) {
+        // targetType 또는 sourceType이 있으면 Java 필터링
+        // 이 경우에도 사용자 화면에서는 isVisible = true인 공고만 보여준다.
+        if (finalTargetType != null || finalSourceType != null) {
             List<Announcement> filtered = repository
-                    .findAllByTargetType(finalTargetType, Sort.by("applyEndDate").descending())
+                    .findByIsVisibleTrue(Pageable.unpaged())
                     .stream()
+                    .filter(a -> finalTargetType == null || finalTargetType.equals(a.getTargetType()))
+                    .filter(a -> finalSourceType == null || finalSourceType.equals(a.getSourceType()))
                     .filter(a -> finalRegion == null || containsIgnoreCase(a.getRegion(), finalRegion))
                     .filter(a -> finalStatus == null || finalStatus.equals(a.getStatus()))
                     .filter(a -> finalKeyword == null || matchesKeyword(a, finalKeyword))
@@ -392,94 +383,94 @@ public class AnnouncementService {
 
         // 마감일 임박 + 검색어 + 지역 + 상태
         if (deadlineSoon && keyword != null && region != null && status != null) {
-            return repository.searchByKeywordAndRegionAndStatusAndDeadline(
+            return repository.searchVisibleByKeywordAndRegionAndStatusAndDeadline(
                     keyword, region, status, today, deadlineEnd, pageable
             );
         }
 
         // 마감일 임박 + 검색어 + 지역
         if (deadlineSoon && keyword != null && region != null) {
-            return repository.searchByKeywordAndRegionAndDeadline(
+            return repository.searchVisibleByKeywordAndRegionAndDeadline(
                     keyword, region, today, deadlineEnd, pageable
             );
         }
 
         // 마감일 임박 + 검색어 + 상태
         if (deadlineSoon && keyword != null && status != null) {
-            return repository.searchByKeywordAndStatusAndDeadline(
+            return repository.searchVisibleByKeywordAndStatusAndDeadline(
                     keyword, status, today, deadlineEnd, pageable
             );
         }
 
         // 마감일 임박 + 검색어
         if (deadlineSoon && keyword != null) {
-            return repository.searchByKeywordAndDeadline(
+            return repository.searchVisibleByKeywordAndDeadline(
                     keyword, today, deadlineEnd, pageable
             );
         }
 
         // 마감일 임박 + 지역 + 상태
         if (deadlineSoon && region != null && status != null) {
-            return repository.findByRegionContainingIgnoreCaseAndStatusAndApplyEndDateBetween(
+            return repository.findByRegionContainingIgnoreCaseAndStatusAndApplyEndDateBetweenAndIsVisibleTrue(
                     region, status, today, deadlineEnd, pageable
             );
         }
 
         // 마감일 임박 + 지역
         if (deadlineSoon && region != null) {
-            return repository.findByRegionContainingIgnoreCaseAndApplyEndDateBetween(
+            return repository.findByRegionContainingIgnoreCaseAndApplyEndDateBetweenAndIsVisibleTrue(
                     region, today, deadlineEnd, pageable
             );
         }
 
         // 마감일 임박 + 상태
         if (deadlineSoon && status != null) {
-            return repository.findByStatusAndApplyEndDateBetween(
+            return repository.findByStatusAndApplyEndDateBetweenAndIsVisibleTrue(
                     status, today, deadlineEnd, pageable
             );
         }
 
         // 마감일 임박만
         if (deadlineSoon) {
-            return repository.findByApplyEndDateBetween(today, deadlineEnd, pageable);
+            return repository.findByApplyEndDateBetweenAndIsVisibleTrue(today, deadlineEnd, pageable);
         }
 
         // 검색어 + 지역 + 상태
         if (keyword != null && region != null && status != null) {
-            return repository.searchByKeywordAndRegionAndStatus(keyword, region, status, pageable);
+            return repository.searchVisibleByKeywordAndRegionAndStatus(keyword, region, status, pageable);
         }
 
         // 검색어 + 지역
         if (keyword != null && region != null) {
-            return repository.searchByKeywordAndRegion(keyword, region, pageable);
+            return repository.searchVisibleByKeywordAndRegion(keyword, region, pageable);
         }
 
         // 검색어 + 상태
         if (keyword != null && status != null) {
-            return repository.searchByKeywordAndStatus(keyword, status, pageable);
+            return repository.searchVisibleByKeywordAndStatus(keyword, status, pageable);
         }
 
         // 검색어만
         if (keyword != null) {
-            return repository.searchByKeyword(keyword, pageable);
+            return repository.searchVisibleByKeyword(keyword, pageable);
         }
 
         // 지역 + 상태
         if (region != null && status != null) {
-            return repository.findByRegionContainingIgnoreCaseAndStatus(region, status, pageable);
+            return repository.findByRegionContainingIgnoreCaseAndStatusAndIsVisibleTrue(region, status, pageable);
         }
 
         // 지역
         if (region != null) {
-            return repository.findByRegionContainingIgnoreCase(region, pageable);
+            return repository.findByRegionContainingIgnoreCaseAndIsVisibleTrue(region, pageable);
         }
 
         // 상태
         if (status != null) {
-            return repository.findByStatus(status, pageable);
+            return repository.findByStatusAndIsVisibleTrue(status, pageable);
         }
 
-        return repository.findAll(pageable);
+        return repository.findByIsVisibleTrue(pageable);
     }
 
     // ===============
@@ -498,6 +489,7 @@ public class AnnouncementService {
         if (value == null || value.isBlank()) {
             return 0;
         }
+
         try {
             return Integer.parseInt(value);
         } catch (NumberFormatException e) {
@@ -553,6 +545,7 @@ public class AnnouncementService {
     // ==============
     @Transactional(readOnly = true)
     public Announcement getOne(Long id) {
-        return repository.findById(id).orElseThrow(() -> new RuntimeException("공고를 찾을 수 없습니다."));
+        return repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("공고를 찾을 수 없습니다."));
     }
 }

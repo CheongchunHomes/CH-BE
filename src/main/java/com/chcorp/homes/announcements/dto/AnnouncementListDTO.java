@@ -25,6 +25,7 @@ public class AnnouncementListDTO {
     private LocalDate beginDe;
     private LocalDate endDe;
     private String content;
+    private Integer surlus;
 
     //Entity -> DTO 변환 생성자
     public AnnouncementListDTO(Announcement entity) {
@@ -45,5 +46,6 @@ public class AnnouncementListDTO {
         this.beginDe = entity.getBeginDe();
         this.endDe = entity.getEndDe();
         this.content = entity.getContent();
+        this.surlus = entity.getSurlus();
     }
 }

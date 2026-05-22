@@ -3,15 +3,22 @@ package com.chcorp.homes.diagnosis.dto.request;
 import com.chcorp.homes.diagnosis.entity.EmploymentPeriod;
 import com.chcorp.homes.diagnosis.entity.EmploymentStatus;
 import com.chcorp.homes.diagnosis.entity.MarriagePeriod;
+import com.chcorp.homes.diagnosis.entity.UserProfile;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import java.time.LocalDate;
 
 /**
  * 자가진단 요청 DTO (공통)
  * - 프로필 진단 / 가상 진단 둘 다 사용
- * - isProfileDiagnosis: true → DB 저장, false → 계산만
+ * - fromProfile(): 저장된 프로필 기반 추천 계산 시 사용
  */
 @Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class DiagnosisRequestDTO {
 
     /* 프로필 저장 여부 (true: 실제진단, false: 가상진단) */
@@ -83,4 +90,35 @@ public class DiagnosisRequestDTO {
     /* 한부모 여부 */
     private Boolean singleParent;
 
+    /**
+     * UserProfile → DiagnosisRequestDTO 변환
+     * - DB에 저장된 프로필 기반으로 추천 채점할 때 사용
+     * - GET /recommendation/calculate/me 에서 호출
+     */
+    public static DiagnosisRequestDTO fromProfile(UserProfile profile) {
+        return DiagnosisRequestDTO.builder()
+                .birthDate(profile.getBirthDate())
+                .married(profile.getMarried())
+                .houseless(profile.getHouseless())
+                .householdSep(profile.getHouseholdSep())
+                .disabilityYn(profile.getDisabilityYn())
+                .dependentCount(profile.getDependentCount())
+                .currentResidence(profile.getCurrentResidence())
+                .annualIncome(profile.getAnnualIncome())
+                .totalAsset(profile.getTotalAsset())
+                .cashAsset(profile.getCashAsset())
+                .hasSubscription(profile.getHasSubscription())
+                .subscriptionMonths(profile.getSubscriptionMonths())
+                .desiredCity(profile.getDesiredCity())
+                .desiredDistrict(profile.getDesiredDistrict())
+                .desiredArea(profile.getDesiredArea())
+                .desiredType(profile.getDesiredType())
+                .employmentStatus(profile.getEmploymentStatus())
+                .employmentPeriod(profile.getEmploymentPeriod())
+                .marriagePlan(profile.getMarriagePlan())
+                .marriagePeriod(profile.getMarriagePeriod())
+                .hasYoungChild(profile.getHasYoungChild())
+                .singleParent(profile.getSingleParent())
+                .build();
+    }
 }
