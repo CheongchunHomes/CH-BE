@@ -10,10 +10,18 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public interface AnnouncementRepository extends JpaRepository<Announcement, Long> {
 
     boolean existsByExternalId(String externalId);
+
+    // 외부 API 데이터 중복 저장 방지용
+    // 같은 externalId라도 출처가 다를 수 있으므로 sourceType까지 같이 확인
+    boolean existsBySourceTypeAndExternalId(String sourceType, String externalId);
+
+    // 외부 API 데이터 갱신/upsert 처리용
+    Optional<Announcement> findBySourceTypeAndExternalId(String sourceType, String externalId);
 
     // targetType으로 조회
     Page<Announcement> findByTargetType(String targetType, Pageable pageable);
@@ -59,6 +67,8 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
             String status,
             Pageable pageable
     );
+
+    List<Announcement> findTop100ByLatitudeIsNullAndLongitudeIsNullAndAddressIsNotNull();
 
     // =========================
     // 관리자용 통합검색

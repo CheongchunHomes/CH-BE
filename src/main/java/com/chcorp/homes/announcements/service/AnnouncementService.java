@@ -98,7 +98,10 @@ public class AnnouncementService {
 
                     String externalId = "RENTAL-" + pblancId + "-" + houseSn;
 
-                    if (repository.existsByExternalId(externalId)) {
+                    String sourceType = "마이홈포털-공공임대주택";
+
+                    if (repository.existsBySourceTypeAndExternalId(sourceType, externalId)) {
+                        log.info("[임대주택][{}] externalId={} 이미 존재 - 저장 건너뜀", brtcCode, externalId);
                         continue;
                     }
 
@@ -195,7 +198,10 @@ public class AnnouncementService {
 
                     String externalId = "SALE-" + pblancId + "-" + houseSn;
 
-                    if (repository.existsByExternalId(externalId)) {
+                    String sourceType = "마이홈포털-공공분양주택";
+
+                    if (repository.existsBySourceTypeAndExternalId(sourceType, externalId)) {
+                        log.info("[공공분양주택] externalId={} 이미 존재 - 저장 건너뜀", externalId);
                         continue;
                     }
 
@@ -338,6 +344,9 @@ public class AnnouncementService {
             String sourceType,
             String targetType,
             boolean deadlineSoon,
+            Double latitude,
+            Double longitude,
+            String locationFilter,
             int page,
             int size
     ) {
@@ -348,6 +357,9 @@ public class AnnouncementService {
                 normalize(sourceType),
                 normalize(targetType),
                 deadlineSoon,
+                latitude,
+                longitude,
+                normalize(locationFilter),
                 page,
                 size
         );

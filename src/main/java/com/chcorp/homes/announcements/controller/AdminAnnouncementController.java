@@ -3,6 +3,7 @@ package com.chcorp.homes.announcements.controller;
 import com.chcorp.homes.announcements.dto.AdminAnnouncementRequestDTO;
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.service.AdminAnnouncementService;
+import com.chcorp.homes.announcements.service.AnnouncementCoordinateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminAnnouncementController {
 
     private final AdminAnnouncementService adminAnnouncementService;
+    private final AnnouncementCoordinateService announcementCoordinateService;
 
     // =========================
     // 목록
@@ -132,5 +134,11 @@ public class AdminAnnouncementController {
     public String triggerApplyhome() {
         adminAnnouncementService.triggerFetchApplyhome();
         return "redirect:/admin/announcements";
+    }
+
+    @PostMapping("/coordinates/update")
+    @ResponseBody
+    public AnnouncementCoordinateService.CoordinateUpdateResult updateCoordinates() {
+        return announcementCoordinateService.updateMissingCoordinates();
     }
 }
