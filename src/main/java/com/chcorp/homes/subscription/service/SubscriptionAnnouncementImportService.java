@@ -2,7 +2,7 @@ package com.chcorp.homes.subscription.service;
 
 import com.chcorp.homes.subscription.dto.ApplyhomeAptAnnouncementApiResponse;
 import com.chcorp.homes.subscription.dto.SubscriptionAnnouncementImportResultDTO;
-import com.chcorp.homes.subscription.entity.Announcem;
+import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.subscription.repository.SubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -104,7 +104,7 @@ public class SubscriptionAnnouncementImportService {
                     continue;
                 }
 
-                Announcem announcement = Announcem.builder()
+                Announcement announcement = Announcement.builder()
                         .externalId("APPLYHOME-" + pblancNo)
                         .pblancNo(pblancNo)
                         .sourceType("청약홈")

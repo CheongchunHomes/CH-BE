@@ -341,4 +341,101 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
             @Param("deadlineEnd") LocalDate deadlineEnd,
             Pageable pageable
     );
+
+    // 노출 중이고 마감일이 오늘 이후인 공고만 조회
+    Page<Announcement> findByIsVisibleTrueAndApplyEndDateGreaterThanEqual(
+            LocalDate today,
+            Pageable pageable
+    );
+
+    // 모집유형별로 노출 중이고 마감일이 오늘 이후인 공고만 조회
+    Page<Announcement> findByRecuitmentTypeAndIsVisibleTrueAndApplyEndDateGreaterThanEqual(
+            String recuitmentType,
+            LocalDate today,
+            Pageable pageable
+    );
+
+    // 출처와 모집유형이 일치하고 마감되지 않은 공고만 조회
+    Page<Announcement> findBySourceTypeAndRecuitmentTypeAndIsVisibleTrueAndApplyEndDateGreaterThanEqual(
+            String sourceType,
+            String recuitmentType,
+            LocalDate today,
+            Pageable pageable
+    );
+
+    // 여러 출처에 해당하고 마감되지 않은 공고만 조회
+    Page<Announcement> findBySourceTypeInAndIsVisibleTrueAndApplyEndDateGreaterThanEqual(
+            List<String> sourceTypes,
+            LocalDate today,
+            Pageable pageable
+    );
+
+    // 특별공급 물량이 있는 마감 전 APT 공고만 조회한다.
+    @Query("""
+    SELECT DISTINCT a
+    FROM Announcement a
+    WHERE a.sourceType = :sourceType
+      AND a.recuitmentType = :recuitmentType
+      AND a.isVisible = true
+      AND a.applyEndDate >= :today
+      AND EXISTS (
+          SELECT 1
+          FROM SubscriptionHouseType h
+          WHERE TRIM(h.pblancNo) = TRIM(a.pblancNo)
+            AND h.specialSupplyCount IS NOT NULL
+            AND h.specialSupplyCount > 0
+      )
+    """)
+    Page<Announcement> findAptSpecialSupplyAnnouncements(
+            @Param("sourceType") String sourceType,
+            @Param("recuitmentType") String recuitmentType,
+            @Param("today") LocalDate today,
+            Pageable pageable
+    );
+
+    // 일반공급 물량이 있는 마감 전 APT 공고만 조회한다.
+// 화면에서는 1순위/2순위 묶음으로 보여준다.
+    @Query("""
+    SELECT DISTINCT a
+    FROM Announcement a
+    WHERE a.sourceType = :sourceType
+      AND a.recuitmentType = :recuitmentType
+      AND a.isVisible = true
+      AND a.applyEndDate >= :today
+      AND EXISTS (
+          SELECT 1
+          FROM SubscriptionHouseType h
+          WHERE TRIM(h.pblancNo) = TRIM(a.pblancNo)
+            AND h.generalSupplyCount IS NOT NULL
+            AND h.generalSupplyCount > 0
+      )
+    """)
+    Page<Announcement> findAptGeneralAnnouncements(
+            @Param("sourceType") String sourceType,
+            @Param("recuitmentType") String recuitmentType,
+            @Param("today") LocalDate today,
+            Pageable pageable
+    );
+        // 경쟁률 데이터가 있는 마감 전 APT 공고를 순위 기준으로 조회한다.
+        @Query("""
+            SELECT DISTINCT a
+            FROM Announcement a
+            WHERE a.sourceType = :sourceType
+              AND a.recuitmentType = :recuitmentType
+              AND a.isVisible = true
+              AND a.applyEndDate >= :today
+              AND EXISTS (
+                  SELECT 1
+                  FROM SubscriptionCompetitionRate r
+                  WHERE r.announcementId = a.announcementId
+                    AND r.rankNo = :rankNo
+              )
+            """)
+        Page<Announcement> findAptCompetitionAnnouncementsByRank(
+                @Param("sourceType") String sourceType,
+                @Param("recuitmentType") String recuitmentType,
+                @Param("rankNo") Integer rankNo,
+                @Param("today") LocalDate today,
+                Pageable pageable
+        );
 }

@@ -14,4 +14,9 @@ public interface SubscriptionHouseTypeRepository extends JpaRepository<Subscript
             String modelNo,
             String houseTypeName
     );
+
+    // 특별공급 API 호출에 필요한 공고번호와 주택관리번호 조합을 조회한다.
+    List<SubscriptionHouseType> findByHouseManageNoIsNotNullAndPblancNoIsNotNull();
+
+
 }
