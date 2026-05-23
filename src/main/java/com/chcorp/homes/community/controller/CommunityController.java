@@ -1,52 +1,110 @@
 package com.chcorp.homes.community.controller;
 
-import com.chcorp.homes.community.entity.CommunityPost;
-import com.chcorp.homes.community.repository.CommunityPostRepository;
+import com.chcorp.homes.community.dto.request.CommunityCreateDTO;
+import com.chcorp.homes.community.dto.request.CommunityUpdateDTO;
+import com.chcorp.homes.community.dto.response.CommunityPageResponseDTO;
+import com.chcorp.homes.community.dto.response.CommunityResponseDTO;
+import com.chcorp.homes.community.service.CommunityService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
 @RestController
-@RequestMapping("/community")
 @RequiredArgsConstructor
+@RequestMapping("/community")
 public class CommunityController {
 
-    private final CommunityPostRepository communityPostRepository;
+    private final CommunityService communityService;
 
-    @PostMapping("/add")
-    public CommunityPost addPost(@RequestBody CommunityPost post) {
-        if (post.getUserId() == null) {
-            post.setUserId(1L);
+    private Long resolveUserId(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return 1L; // 로그인 기능 완성 전 임시 테스트용
         }
 
-        if (post.getViewCount() == null) {
-            post.setViewCount(0L);
-        }
+        return Long.valueOf(authentication.getName());
+    }
 
-        if (post.getCreatedAt() == null) {
-            post.setCreatedAt(LocalDateTime.now());
-        }
-
-        return communityPostRepository.save(post);
+    @GetMapping
+    public ResponseEntity<CommunityPageResponseDTO> getPosts(
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(
+                communityService.getPosts(region, keyword, page, size)
+        );
     }
 
     @GetMapping("/list")
-    public List<CommunityPost> getPosts(@RequestParam(required = false) String region) {
-        if (region != null && !region.isBlank()) {
-            return communityPostRepository.findByRegionOrderByCreatedAtDesc(region);
-        }
-
-        return communityPostRepository.findAllByOrderByCreatedAtDesc();
+    public ResponseEntity<CommunityPageResponseDTO> getPostsByListPath(
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ResponseEntity.ok(
+                communityService.getPosts(region, keyword, page, size)
+        );
     }
 
     @GetMapping("/{postId}")
-    public CommunityPost getPost(@PathVariable Long postId) {
-        CommunityPost post = communityPostRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("게시글을 찾을 수 없습니다."));
+    public ResponseEntity<CommunityResponseDTO> getPost(
+            @PathVariable Long postId
+    ) {
+        return ResponseEntity.ok(
+                communityService.getPost(postId)
+        );
+    }
 
-        post.setViewCount(post.getViewCount() + 1);
-        return communityPostRepository.save(post);
+    @PostMapping
+    public ResponseEntity<CommunityResponseDTO> createPost(
+            Authentication authentication,
+            @RequestBody CommunityCreateDTO request
+    ) {
+        Long userId = resolveUserId(authentication);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(communityService.createPost(userId, request));
+    }
+
+    @PostMapping("/add")
+    public ResponseEntity<CommunityResponseDTO> createPostByAddPath(
+            Authentication authentication,
+            @RequestBody CommunityCreateDTO request
+    ) {
+        Long userId = resolveUserId(authentication);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(communityService.createPost(userId, request));
+    }
+
+    @PutMapping("/{postId}")
+    public ResponseEntity<CommunityResponseDTO> updatePost(
+            @PathVariable Long postId,
+            Authentication authentication,
+            @RequestBody CommunityUpdateDTO request
+    ) {
+        Long userId = resolveUserId(authentication);
+
+        return ResponseEntity.ok(
+                communityService.updatePost(postId, userId, request)
+        );
+    }
+
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<Void> deletePost(
+            @PathVariable Long postId,
+            Authentication authentication
+    ) {
+        Long userId = resolveUserId(authentication);
+
+        communityService.deletePost(postId, userId);
+
+        return ResponseEntity.noContent().build();
     }
 }
