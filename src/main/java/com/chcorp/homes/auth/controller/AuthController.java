@@ -33,12 +33,11 @@ public class AuthController {
             @RequestBody AuthLoginDTO request,
             HttpServletRequest servletRequest
     ) {
-        return authService.login(request, servletRequest)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.ok().build());
+        return ResponseEntity.ok(authService.login(request, servletRequest));
     }
 
     /**
+     * 엑세스 토큰 재발급
      * BFF가 refresh token을 body로 전달한다.
      * 70% 초과 → 401 REAUTH_REQUIRED
      * 만료 → 401 REFRESH_EXPIRED

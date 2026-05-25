@@ -33,6 +33,7 @@
 아래 환경 변수가 필요합니다.
 
 ``` .env
+# example
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=yourDBName
