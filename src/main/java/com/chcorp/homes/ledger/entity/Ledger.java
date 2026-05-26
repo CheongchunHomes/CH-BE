@@ -1,35 +1,46 @@
 package com.chcorp.homes.ledger.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "expenditures")
-@Getter @Setter
+@Table(name = "ledger")
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Ledger {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "expenditure_id")
-    @JsonProperty("expenditure_id")
     private Long expenditureId;
 
     @Column(name = "user_id", nullable = false)
-    @JsonProperty("user_id")
     private Long userId;
 
+    @Column(nullable = false, length = 50)
     private String category;
+
+    @Column(nullable = false)
     private Long amount;
-    private String method; // 카드, 현금, 쿠폰
+
+    @Column(nullable = false, length = 30)
+    private String method;
+
+    @Column(length = 255)
     private String memo;
 
-    @Column(name = "spent_at")
-    @JsonProperty("spent_at")
+    @Column(name = "spent_at", nullable = false)
     private LocalDate spentAt;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private LocalDateTime createdAt;
+    public void update(String category, Long amount, String method, String memo, LocalDate spentAt) {
+        this.category = category;
+        this.amount = amount;
+        this.method = method;
+        this.memo = memo;
+        this.spentAt = spentAt;
+    }
 }

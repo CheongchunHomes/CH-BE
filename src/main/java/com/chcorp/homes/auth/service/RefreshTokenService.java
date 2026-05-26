@@ -50,16 +50,10 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public boolean hasActiveSession(User user, HttpServletRequest request) {
-        String userAgent = resolveUserAgent(request);
-        Instant now = Instant.now();
-
-        refreshTokenRepository.deleteExpiredSessions(user, userAgent, now);
-
-        return refreshTokenRepository.existsActiveSession(
+    public void replaceLoginSession(User user, HttpServletRequest request) {
+        refreshTokenRepository.deleteSessionsByUserAndUserAgent(
                 user,
-                userAgent,
-                now
+                resolveUserAgent(request)
         );
     }
 

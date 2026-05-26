@@ -6,14 +6,16 @@ public record AuthUserResponse(
         Long id,
         String email,
         String nickname,
-        String role
+        String role,
+        boolean hasPersonalInfo
 ) {
-    public static AuthUserResponse from(User user) {
+    public static AuthUserResponse from(User user, boolean hasPersonalInfo) {
         return new AuthUserResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getNickname(),
-                user.getRole().name()
+                user.getRole().name(),
+                hasPersonalInfo
         );
     }
 }
