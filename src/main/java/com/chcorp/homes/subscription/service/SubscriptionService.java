@@ -3,6 +3,8 @@ package com.chcorp.homes.subscription.service;
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
 import com.chcorp.homes.subscription.dto.SubscriptionDTO;
+import com.chcorp.homes.subscription.dto.SubscriptionGeocodeResultDTO;
+import com.chcorp.homes.subscription.dto.SubscriptionMapDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -10,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +37,7 @@ public class SubscriptionService {
     private static final String RECRUITMENT_OFFICE = "도시형/오피스텔/생활숙박시설/민간임대";
 
     private final AnnouncementRepository announcementRepository;
+    private final KakaoAddressGeocodingService kakaoAddressGeocodingService;
 
     public List<SubscriptionDTO> getAnnouncements(String category, String recruitmentType, String applyType) {
         LocalDate today = LocalDate.now();
@@ -56,6 +60,55 @@ public class SubscriptionService {
                 .stream()
                 .map(SubscriptionDTO::from)
                 .toList();
+    }
+
+
+    @Transactional(readOnly = true)
+    public List<SubscriptionMapDTO> getMapAnnouncements() {
+        LocalDate today = LocalDate.now();
+
+        return announcementRepository.findApplyingNowMapAnnouncements(today)
+                .stream()
+                .map(SubscriptionMapDTO::from)
+                .toList();
+    }
+
+    @Transactional
+    public SubscriptionGeocodeResultDTO geocodeMissingCoordinates(int limit) {
+        int safeLimit = Math.min(Math.max(limit, 1), 500);
+        Pageable pageable = PageRequest.of(0, safeLimit);
+        List<Announcement> targets = announcementRepository.findGeocodeTargets(pageable);
+
+        int successCount = 0;
+        int failedCount = 0;
+        int skippedCount = 0;
+
+        for (Announcement announcement : targets) {
+            if (announcement.getAddress() == null || announcement.getAddress().isBlank()) {
+                skippedCount++;
+                continue;
+            }
+
+            var coordinates = kakaoAddressGeocodingService.geocode(announcement.getAddress());
+
+            if (coordinates.isEmpty()) {
+                failedCount++;
+                continue;
+            }
+
+            announcement.updateCoordinates(
+                    coordinates.get().latitude(),
+                    coordinates.get().longitude()
+            );
+            successCount++;
+        }
+
+        return new SubscriptionGeocodeResultDTO(
+                targets.size(),
+                successCount,
+                failedCount,
+                skippedCount
+        );
     }
 
     private Page<Announcement> findAnnouncementsByCategory(

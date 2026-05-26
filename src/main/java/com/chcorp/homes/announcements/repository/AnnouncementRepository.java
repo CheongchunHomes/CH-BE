@@ -416,26 +416,31 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
             @Param("today") LocalDate today,
             Pageable pageable
     );
-        // 경쟁률 데이터가 있는 마감 전 APT 공고를 순위 기준으로 조회한다.
-        @Query("""
-            SELECT DISTINCT a
-            FROM Announcement a
-            WHERE a.sourceType = :sourceType
-              AND a.recuitmentType = :recuitmentType
-              AND a.isVisible = true
-              AND a.applyEndDate >= :today
-              AND EXISTS (
-                  SELECT 1
-                  FROM SubscriptionCompetitionRate r
-                  WHERE r.announcementId = a.announcementId
-                    AND r.rankNo = :rankNo
-              )
-            """)
-        Page<Announcement> findAptCompetitionAnnouncementsByRank(
-                @Param("sourceType") String sourceType,
-                @Param("recuitmentType") String recuitmentType,
-                @Param("rankNo") Integer rankNo,
-                @Param("today") LocalDate today,
-                Pageable pageable
-        );
+    // 지도에 표시할 수 있는 청약 공고만 조회한다.
+    @Query("""
+        SELECT a
+        FROM Announcement a
+        WHERE a.isVisible = true
+          AND a.latitude IS NOT NULL
+          AND a.longitude IS NOT NULL
+          AND a.applyStartDate IS NOT NULL
+          AND a.applyEndDate IS NOT NULL
+          AND a.applyStartDate <= :today
+          AND a.applyEndDate >= :today
+        ORDER BY a.applyEndDate ASC
+        """)
+    List<Announcement> findApplyingNowMapAnnouncements(@Param("today") LocalDate today);
+
+    // 주소는 있지만 좌표가 아직 없는 공고를 좌표 변환 대상으로 조회한다.
+    @Query("""
+        SELECT a
+        FROM Announcement a
+        WHERE a.isVisible = true
+          AND a.address IS NOT NULL
+          AND TRIM(a.address) <> ''
+          AND (a.latitude IS NULL OR a.longitude IS NULL)
+        ORDER BY a.announcementId ASC
+    """)
+    List<Announcement> findGeocodeTargets(Pageable pageable);
+
 }

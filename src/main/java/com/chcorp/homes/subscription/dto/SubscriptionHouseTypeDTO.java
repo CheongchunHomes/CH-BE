@@ -39,4 +39,22 @@ public class SubscriptionHouseTypeDTO {
                 .monthlyRent(houseType.getMonthlyRent())
                 .build();
     }
+
+    public static SubscriptionHouseTypeDTO defaultForMyhome(Long announcementId) {
+        return SubscriptionHouseTypeDTO.builder()
+                .houseTypeId(null)
+                .announcementId(announcementId)
+                .houseManageNo(null)
+                .pblancNo(null)
+                .modelNo(null)
+                .houseTypeName("기본타입")
+                .exclusiveArea("미정")
+                .supplyHouseholdCount(null)
+                .specialSupplyCount(null)
+                .generalSupplyCount(null)
+                .supplyPrice(null)
+                .rentDeposit(null)
+                .monthlyRent(null)
+                .build();
+    }
 }

@@ -127,6 +127,11 @@ public class Announcement extends MutableBaseEntity {
         this.isVisible = isVisible;
     }
 
+    public void updateCoordinates(BigDecimal latitude, BigDecimal longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
     public void updateAdminFields(String title, String region,
                                   String recuitmentType, String targetType,
                                   String status, String address,
