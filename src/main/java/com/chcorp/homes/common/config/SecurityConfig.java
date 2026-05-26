@@ -26,6 +26,7 @@ public class SecurityConfig {
             "/auth/reauth",
             "/auth/logout",
             "/users/register",
+            "/users/nickname/check",
             "/admin",
             "/admin/**",
             "/swagger-ui/**",
@@ -39,7 +40,8 @@ public class SecurityConfig {
             "/ws/map-chat",
             "/ws/map-chat/**",
             "/policies",
-            "/policies/**"
+            "/policies/**",
+            "/simulator/**"
 //            ,"/**"   // 임시
     };
 

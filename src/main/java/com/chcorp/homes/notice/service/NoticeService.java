@@ -51,6 +51,31 @@ public class NoticeService {
         return NoticeResponseDTO.from(saved);
     }
 
+    @Transactional
+    public NoticeResponseDTO updateNoticeFromAdmin(Long noticeId, NoticeCreateRequestDTO request) {
+        Notice notice = noticeRepository.findById(noticeId)
+                .orElseThrow(() -> new IllegalArgumentException("공지사항을 찾을 수 없습니다."));
+
+        notice.updateFromAdmin(
+                blankToDefault(request.category(), "운영자 안내"),
+                request.title(),
+                request.summary(),
+                request.content(),
+                request.important()
+        );
+
+        return NoticeResponseDTO.from(notice);
+    }
+
+    @Transactional
+    public void deleteNoticeFromAdmin(Long noticeId) {
+        if (!noticeRepository.existsById(noticeId)) {
+            throw new IllegalArgumentException("공지사항을 찾을 수 없습니다.");
+        }
+
+        noticeRepository.deleteById(noticeId);
+    }
+
     private String blankToDefault(String value, String defaultValue) {
         return value == null || value.isBlank() ? defaultValue : value;
     }

@@ -177,7 +177,7 @@ public class AdminController {
                 .map(item -> row(
                         safe(item.getTitle()),
                         safe(item.getRegion()),
-                        safe(item.getRecruitmentType()),
+                        safe(item.getRecuitmentType()),
                         dateRange(item.getApplyStartDate(), item.getApplyEndDate())
                 ))
                 .toList();
@@ -288,7 +288,7 @@ public class AdminController {
                 menu("관리자 메인", "/admin", "overview".equals(section), "전체 현황"),
                 menu("유저", "/admin?section=users", "users".equals(section), "유저 리스트"),
                 menu("청약", "/admin?section=subscription", "subscription".equals(section), "청약 리스트"),
-                menu("대출", "/admin?section=loan", "loan".equals(section), "대출 리스트"),
+                menu("대출", "/admin/loan", "loan".equals(section), "대출 허브"),
                 menu("공고", "/admin/announcements", "announcement".equals(section), "공고 리스트"),
                 menu("제도", "/admin/policies", "policy".equals(section), "지원제도 리스트"),
                 menu("자산", "/admin?section=asset", "asset".equals(section), "파일 관리"),
@@ -314,7 +314,7 @@ public class AdminController {
         return List.of(
                 new OverviewAction("유저 리스트", "가입 유저의 권한과 상태를 확인합니다.", "/admin?section=users"),
                 new OverviewAction("청약 리스트", "청약 공고와 모집 기간을 확인합니다.", "/admin?section=subscription"),
-                new OverviewAction("대출 리스트", "대출 계약과 서명 진행 상태를 확인합니다.", "/admin?section=loan"),
+                new OverviewAction("대출 리스트", "대출 계약과 서명 진행 상태를 확인합니다.", "/admin/loan"),
                 new OverviewAction("공고 리스트", "노출 중인 공고와 모집 유형을 확인합니다.", "/admin?section=announcement"),
                 new OverviewAction("지원제도 리스트", "노출 중인 지원제도와 모집 유형을 확인합니다.", "/admin?section=policy")
         );
