@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대출상품 관리 | 관리자</title>
+    <style>
+        :root{
+            --bg:#eef3ff;
+            --card:#fff;
+            --line:#d9e3f6;
+            --text:#0f172a;
+            --muted:#64748b;
+            --blue:#2563eb;
+            --blue-soft:#eaf1ff;
+            --green:#10b981;
+            --green-soft:#e7fbf2;
+            --shadow:0 14px 42px rgba(15,23,42,.08);
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:"Apple SD Gothic Neo","Noto Sans KR",Arial,sans-serif;
+            color:var(--text);
+            background:linear-gradient(180deg,#f7f9ff 0%,var(--bg) 100%);
+            min-height:100vh;
+        }
+        a{color:inherit;text-decoration:none}
+        .layout{
+            display:grid;
+            grid-template-columns:260px 1fr;
+            gap:24px;
+            padding:24px;
+            min-height:100vh;
+        }
+        .sidebar,.hero,.panel,.table-panel,.card{
+            background:var(--card);
+            border:1px solid var(--line);
+            border-radius:24px;
+            box-shadow:var(--shadow);
+        }
+        .sidebar{
+            padding:22px 18px;
+            display:flex;
+            flex-direction:column;
+            gap:18px;
+            align-self:start;
+        }
+        .brand{
+            display:flex;
+            align-items:center;
+            gap:12px;
+            padding-bottom:12px;
+            border-bottom:1px solid rgba(148,163,184,.25);
+        }
+        .brand-badge{
+            width:44px;
+            height:44px;
+            border-radius:16px;
+            display:grid;
+            place-items:center;
+            background:linear-gradient(135deg,#dbeafe,#eff6ff);
+            color:var(--blue);
+            font-weight:900;
+            font-size:18px;
+        }
+        .brand h1{margin:0;font-size:19px;line-height:1.2}
+        .brand p{margin:6px 0 0;font-size:12px;color:var(--muted)}
+        .menu-title{font-size:12px;letter-spacing:.08em;color:var(--muted);font-weight:800;text-transform:uppercase}
+        .menu-list{display:grid;gap:10px}
+        .menu-item{
+            padding:14px 16px;
+            border-radius:16px;
+            border:1px solid #dbe5ff;
+            background:linear-gradient(180deg,#f7fbff 0%,#eef6ff 100%);
+            display:grid;
+            gap:4px;
+        }
+        .menu-item.active{
+            background:linear-gradient(135deg,var(--blue),#4f7cff);
+            color:#fff;
+            border-color:transparent;
+        }
+        .menu-item.active span{color:rgba(255,255,255,.86)}
+        .menu-item strong{font-size:15px}
+        .menu-item span{font-size:12px;color:var(--muted)}
+        .content{display:grid;gap:18px;align-content:start}
+        .hero{
+            padding:24px 28px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:20px;
+        }
+        .eyebrow{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            padding:8px 12px;
+            border-radius:999px;
+            background:var(--blue-soft);
+            color:var(--blue);
+            font-weight:800;
+            font-size:13px;
+            margin-bottom:10px;
+        }
+        .hero h2{margin:0;font-size:30px;line-height:1.15}
+        .hero p{margin:8px 0 0;color:var(--muted);font-size:15px;line-height:1.7}
+        .hero-actions{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            flex-wrap:wrap;
+            justify-content:flex-end;
+        }
+        .pill{
+            padding:10px 14px;
+            border-radius:999px;
+            background:var(--green-soft);
+            color:#059669;
+            font-size:13px;
+            font-weight:800;
+        }
+        .button{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            gap:8px;
+            padding:12px 18px;
+            border-radius:14px;
+            background:linear-gradient(135deg,var(--blue),#4f7cff);
+            color:#fff;
+            font-weight:800;
+            box-shadow:0 10px 24px rgba(37,99,235,.18);
+            border:none;
+            cursor:pointer;
+        }
+        .button.ghost{
+            background:#fff;
+            color:var(--blue);
+            border:1px solid #dbe5ff;
+            box-shadow:none;
+        }
+        .stats-grid{
+            display:grid;
+            grid-template-columns:repeat(3,minmax(0,1fr));
+            gap:16px;
+        }
+        .stat-card{
+            padding:20px 22px;
+            min-height:120px;
+        }
+        .stat-card .label{font-size:13px;color:var(--muted);margin-bottom:10px}
+        .stat-card .value{font-size:34px;line-height:1;font-weight:900;margin-bottom:12px}
+        .stat-card .meta{color:var(--green);font-size:13px;font-weight:800}
+        .panel{padding:24px}
+        .panel h3{margin:0 0 8px;font-size:24px}
+        .panel p{margin:0;color:var(--muted);line-height:1.7;font-size:14px}
+        .form-grid{
+            display:grid;
+            grid-template-columns:repeat(2,minmax(0,1fr));
+            gap:14px;
+            margin-top:18px;
+        }
+        .field{
+            display:grid;
+            gap:6px;
+        }
+        .field label{
+            font-size:13px;
+            color:#334155;
+            font-weight:800;
+        }
+        .field input,.field textarea,.field select{
+            width:100%;
+            border:1px solid #dbe5ff;
+            border-radius:14px;
+            padding:12px 14px;
+            font:inherit;
+            background:#fff;
+            outline:none;
+        }
+        .field textarea{min-height:90px;resize:vertical}
+        .field input:focus,.field textarea:focus,.field select:focus{
+            border-color:#7da2ff;
+            box-shadow:0 0 0 3px rgba(37,99,235,.08);
+        }
+        .field.full{grid-column:1 / -1}
+        .radio-row{
+            display:grid;
+            gap:12px;
+            margin-top:18px;
+        }
+        .radio-group{
+            display:flex;
+            flex-wrap:wrap;
+            gap:10px;
+            align-items:center;
+        }
+        .radio-group label{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            padding:10px 12px;
+            border:1px solid #dbe5ff;
+            border-radius:14px;
+            background:#f8fbff;
+            font-size:14px;
+            color:#334155;
+        }
+        .section-actions{
+            display:flex;
+            justify-content:flex-end;
+            gap:10px;
+            margin-top:18px;
+        }
+        .table-panel{padding:0;overflow:hidden}
+        .table-head{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            padding:22px 24px 16px;
+        }
+        .table-head h3{margin:0;font-size:24px}
+        .table-head p{margin:6px 0 0;color:var(--muted);font-size:14px}
+        .table-scroll{overflow-x:auto}
+        table{
+            width:100%;
+            border-collapse:collapse;
+            min-width:1320px;
+        }
+        th,td{
+            padding:16px 18px;
+            border-top:1px solid var(--line);
+            text-align:left;
+            vertical-align:middle;
+            font-size:14px;
+        }
+        th{
+            background:#f8fbff;
+            color:#334155;
+            font-weight:800;
+        }
+        tbody tr:nth-child(even) td{background:#fcfdff}
+        .badge{
+            display:inline-flex;
+            align-items:center;
+            gap:6px;
+            padding:6px 10px;
+            border-radius:999px;
+            font-size:12px;
+            font-weight:800;
+        }
+        .badge.green{background:var(--green-soft);color:#059669}
+        .badge.blue{background:var(--blue-soft);color:var(--blue)}
+        .badge.gray{background:#eef2ff;color:#475569}
+        .action-link{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            min-width:72px;
+            padding:9px 12px;
+            border-radius:12px;
+            border:1px solid #dbe5ff;
+            background:#fff;
+            color:var(--blue);
+            font-weight:800;
+        }
+        .empty-state{
+            padding:36px 20px;
+            text-align:center;
+            color:var(--muted);
+            border-top:1px solid var(--line);
+        }
+        .hint{
+            color:var(--muted);
+            font-size:12px;
+            line-height:1.5;
+        }
+        @media (max-width:1200px){
+            .layout{grid-template-columns:1fr}
+            .stats-grid,.form-grid{grid-template-columns:1fr}
+            .hero{flex-direction:column;align-items:flex-start}
+            .hero-actions{justify-content:flex-start}
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-badge">H</div>
+            <div>
+                <h1>관리자 메인</h1>
+                <p>청년 주거 통합 관리</p>
+            </div>
+        </div>
+        <div>
+            <div class="menu-title">메뉴 리스트</div>
+            <div class="menu-list">
+                <a class="menu-item" th:classappend="${currentMenu == 'overview'} ? ' active' : ''" href="/admin">
+                    <strong>관리자 메인</strong><span>전체 현황</span>
+                </a>
+                <a class="menu-item" href="/admin?section=users"><strong>유저</strong><span>유저 리스트</span></a>
+                <a class="menu-item" href="/admin?section=subscription"><strong>청약</strong><span>청약 리스트</span></a>
+                <a class="menu-item active" th:classappend="${currentMenu == 'loan'} ? ' active' : ''" href="/admin/loan">
+                    <strong>대출</strong><span>대출 허브</span>
+                </a>
+                <a class="menu-item" href="/admin?section=announcement"><strong>공고</strong><span>공고 리스트</span></a>
+                <a class="menu-item" href="/admin?section=asset"><strong>자산</strong><span>파일 관리</span></a>
+                <a class="menu-item" href="/admin?section=community"><strong>커뮤니티</strong><span>게시글 관리</span></a>
+                <a class="menu-item" href="/admin?section=simulation"><strong>시뮬레이션</strong><span>진단 / 계산</span></a>
+                <a class="menu-item" href="/admin?section=settings"><strong>설정</strong><span>권한 / 시스템</span></a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">대출상품 관리</div>
+                <h2>대출상품 목록</h2>
+                <p>DB에 저장된 대출상품을 확인하고, 새 상품 등록과 기존 상품 수정을 진행합니다.</p>
+            </div>
+            <div class="hero-actions">
+                <span class="pill">만원 단위</span>
+                <a class="button ghost" href="/admin/loan">대출 허브</a>
+            </div>
+        </section>
+
+        <section class="stats-grid">
+            <article class="card stat-card">
+                <div class="label">등록 상품 수</div>
+                <div class="value" th:text="${productCount}">0</div>
+                <div class="meta">전체</div>
+            </article>
+            <article class="card stat-card">
+                <div class="label">입력 방식</div>
+                <div class="value">만원</div>
+                <div class="meta">금액 통일</div>
+            </article>
+            <article class="card stat-card">
+                <div class="label">관리 화면</div>
+                <div class="value">수정</div>
+                <div class="meta">상품별 편집</div>
+            </article>
+        </section>
+
+        <section class="panel">
+            <h3>대출상품 등록</h3>
+            <p>상품명, 제공기관, 유형, 금리, 최저금리, 최대한도, 소득한도는 입력값으로 받고, 정책과 노출은 아래 yes/no로 선택합니다.</p>
+
+            <form th:action="@{/admin/loan-products}" method="post">
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="externalCode">외부코드</label>
+                        <input id="externalCode" name="externalCode" type="text" placeholder="예: HF-2026-001" required>
+                    </div>
+                    <div class="field">
+                        <label for="provider">제공기관</label>
+                        <input id="provider" name="provider" type="text" placeholder="예: 주택도시보증공사" required>
+                    </div>
+                    <div class="field">
+                        <label for="name">상품명</label>
+                        <input id="name" name="name" type="text" placeholder="예: 신생아 특례 버팀목대출" required>
+                    </div>
+                    <div class="field">
+                        <label for="loanType">유형</label>
+                        <input id="loanType" name="loanType" type="text" placeholder="예: 전세자금대출" required>
+                    </div>
+                    <div class="field">
+                        <label for="interestRate">금리(%)</label>
+                        <input id="interestRate" name="interestRate" type="number" step="0.001" placeholder="예: 1.800">
+                    </div>
+                    <div class="field">
+                        <label for="interestRateMin">최저금리(%)</label>
+                        <input id="interestRateMin" name="interestRateMin" type="number" step="0.001" placeholder="예: 1.500">
+                    </div>
+                    <div class="field">
+                        <label for="maxAmount">최대한도(만원)</label>
+                        <input id="maxAmount" name="maxAmount" type="number" placeholder="예: 10000">
+                    </div>
+                    <div class="field">
+                        <label for="incomeLimit">소득한도(만원)</label>
+                        <input id="incomeLimit" name="incomeLimit" type="number" placeholder="예: 8500">
+                    </div>
+                    <div class="field full">
+                        <label for="conditions">조건</label>
+                        <textarea id="conditions" name="conditions" placeholder="상품 조건을 입력하세요."></textarea>
+                    </div>
+                </div>
+
+                <div class="radio-row">
+                    <div>
+                        <div class="hint">정책대출</div>
+                        <div class="radio-group">
+                            <label><input type="radio" name="policyLoan" value="true"> 예</label>
+                            <label><input type="radio" name="policyLoan" value="false" checked> 아니오</label>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="hint">노출</div>
+                        <div class="radio-group">
+                            <label><input type="radio" name="visible" value="true" checked> 예</label>
+                            <label><input type="radio" name="visible" value="false"> 아니오</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-actions">
+                    <a class="button ghost" href="/admin/loan">취소</a>
+                    <button class="button" type="submit">대출상품 등록</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3>등록된 대출상품</h3>
+                    <p>목록에서 확인하고 각 상품별 수정 화면으로 이동할 수 있습니다.</p>
+                </div>
+                <span class="pill">총 <span th:text="${productCount}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!#lists.isEmpty(products)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>상품명</th>
+                        <th>제공기관</th>
+                        <th>유형</th>
+                        <th>금리</th>
+                        <th>최저금리</th>
+                        <th>최대한도(만원)</th>
+                        <th>소득한도(만원)</th>
+                        <th>정책</th>
+                        <th>노출</th>
+                        <th>수정</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="product : ${products}">
+                        <td th:text="${product.loanId}">1</td>
+                        <td th:text="${product.name}">상품명</td>
+                        <td th:text="${product.provider}">제공기관</td>
+                        <td th:text="${product.loanType}">유형</td>
+                        <td th:text="${product.interestRate != null ? product.interestRate + '%' : '-'}">-</td>
+                        <td th:text="${product.interestRateMin != null ? product.interestRateMin + '%' : '-'}">-</td>
+                        <td th:text="${product.maxAmount != null ? product.maxAmount + '' : '-'}">-</td>
+                        <td th:text="${product.incomeLimit != null ? product.incomeLimit + '' : '-'}">-</td>
+                        <td>
+                            <span class="badge" th:classappend="${product.policyLoan} ? ' green' : ' gray'" th:text="${product.policyLoan ? '예' : '아니오'}">예</span>
+                        </td>
+                        <td>
+                            <span class="badge" th:classappend="${product.visible} ? ' blue' : ' gray'" th:text="${product.visible ? '예' : '아니오'}">예</span>
+                        </td>
+                        <td>
+                            <a class="action-link" th:href="@{/admin/loan-products/{loanId}/edit(loanId=${product.loanId})}">수정</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${#lists.isEmpty(products)}">
+                등록된 대출상품이 없습니다.
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

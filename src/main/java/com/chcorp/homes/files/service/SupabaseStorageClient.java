@@ -1,6 +1,6 @@
 package com.chcorp.homes.files.service;
 
-import com.chcorp.homes.files.config.SupabaseStorageProperties;
+import com.chcorp.homes.common.config.SupabaseStorageProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;

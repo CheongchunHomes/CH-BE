@@ -1,4 +1,4 @@
-package com.chcorp.homes.files.config;
+package com.chcorp.homes.common.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
