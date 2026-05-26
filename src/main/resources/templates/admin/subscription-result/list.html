@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청약 신청 결과 관리</title>
+    <style>
+        :root {
+            --bg: #eef3ff; --card: #ffffff; --line: #d9e3f6;
+            --text: #0f172a; --muted: #64748b; --blue: #2563eb;
+            --blue-soft: #eaf1ff; --green: #10b981; --green-soft: #e7fbf2;
+            --red: #ef4444; --red-soft: #fef2f2;
+            --shadow: 0 14px 42px rgba(15, 23, 42, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at top left, rgba(37,99,235,0.08), transparent 28%),
+                        linear-gradient(180deg, #f7f9ff 0%, var(--bg) 100%);
+            min-height: 100vh;
+        }
+        a { color: inherit; text-decoration: none; }
+        .layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; padding: 24px; min-height: 100vh; }
+        .sidebar, .card, .table-panel {
+            background: var(--card); border: 1px solid var(--line);
+            border-radius: 24px; box-shadow: var(--shadow);
+        }
+        .sidebar { padding: 22px 18px; display: flex; flex-direction: column; gap: 18px; align-self: start; }
+        .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148,163,184,0.25); }
+        .brand-badge { width: 44px; height: 44px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, #dbeafe, #eff6ff); color: var(--blue); font-weight: 900; font-size: 18px; }
+        .brand h1 { margin: 0; font-size: 19px; line-height: 1.2; }
+        .brand p { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+        .menu-title { font-size: 12px; letter-spacing: 0.08em; color: var(--muted); font-weight: 800; text-transform: uppercase; }
+        .menu-list { display: grid; gap: 10px; }
+        .menu-item { padding: 14px 16px; border-radius: 16px; border: 1px solid #dbe5ff; background: linear-gradient(180deg, #f7fbff 0%, #eef6ff 100%); display: grid; gap: 4px; }
+        .menu-item strong { font-size: 15px; }
+        .menu-item span { font-size: 12px; color: var(--muted); }
+        .menu-item.active { background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; border-color: transparent; }
+        .menu-item.active span { color: rgba(255,255,255,0.86); }
+        .content { display: grid; gap: 18px; align-content: start; }
+        .hero { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); padding: 24px 28px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+        .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-weight: 800; font-size: 13px; margin-bottom: 10px; }
+        .hero h2 { margin: 0; font-size: 30px; line-height: 1.15; }
+        .hero p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+        .button { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 14px; background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; font-weight: 800; font-size: 14px; border: none; cursor: pointer; box-shadow: 0 10px 24px rgba(37,99,235,0.18); text-decoration: none; }
+        .button.danger { background: linear-gradient(135deg, var(--red), #f87171); box-shadow: 0 10px 24px rgba(239,68,68,0.18); }
+        .button.sm { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+        .pill { padding: 10px 14px; border-radius: 999px; background: var(--green-soft); color: #059669; font-size: 13px; font-weight: 800; }
+        .table-panel { padding: 0; overflow: hidden; }
+        .table-head { display: flex; justify-content: space-between; align-items: center; padding: 22px 24px 16px; }
+        .table-head h3 { margin: 0; font-size: 22px; }
+        .table-head p { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+        .table-scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 720px; }
+        th, td { padding: 14px 16px; border-top: 1px solid var(--line); text-align: left; vertical-align: middle; font-size: 14px; }
+        th { background: #f8fbff; color: #334155; font-weight: 800; }
+        tbody tr:nth-child(even) td { background: #fcfdff; }
+        .action-group { display: flex; gap: 6px; }
+        .empty-state { padding: 36px 20px; text-align: center; color: var(--muted); border-top: 1px solid var(--line); }
+        .badge { display: inline-flex; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; }
+        .badge.win { background: var(--green-soft); color: #059669; }
+        .badge.lose { background: var(--red-soft); color: var(--red); }
+        .badge.pending { background: var(--blue-soft); color: var(--blue); }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-badge">H</div>
+            <div>
+                <h1>관리자 메인</h1>
+                <p>청년 주거 통합 관리</p>
+            </div>
+        </div>
+        <div>
+            <div class="menu-title">메뉴 리스트</div>
+            <div class="menu-list">
+                <a class="menu-item" href="/admin"><strong>관리자 메인</strong><span>전체 현황</span></a>
+                <a class="menu-item" href="/admin?section=users"><strong>유저</strong><span>유저 리스트</span></a>
+                <a class="menu-item" href="/admin?section=subscription"><strong>청약</strong><span>청약 리스트</span></a>
+                <a class="menu-item" href="/admin?section=loan"><strong>대출</strong><span>대출 리스트</span></a>
+                <a class="menu-item" href="/admin/announcements"><strong>공고</strong><span>공고 리스트</span></a>
+                <a class="menu-item" href="/admin/policies"><strong>제도</strong><span>지원제도 리스트</span></a>
+                <a class="menu-item active" href="/admin/subscription-result"><strong>청약결과</strong><span>신청내역/당첨낙첨</span></a>
+                <a class="menu-item" href="/admin?section=community"><strong>커뮤니티</strong><span>게시글 관리</span></a>
+                <a class="menu-item" href="/admin?section=notice"><strong>공지사항</strong><span>공지사항 관리</span></a>
+                <a class="menu-item" href="/admin?section=statistics"><strong>통계</strong><span>통계 리포트</span></a>
+                <a class="menu-item" href="/admin?section=settings"><strong>설정</strong><span>권한 / 시스템</span></a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">청약 신청 결과</div>
+                <h2>청약 결과 관리</h2>
+                <p>유저별 청약 당첨 · 낙첨 결과를 확인하고 관리합니다.</p>
+            </div>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3>청약 신청 목록</h3>
+                    <p>신청한 유저의 당첨 · 낙첨 결과를 처리합니다.</p>
+                </div>
+                <span class="pill">총 <span th:text="${#lists.size(applications)}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!#lists.isEmpty(applications)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>신청 ID</th>
+                        <th>유저 ID</th>
+                        <th>공고 ID</th>
+                        <th>상태</th>
+                        <th>신청일</th>
+                        <th>결과일</th>
+                        <th>처리</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="app : ${applications}">
+                        <td th:text="${app.subAppId}">1</td>
+                        <td th:text="${app.userId}">1</td>
+                        <td th:text="${app.announcementId}">1</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${app.status == '당첨'} ? 'win' : (${app.status == '낙첨'} ? 'lose' : 'pending')"
+                                  th:text="${app.status}">신청</span>
+                        </td>
+                        <td th:text="${app.appliedAt}">-</td>
+                        <td th:text="${app.resultAt != null} ? ${app.resultAt} : '-'">-</td>
+                        <td>
+                            <div class="action-group">
+                                <form th:action="@{/admin/subscription-result/{id}/result(id=${app.subAppId})}" method="post">
+                                    <input type="hidden" name="status" value="당첨">
+                                    <button class="button sm" type="submit">당첨</button>
+                                </form>
+                                <form th:action="@{/admin/subscription-result/{id}/result(id=${app.subAppId})}" method="post">
+                                    <input type="hidden" name="status" value="낙첨">
+                                    <button class="button sm danger" type="submit">낙첨</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${#lists.isEmpty(applications)}">
+                청약 신청 내역이 없습니다.
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>
