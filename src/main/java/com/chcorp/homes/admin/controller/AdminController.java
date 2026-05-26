@@ -1,6 +1,6 @@
 package com.chcorp.homes.admin.controller;
 
-import com.chcorp.homes.announcements.entity.Announcement;
+
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
 import com.chcorp.homes.subscription.repository.SubscriptionRepository;
@@ -169,7 +169,7 @@ public class AdminController {
                 .map(item -> row(
                         safe(item.getTitle()),
                         safe(item.getRegion()),
-                        safe(item.getRecruitmentType()),
+                        safe(item.getRecuitmentType()),
                         dateRange(item.getApplyStartDate(), item.getApplyEndDate())
                 ))
                 .toList();
