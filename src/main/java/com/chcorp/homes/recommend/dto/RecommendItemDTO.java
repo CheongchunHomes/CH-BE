@@ -16,9 +16,6 @@ public class RecommendItemDTO {
     private String description; // 간단 설명
     private int matchScore;     // 매칭 점수(높을수록 앞에 노출)
     private String applyUrl;    // 신청 링크
-    private int minAge;
-    private int maxAge;
-    private int maxIncome;
     private Long announcementId;
 
 }

@@ -6,7 +6,6 @@ import com.chcorp.homes.diagnosis.repository.DiagnosisRepository;
 import com.chcorp.homes.diagnosis.repository.UserProfileRepository;
 import com.chcorp.homes.recommend.dto.RecommendItemDTO;
 import com.chcorp.homes.recommend.dto.RecommendSummaryResponse;
-import jdk.jshell.Diag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -116,18 +115,6 @@ public class RecoService {
 
     public RecommendSummaryResponse getSummary(Long userId) {
 
-        // TODO: user_diagnosis_results 연결 후 실제 데이터로 교체
-        RecommendSummaryResponse.DiagnosisResult diagnosis = RecommendSummaryResponse.DiagnosisResult.builder()
-                .subscriptionReadinessScore(72)
-                .publicRentalFitScore(85)
-                .jeonseloanScore(90)
-                .saleSubscriptionScore(45)
-                .subscriptionReadinessGrade("B")
-                .publicRentalFitGrade("A")
-                .jeonseloanGrade("A")
-                .saleSubscriptionGrade("C")
-                .build();
-
         String region = userProfileRepository.findByUserId(userId)
                 .map(p -> p.getDesiredCity() != null ? p.getDesiredCity() : "전국")
                 .orElse("전국");
@@ -187,7 +174,7 @@ public class RecoService {
 
         return RecommendSummaryResponse.builder()
                 .policies(allItems)
-                .diagnosis(diagnosis)
+                .desiredCity(region)
                 .build();
     }
 
