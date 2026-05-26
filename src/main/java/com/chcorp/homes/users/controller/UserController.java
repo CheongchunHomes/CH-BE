@@ -1,7 +1,9 @@
 package com.chcorp.homes.users.controller;
 
+import com.chcorp.homes.users.dto.request.PersonalInfoRequestDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
 import com.chcorp.homes.users.dto.response.MyProfileDTO;
+import com.chcorp.homes.users.dto.response.NicknameCheckResponseDTO;
 import com.chcorp.homes.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,11 +26,27 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @GetMapping("/nickname/check")
+    public ResponseEntity<NicknameCheckResponseDTO> checkNickname(@RequestParam String nickname) {
+        boolean available = userService.checkNicknameAvailable(nickname);
+        return ResponseEntity.ok(new NicknameCheckResponseDTO(available));
+    }
+
     @GetMapping("/mypage")
     public ResponseEntity<MyProfileDTO> mypage(Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
         log.info("Mypage userId: {}", userId);
         MyProfileDTO dto = userService.mypage(userId);
         return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/personal")
+    public ResponseEntity<Void> personal(
+            Authentication authentication,
+            @RequestBody PersonalInfoRequestDTO request
+    ) {
+        Long userId = Long.valueOf(authentication.getName());
+        userService.createPersonalInfo(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

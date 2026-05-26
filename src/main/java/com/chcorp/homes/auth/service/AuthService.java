@@ -8,11 +8,11 @@ import com.chcorp.homes.auth.dto.response.AuthUserResponse;
 import com.chcorp.homes.auth.dto.response.ReauthResponseDTO;
 import com.chcorp.homes.common.config.JwtTokenProvider;
 import com.chcorp.homes.users.entity.User;
+import com.chcorp.homes.users.entity.UserRole;
 import com.chcorp.homes.users.repository.UserRepository;
 import com.chcorp.homes.users.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -37,27 +37,25 @@ public class AuthService {
      * cookie 발급은 BFF가 담당한다.
      */
     @Transactional
-    public Optional<AuthLoginResponseDTO> login(AuthLoginDTO request, HttpServletRequest servletRequest) {
+    public AuthLoginResponseDTO login(AuthLoginDTO request, HttpServletRequest servletRequest) {
         User user = authenticate(request);
 
-        if (refreshTokenService.hasActiveSession(user, servletRequest)) {
-            return Optional.empty();
-        }
-
+        refreshTokenService.replaceLoginSession(user, servletRequest);
         RefreshTokenService.IssuedRefreshToken refreshToken = refreshTokenService.issue(user, servletRequest);
 
         JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user);
 
-        return Optional.of(new AuthLoginResponseDTO(
+        return new AuthLoginResponseDTO(
                 accessToken.token(),
                 accessToken.expiresAt(),
                 refreshToken.token(),
                 refreshToken.expiresAt()
-        ));
+        );
     }
 
     /**
      * /auth/refresh.
+     * 엑세스 토큰 재발급
      * 70% 임계치 및 만료 판단은 RefreshTokenService에서 예외로 처리한다.
      * 정상이면 access token과 access token 만료 시각만 재발급한다 (refresh rotation 없음).
      */
@@ -105,7 +103,9 @@ public class AuthService {
     @Transactional(readOnly = true)
     public AuthUserResponse me(Long userId) {
         User user = userService.findById(userId);
-        return AuthUserResponse.from(user);
+        boolean hasPersonalInfo =
+                user.getRole() == UserRole.ADMIN || userService.hasPersonalInfo(userId);
+        return AuthUserResponse.from(user, hasPersonalInfo);
     }
 
     /**

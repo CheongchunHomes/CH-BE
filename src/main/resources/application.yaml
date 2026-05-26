@@ -18,6 +18,14 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+supabase:
+  url: ${SUPABASE_URL}
+  secret-key: ${SUPABASE_SECRET_KEY}
+  storage:
+    private-file-bucket: ${SUPABASE_PRIVATE_FILE_BUCKET:private-files}
+    signed-download-ttl-seconds: ${SUPABASE_SIGNED_DOWNLOAD_TTL_SECONDS:300}
+
+
 jwt:
   secret: ${SECRET_KEY}
   access-token-expiration: ${ACCESS_TOKEN_EXPIRATION}

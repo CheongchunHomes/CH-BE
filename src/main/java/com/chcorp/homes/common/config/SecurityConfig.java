@@ -26,6 +26,7 @@ public class SecurityConfig {
             "/auth/reauth",
             "/auth/logout",
             "/users/register",
+            "/users/nickname/check",
             "/admin",
             "/admin/**",
             "/swagger-ui/**",
