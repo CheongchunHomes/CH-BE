@@ -40,7 +40,8 @@ public class SecurityConfig {
             "/ws/map-chat",
             "/ws/map-chat/**",
             "/policies",
-            "/policies/**"
+            "/policies/**",
+            "/simulator/**"
 //            ,"/**"   // 임시
     };
 
