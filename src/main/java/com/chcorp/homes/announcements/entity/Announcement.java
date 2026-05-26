@@ -25,6 +25,10 @@ public class Announcement extends MutableBaseEntity {
     @Column(name = "external_id")
     private String externalId;      // API의 pblanId
 
+
+    @Column(name = "pblanc_no")
+    private String pblancNo;         // 청약홈 공고번호
+
     @Column(name = "source_type")
     private String sourceType;      // "LH", "청약홈" 등 출처 구분
 
@@ -113,13 +117,10 @@ public class Announcement extends MutableBaseEntity {
     @Column(name = "surlus")
     private Integer surlus;
 
+
     // =======================
     // 관리자 도메인 메서드
     // =======================
-
-    public void updateVisibility(Boolean isVisible) {
-        this.isVisible = isVisible;
-    }
 
     public void updateCoordinate(Double latitude, Double longitude) {
         this.latitude = latitude == null ? null : BigDecimal.valueOf(latitude);
@@ -143,5 +144,4 @@ public class Announcement extends MutableBaseEntity {
         this.applyStartDate = applyStartDate;
         this.applyEndDate = applyEndDate;
     }
-
 }
