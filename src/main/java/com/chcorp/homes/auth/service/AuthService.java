@@ -8,6 +8,7 @@ import com.chcorp.homes.auth.dto.response.AuthUserResponse;
 import com.chcorp.homes.auth.dto.response.ReauthResponseDTO;
 import com.chcorp.homes.common.config.JwtTokenProvider;
 import com.chcorp.homes.users.entity.User;
+import com.chcorp.homes.users.entity.UserRole;
 import com.chcorp.homes.users.repository.UserRepository;
 import com.chcorp.homes.users.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -102,7 +103,8 @@ public class AuthService {
     @Transactional(readOnly = true)
     public AuthUserResponse me(Long userId) {
         User user = userService.findById(userId);
-        boolean hasPersonalInfo = userService.hasPersonalInfo(userId);
+        boolean hasPersonalInfo =
+                user.getRole() == UserRole.ADMIN || userService.hasPersonalInfo(userId);
         return AuthUserResponse.from(user, hasPersonalInfo);
     }
 
