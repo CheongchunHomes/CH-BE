@@ -15,6 +15,8 @@
             --blue-soft: #eaf1ff;
             --green: #10b981;
             --green-soft: #e7fbf2;
+            --red: #ef4444;
+            --red-dark: #dc2626;
             --shadow: 0 14px 42px rgba(15, 23, 42, 0.08);
         }
 
@@ -396,6 +398,26 @@
             font-size: 12px;
         }
 
+        .delete-form {
+            margin: 0;
+        }
+
+        .delete-button {
+            border: none;
+            border-radius: 12px;
+            background: var(--red);
+            color: #ffffff;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.18s ease;
+        }
+
+        .delete-button:hover {
+            background: var(--red-dark);
+        }
+
         @media (max-width: 1200px) {
             .layout {
                 grid-template-columns: 1fr;
@@ -512,8 +534,23 @@
                     </thead>
                     <tbody>
                     <tr th:each="row : ${tableRows}">
-                        <td th:each="cell : ${row.columns}">
-                            <span th:text="${cell}">값</span>
+                        <td th:each="cell, stat : ${row.columns}">
+                            <span
+                                    th:if="${section != 'community' or !stat.last}"
+                                    th:text="${cell}"
+                            >
+                                값
+                            </span>
+
+                            <form
+                                    th:if="${section == 'community' and stat.last}"
+                                    class="delete-form"
+                                    th:action="@{/admin/community/{postId}/delete(postId=${cell})}"
+                                    method="post"
+                                    onsubmit="return confirm('정말 이 커뮤니티 게시글을 삭제하시겠습니까?');"
+                            >
+                                <button type="submit" class="delete-button">삭제</button>
+                            </form>
                         </td>
                     </tr>
                     </tbody>

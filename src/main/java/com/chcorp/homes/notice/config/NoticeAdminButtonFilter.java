@@ -137,7 +137,7 @@ public class NoticeAdminButtonFilter extends OncePerRequestFilter {
                                        placeholder="목록에 표시될 짧은 설명을 입력하세요."
                                        required
                                        style="height: 48px; border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; font-size: 14px;">
-                                <small style="color: var(--muted); font-size: 13px;">summary는 최대 50자입니다.</small>
+                                <small style="color: var(--muted); font-size: 13px;"></small>
                             </div>
 
                             <div style="display: grid; gap: 8px;">

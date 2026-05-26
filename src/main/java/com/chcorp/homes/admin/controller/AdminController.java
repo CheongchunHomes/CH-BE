@@ -1,7 +1,9 @@
 package com.chcorp.homes.admin.controller;
 
-import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
+import com.chcorp.homes.community.repository.CommunityPostRepository;
+import com.chcorp.homes.community.service.CommunityService;
+import com.chcorp.homes.notice.repository.NoticeRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
 import com.chcorp.homes.subscription.repository.SubscriptionRepository;
 import com.chcorp.homes.users.entity.User;
@@ -13,10 +15,10 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import com.chcorp.homes.community.repository.CommunityPostRepository;
-import com.chcorp.homes.notice.repository.NoticeRepository;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -24,7 +26,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 @Controller
 @RequiredArgsConstructor
@@ -39,6 +40,7 @@ public class AdminController {
     private final SubscriptionRepository subscriptionRepository;
     private final PolicyRepository policyRepository;
     private final CommunityPostRepository communityPostRepository;
+    private final CommunityService communityService;
     private final NoticeRepository noticeRepository;
 
     @GetMapping
@@ -59,6 +61,12 @@ public class AdminController {
         model.addAttribute("sectionBadge", sectionLabel(currentSection));
 
         return "admin";
+    }
+
+    @PostMapping("/community/{postId}/delete")
+    public String deleteCommunityPost(@PathVariable Long postId) {
+        communityService.deletePostByAdmin(postId);
+        return "redirect:/admin?section=community";
     }
 
     private SectionView buildSectionView(String section) {
@@ -83,7 +91,6 @@ public class AdminController {
                     "노출 중인 공고의 지역, 유형, 상태를 관리합니다.",
                     buildAnnouncementTable()
             );
-
             case "policy" -> new SectionView(
                     "지원제도 리스트",
                     "노출 중인 지원제도의 유형, 상태를 관리합니다.",
@@ -159,6 +166,7 @@ public class AdminController {
                         statusLabel(user.getStatus())
                 ))
                 .toList();
+
         return new TableView(List.of("이메일", "닉네임", "권한", "상태"), rows);
     }
 
@@ -173,6 +181,7 @@ public class AdminController {
                         dateRange(item.getApplyStartDate(), item.getApplyEndDate())
                 ))
                 .toList();
+
         return new TableView(List.of("제목", "지역", "모집유형", "기간"), rows);
     }
 
@@ -187,6 +196,7 @@ public class AdminController {
                         safe(item.getStatus())
                 ))
                 .toList();
+
         return new TableView(List.of("제목", "지역", "모집유형", "상태"), rows);
     }
 
@@ -201,6 +211,7 @@ public class AdminController {
                         safe(item.getStatus())
                 ))
                 .toList();
+
         return new TableView(List.of("제목", "대분류", "소분류", "상태"), rows);
     }
 
@@ -210,6 +221,7 @@ public class AdminController {
         rows.add(row("신혼부부전용 전세자금대출", "PDF 생성 완료", "검토 필요", "15분 전"));
         rows.add(row("중소기업취업청년 전월세 보증금", "저장 완료", "진행 중", "31분 전"));
         rows.add(row("일반 버팀목전세자금대출", "다음 페이지 이동", "완료", "1시간 전"));
+
         return new TableView(List.of("상품", "단계", "상태", "업데이트"), rows);
     }
 
@@ -240,12 +252,14 @@ public class AdminController {
                         safe(post.getTitle()),
                         safe(post.getRegion()),
                         String.valueOf(post.getViewCount()),
-                        formatTime(post.getCreatedAt())
+                        formatTime(post.getCreatedAt()),
+                        String.valueOf(post.getPostId())
                 ))
                 .toList();
 
-        return new TableView(List.of("제목", "지역", "조회수", "작성일"), rows);
+        return new TableView(List.of("제목", "지역", "조회수", "작성일", "관리"), rows);
     }
+
     private TableView buildStatisticsTable() {
         List<User> users = userRepository.findAll();
 
@@ -319,8 +333,10 @@ public class AdminController {
         if (section == null || section.isBlank()) {
             return "overview";
         }
+
         return switch (section) {
-            case "overview", "users", "subscription", "loan", "announcement", "policy", "asset", "notice", "community", "simulation", "statistics", "settings" -> section;            default -> "overview";
+            case "overview", "users", "subscription", "loan", "announcement", "policy", "asset", "notice", "community", "simulation", "statistics", "settings" -> section;
+            default -> "overview";
         };
     }
 
@@ -345,6 +361,7 @@ public class AdminController {
         if (role == null) {
             return "-";
         }
+
         return switch (role) {
             case ADMIN -> "관리자";
             case USER -> "일반";
@@ -355,6 +372,7 @@ public class AdminController {
         if (status == null) {
             return "-";
         }
+
         return switch (status) {
             case enabled -> "활성";
             case disabled -> "비활성";
@@ -373,6 +391,7 @@ public class AdminController {
         if (instant == null) {
             return "-";
         }
+
         return TIME_FMT.format(instant.atZone(ZoneId.of("Asia/Seoul")));
     }
 
