@@ -2,12 +2,17 @@ package com.chcorp.homes.sign.service;
 
 import com.chcorp.homes.properties.entity.Property;
 import com.chcorp.homes.properties.repository.PropertyRepository;
+import com.chcorp.homes.diagnosis.entity.UserProfile;
+import com.chcorp.homes.diagnosis.repository.UserProfileRepository;
 import com.chcorp.homes.sign.dto.request.SignCreateRequestDTO;
+import com.chcorp.homes.sign.dto.response.SignContractResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignResponseDTO;
 import com.chcorp.homes.sign.entity.SignRequest;
 import com.chcorp.homes.sign.entity.SignStatus;
 import com.chcorp.homes.sign.repository.SignRepository;
+import com.chcorp.homes.users.entity.PersonalInfo;
 import com.chcorp.homes.users.entity.User;
+import com.chcorp.homes.users.repository.PersonalInfoRepository;
 import com.chcorp.homes.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +29,8 @@ public class SignService {
     private final SignRepository signRepository;
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
+    private final PersonalInfoRepository personalInfoRepository;
+    private final UserProfileRepository userProfileRepository;
 
     @Transactional(readOnly = true)
     public List<SignResponseDTO> myList(Long currentUserId) {
@@ -36,6 +43,25 @@ public class SignService {
                 .stream()
                 .map(SignResponseDTO::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public SignContractResponseDTO contractDetail(Long currentUserId, Long signId) {
+        validateCurrentUserId(currentUserId);
+
+        SignRequest signRequest = getSignRequest(signId);
+        validateParticipant(signRequest, currentUserId);
+
+        PersonalInfo providerInfo = personalInfoRepository.findByUserId(signRequest.getProvider().getId())
+                .orElse(null);
+        PersonalInfo customerInfo = personalInfoRepository.findByUserId(signRequest.getCustomer().getId())
+                .orElse(null);
+        UserProfile providerProfile = userProfileRepository.findByUserId(signRequest.getProvider().getId())
+                .orElse(null);
+        UserProfile customerProfile = userProfileRepository.findByUserId(signRequest.getCustomer().getId())
+                .orElse(null);
+
+        return SignContractResponseDTO.from(signRequest, providerInfo, customerInfo, providerProfile, customerProfile);
     }
 
     @Transactional

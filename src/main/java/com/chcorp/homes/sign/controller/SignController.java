@@ -1,6 +1,7 @@
 package com.chcorp.homes.sign.controller;
 
 import com.chcorp.homes.sign.dto.request.SignCreateRequestDTO;
+import com.chcorp.homes.sign.dto.response.SignContractResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignResponseDTO;
 import com.chcorp.homes.sign.service.SignService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,20 @@ public class SignController {
         Long currentUserId = Long.valueOf(authentication.getName());
 
         return ResponseEntity.ok(signService.myList(currentUserId));
+    }
+
+
+    /**
+     * 계약서 상세
+     * */
+    @GetMapping("/{signId}/contract")
+    public ResponseEntity<SignContractResponseDTO> contractDetail(
+            Authentication authentication,
+            @PathVariable Long signId
+    ) {
+        Long currentUserId = Long.valueOf(authentication.getName());
+
+        return ResponseEntity.ok(signService.contractDetail(currentUserId, signId));
     }
 
 
