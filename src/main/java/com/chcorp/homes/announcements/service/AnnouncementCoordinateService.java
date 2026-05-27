@@ -39,7 +39,7 @@ public class AnnouncementCoordinateService {
                 continue;
             }
 
-            announcement.updateCoordinate(
+            announcement.updateCoordinates(
                     coordinate.getLatitude(),
                     coordinate.getLongitude()
             );

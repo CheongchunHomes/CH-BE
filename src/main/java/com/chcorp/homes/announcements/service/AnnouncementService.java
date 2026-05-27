@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -344,8 +345,9 @@ public class AnnouncementService {
             String sourceType,
             String targetType,
             boolean deadlineSoon,
-            Double latitude,
-            Double longitude,
+            String areaType,
+            BigDecimal latitude,
+            BigDecimal longitude,
             String locationFilter,
             int page,
             int size
@@ -360,6 +362,7 @@ public class AnnouncementService {
                 latitude,
                 longitude,
                 normalize(locationFilter),
+                normalize(areaType),
                 page,
                 size
         );

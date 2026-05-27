@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.math.BigDecimal;
 import java.net.URI;
 
 @Service
@@ -66,8 +67,8 @@ public class KakaoGeocodingService {
 
             KakaoAddressResponse.Document document = body.getDocuments().get(0);
 
-            Double longitude = Double.valueOf(document.getX());
-            Double latitude = Double.valueOf(document.getY());
+            BigDecimal longitude = new BigDecimal(document.getX());
+            BigDecimal latitude = new BigDecimal(document.getY());
 
             return new Coordinate(latitude, longitude);
 
@@ -84,7 +85,7 @@ public class KakaoGeocodingService {
     @Getter
     @AllArgsConstructor
     public static class Coordinate {
-        private Double latitude;
-        private Double longitude;
+        private BigDecimal latitude;
+        private BigDecimal longitude;
     }
 }

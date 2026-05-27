@@ -2,15 +2,18 @@ package com.chcorp.homes.announcements.repository;
 
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.entity.QAnnouncement;
+import com.chcorp.homes.subscription.entity.QSubscriptionHouseType;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -27,13 +30,16 @@ public class AnnouncementQueryRepository {
             String sourceType,
             String targetType,
             boolean deadlineSoon,
-            Double latitude,
-            Double longitude,
+            BigDecimal latitude,
+            BigDecimal longitude,
             String locationFilter,
+            String areaType,
             int page,
             int size
     ) {
         QAnnouncement announcement = QAnnouncement.announcement;
+
+        QSubscriptionHouseType houseType = QSubscriptionHouseType.subscriptionHouseType;
 
         Pageable pageable = PageRequest.of(page, size);
 
@@ -74,6 +80,53 @@ public class AnnouncementQueryRepository {
                             .or(announcement.recuitmentType.containsIgnoreCase(keyword))
                             .or(announcement.targetType.containsIgnoreCase(keyword))
             );
+        }
+
+        // =========================
+        // 전용면적 필터
+        // subscription_house_types.exclusive_area 기준
+        // =========================
+        if (hasText(areaType) && !"전체".equals(areaType)) {
+            NumberExpression<Double> exclusiveAreaExpression = Expressions.numberTemplate(
+                    Double.class,
+                    "cast({0} as double)",
+                    houseType.exclusiveArea
+            );
+
+            BooleanBuilder areaCondition = new BooleanBuilder();
+
+            if ("39㎡ 이하".equals(areaType)) {
+                areaCondition.and(exclusiveAreaExpression.loe(39.0));
+            }
+
+            if ("40~59㎡".equals(areaType) || "40-59㎡".equals(areaType)) {
+                areaCondition.and(exclusiveAreaExpression.goe(40.0));
+                areaCondition.and(exclusiveAreaExpression.loe(59.0));
+            }
+
+            if ("60~84㎡".equals(areaType) || "60-84㎡".equals(areaType)) {
+                areaCondition.and(exclusiveAreaExpression.goe(60.0));
+                areaCondition.and(exclusiveAreaExpression.loe(84.0));
+            }
+
+            if ("85㎡ 이상".equals(areaType)) {
+                areaCondition.and(exclusiveAreaExpression.goe(85.0));
+            }
+
+            if (areaCondition.hasValue()) {
+                condition.and(
+                        JPAExpressions
+                                .selectOne()
+                                .from(houseType)
+                                .where(
+                                        houseType.announcementId.eq(announcement.announcementId),
+                                        houseType.exclusiveArea.isNotNull(),
+                                        houseType.exclusiveArea.isNotEmpty(),
+                                        areaCondition
+                                )
+                                .exists()
+                );
+            }
         }
 
         boolean useLocationFilter =

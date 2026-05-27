@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 
 @RequiredArgsConstructor    // AnnouncementService 주입
 @RequestMapping("/announcements")   // Postman 주소 앞 부분 일치
@@ -56,9 +58,10 @@ public class AnnouncementController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String sourceType,
             @RequestParam(required = false) String targetType,
-            @RequestParam(required = false) Double latitude,
-            @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) BigDecimal latitude,
+            @RequestParam(required = false) BigDecimal longitude,
             @RequestParam(required = false) String locationFilter,
+            @RequestParam(required = false) String areaType,
             @RequestParam(required = false, defaultValue = "false") boolean deadlineSoon,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
@@ -72,6 +75,7 @@ public class AnnouncementController {
                         sourceType,
                         targetType,
                         deadlineSoon,
+                        areaType,
                         latitude,
                         longitude,
                         locationFilter,

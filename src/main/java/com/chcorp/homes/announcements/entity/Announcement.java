@@ -25,7 +25,6 @@ public class Announcement extends MutableBaseEntity {
     @Column(name = "external_id")
     private String externalId;      // API의 pblanId
 
-
     @Column(name = "pblanc_no")
     private String pblancNo;         // 청약홈 공고번호
 
@@ -115,16 +114,20 @@ public class Announcement extends MutableBaseEntity {
     private LocalDate przwnerPresnatnDe;    // 당첨자 발표일
 
     @Column(name = "surlus")
-    private Integer surlus;
+    private Integer surlus;         //  잔여세대 수 (예: "10세대")
 
 
     // =======================
     // 관리자 도메인 메서드
     // =======================
 
-    public void updateCoordinate(Double latitude, Double longitude) {
-        this.latitude = latitude == null ? null : BigDecimal.valueOf(latitude);
-        this.longitude = longitude == null ? null : BigDecimal.valueOf(longitude);
+    public void updateVisibility(Boolean isVisible) {
+        this.isVisible = isVisible;
+    }
+
+    public void updateCoordinates(BigDecimal latitude, BigDecimal longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public void updateAdminFields(String title, String region,
