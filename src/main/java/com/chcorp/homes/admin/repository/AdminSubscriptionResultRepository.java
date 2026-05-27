@@ -10,4 +10,8 @@ public interface AdminSubscriptionResultRepository extends JpaRepository<AdminSu
     List<AdminSubscriptionApplication> findByUserId(Long userId);
     List<AdminSubscriptionApplication> findByStatus(String status);
 
+    List<AdminSubscriptionApplication> findByUserIdAndStatus(Long userId, String status);
+
+
+
 }

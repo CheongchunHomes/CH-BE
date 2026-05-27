@@ -1,6 +1,7 @@
 package com.chcorp.homes.admin.controller;
 
 
+import com.chcorp.homes.admin.repository.AdminSubscriptionResultRepository;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
 import com.chcorp.homes.subscription.repository.SubscriptionRepository;
@@ -23,8 +24,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import com.chcorp.homes.admin.entity.SubscriptionApplication;
-import com.chcorp.homes.admin.repository.SubscriptionApplicationRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +39,6 @@ public class AdminController {
     private final AnnouncementRepository announcementRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final PolicyRepository policyRepository;
-    private final SubscriptionApplicationRepository subscriptionApplicationRepository;
 
     @GetMapping
     public String admin(@RequestParam(value = "section", defaultValue = "overview") String section, Model model) {
@@ -60,16 +58,6 @@ public class AdminController {
         model.addAttribute("sectionBadge", sectionLabel(currentSection));
 
         return "admin";
-    }
-
-    public ResponseEntity<String> updateSubscriptionResult(
-            @PathVariable Long subAppId,
-            @RequestParam String status) {
-        subscriptionApplicationRepository.findById(subAppId).ifPresent(app -> {
-            app.updateResult(status, java.time.LocalDateTime.now());
-            subscriptionApplicationRepository.save(app);
-        });
-        return ResponseEntity.ok("결과 업데이트 완료");
     }
 
     private SectionView buildSectionView(String section) {
@@ -94,13 +82,6 @@ public class AdminController {
                     "노출 중인 공고의 지역, 유형, 상태를 관리합니다.",
                     buildAnnouncementTable()
             );
-
-            case "subscription_result" -> new SectionView(
-                    "청약 신청 후 결과",
-                    "유저별 청약 당첨 · 낙첨 결과를 확인하고 관리합니다.",
-                    buildSubscriptionApplicationTable()
-            );
-
 
             case "policy" -> new SectionView(
                     "지원제도 리스트",
@@ -192,21 +173,6 @@ public class AdminController {
         return new TableView(List.of("제목", "지역", "모집유형", "기간"), rows);
     }
 
-    private TableView buildSubscriptionApplicationTable() {
-        List<TableRow> rows = subscriptionApplicationRepository
-                .findAll(Sort.by(Sort.Direction.DESC, "subAppId"))
-                .stream()
-                .limit(8)
-                .map(app -> row(
-                        String.valueOf(app.getUserId()),
-                        String.valueOf(app.getAnnouncementId()),
-                        safe(app.getStatus()),
-                        app.getAppliedAt() != null ? app.getAppliedAt().toString() : "-",
-                        app.getResultAt() != null ? app.getResultAt().toString() : "-"
-                ))
-                .toList();
-        return new TableView(List.of("유저ID","공고ID","상태","신청일","결과일"), rows);
-    }
 
     private TableView buildAnnouncementTable() {
         List<TableRow> rows = announcementRepository.findAll(Sort.by(Sort.Direction.DESC, "announcementId"))
@@ -261,8 +227,8 @@ public class AdminController {
                 menu("커뮤니티", "/admin?section=community", "community".equals(section), "게시글 관리"),
                 menu("시뮬레이션", "/admin?section=simulation", "simulation".equals(section), "진단 / 계산"),
                 menu("설정", "/admin?section=settings", "settings".equals(section), "권한 / 시스템"),
-                menu("청약결과", "/admin?section=subscription_result",
-                     "subscription_result".equals(section), "신청내역/당첨낙첨")
+                menu("청약결과", "/admin/subscription-result",
+                        "subscription_result".equals(section), "신청내역/당첨낙첨")
         );
     }
 
