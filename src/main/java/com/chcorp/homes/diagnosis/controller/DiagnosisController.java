@@ -40,13 +40,16 @@ public class DiagnosisController {
      * 저장된 프로필 조회
      * - 다시 진단하기 시 폼 복원용
      * - 추천 파트 프로필 기반 채점 시 활용
+     * - 프로필 없으면 204 No Content 반환
      */
     @GetMapping("/profile")
     public ResponseEntity<UserProfileResponseDTO> getMyProfile(
             Authentication authentication
     ) {
         Long userId = Long.valueOf(authentication.getName());
-        return ResponseEntity.ok(diagnosisService.getMyProfile(userId));
+        return diagnosisService.getMyProfile(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     /**
