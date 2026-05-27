@@ -29,7 +29,9 @@ public class ApplyhomeAnnouncementService {
 
     private static final String APPLYHOME_BASE_URL =
             "https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1/getUrbtyOfctlLttotPblancDetail";
+
     private static final int PER_PAGE = 100;
+    private static final String SOURCE_TYPE = "청약홈";
 
     @Transactional
     public void fetchApplyhome() {
@@ -66,25 +68,40 @@ public class ApplyhomeAnnouncementService {
                     break;
                 }
 
+                int savedCount = 0;
+                int duplicatedCount = 0;
+                int invalidCount = 0;
+
                 for (ApplyhomeApiResponse.Item item : items) {
                     String externalId = item.getPblancNo();
 
                     if (externalId == null || externalId.isBlank()) {
+                        invalidCount++;
                         log.warn("[청약홈] {}페이지 PBLANC_NO 없음 - 저장 건너뜀", page);
                         continue;
                     }
 
-//                    if (repository.existsByExternalId(externalId)) {
-//                        log.info("[청약홈] {}페이지 PBLANC_NO {} 이미 존재 - 저장 건너뜀", page, externalId);
-//                        continue;
-//                    }
+                    if (repository.existsBySourceTypeAndExternalId(SOURCE_TYPE, externalId)) {
+                        duplicatedCount++;
+                        log.info("[청약홈] {}페이지 PBLANC_NO={} 이미 존재 - 저장 건너뜀", page, externalId);
+                        continue;
+                    }
 
                     repository.save(toEntity(item));
+                    savedCount++;
                 }
 
-                log.info("[청약홈] {}페이지 완료", page);
+                log.info(
+                        "[청약홈] {}페이지 완료 - 저장 {}건, 중복 {}건, ID없음 {}건",
+                        page,
+                        savedCount,
+                        duplicatedCount,
+                        invalidCount
+                );
+
                 page++;
-            } catch(Exception e) {
+
+            } catch (Exception e) {
                 log.error("[청약홈] {}페이지 실패: {}", page, e.getMessage(), e);
                 break;
             }
@@ -116,7 +133,7 @@ public class ApplyhomeAnnouncementService {
 
         return Announcement.builder()
                 .externalId(item.getPblancNo())
-                .sourceType("청약홈")
+                .sourceType(SOURCE_TYPE)
                 .title(item.getHouseNm())
                 .status(finalStatus)
                 .region(item.getSubscrptAreaCodeNm())
@@ -137,10 +154,12 @@ public class ApplyhomeAnnouncementService {
 
     private LocalDate parseDate(String dateStr) {
         if (dateStr == null || dateStr.isBlank()) return null;
+
         try {
             if (dateStr.contains("-")) {
                 return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
             }
+
             return LocalDate.parse(dateStr, DateTimeFormatter.ofPattern("yyyyMMdd"));
         } catch (Exception e) {
             return null;

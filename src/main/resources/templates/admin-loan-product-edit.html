@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대출상품 수정 | 관리자</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('loan')}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">대출상품 수정</div>
+                <h2 th:text="${product.name}">대출상품</h2>
+                <p>상품명, 제공기관, 유형, 금리, 한도, 정책 여부를 수정한 뒤 저장합니다. 모든 금액은 만원 단위입니다.</p>
+            </div>
+            <div class="hero-actions">
+                <span class="pill">수정 화면</span>
+                <a class="button ghost" href="/admin/loan-products">목록으로</a>
+            </div>
+        </section>
+
+        <section class="panel">
+            <h3>상품 정보 수정</h3>
+            <p>상품명, 제공기관, 유형, 금리, 최저금리, 최대한도, 소득한도는 입력값으로 받고, 정책과 노출은 아래에서 선택합니다.</p>
+
+            <form th:action="@{/admin/loan-products/{loanId}/edit(loanId=${product.loanId})}" method="post">
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="externalCode">외부코드</label>
+                        <input id="externalCode" name="externalCode" type="text" th:value="${product.externalCode}" required>
+                    </div>
+                    <div class="field">
+                        <label for="provider">제공기관</label>
+                        <input id="provider" name="provider" type="text" th:value="${product.provider}" required>
+                    </div>
+                    <div class="field">
+                        <label for="name">상품명</label>
+                        <input id="name" name="name" type="text" th:value="${product.name}" required>
+                    </div>
+                    <div class="field">
+                        <label for="loanType">유형</label>
+                        <input id="loanType" name="loanType" type="text" th:value="${product.loanType}" required>
+                    </div>
+                    <div class="field">
+                        <label for="interestRate">금리(%)</label>
+                        <input id="interestRate" name="interestRate" type="number" step="0.001" th:value="${product.interestRate}">
+                    </div>
+                    <div class="field">
+                        <label for="interestRateMin">최저금리(%)</label>
+                        <input id="interestRateMin" name="interestRateMin" type="number" step="0.001" th:value="${product.interestRateMin}">
+                    </div>
+                    <div class="field">
+                        <label for="maxAmount">최대한도(만원)</label>
+                        <input id="maxAmount" name="maxAmount" type="number" th:value="${product.maxAmount}">
+                    </div>
+                    <div class="field">
+                        <label for="incomeLimit">소득한도(만원)</label>
+                        <input id="incomeLimit" name="incomeLimit" type="number" th:value="${product.incomeLimit}">
+                    </div>
+                    <div class="field full">
+                        <label for="conditions">조건</label>
+                        <textarea id="conditions" name="conditions" th:text="${product.conditions}"></textarea>
+                    </div>
+                </div>
+
+                <div class="radio-row">
+                    <div>
+                        <div class="section-label">정책대출</div>
+                        <div class="radio-group">
+                            <label><input type="radio" name="policyLoan" value="true" th:checked="${product.policyLoan}"> 예</label>
+                            <label><input type="radio" name="policyLoan" value="false" th:checked="${product.policyLoan == null or !product.policyLoan}"> 아니오</label>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="section-label">노출</div>
+                        <div class="radio-group">
+                            <label><input type="radio" name="visible" value="true" th:checked="${product.visible}"> 예</label>
+                            <label><input type="radio" name="visible" value="false" th:checked="${product.visible == null or !product.visible}"> 아니오</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-actions">
+                    <a class="button ghost" href="/admin/loan-products">취소</a>
+                    <button class="button" type="submit">수정 저장</button>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>
