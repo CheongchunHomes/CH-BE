@@ -42,7 +42,7 @@ public class SecurityConfig {
             "/policies",
             "/policies/**",
             "/simulator/**"
-//            ,"/**"   // 임시
+            ,"/**"   // 임시
     };
 
     @Bean

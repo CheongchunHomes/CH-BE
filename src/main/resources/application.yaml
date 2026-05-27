@@ -43,4 +43,4 @@ api:
     youth:
         service-key: ${API_POLICY_YOUTH_SERVICE_KEY}
   kakao:
-    rest-api-key: ${KAKAO_REST_API_KEY:}
+    rest-api-key: ${KAKAO_REST_API_KEY}

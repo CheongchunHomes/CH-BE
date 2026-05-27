@@ -301,8 +301,8 @@ public class AdminController {
                 new OverviewAction("유저 리스트", "가입 유저의 권한과 상태를 확인합니다.", "/admin?section=users"),
                 new OverviewAction("청약 리스트", "청약 공고와 모집 기간을 확인합니다.", "/admin?section=subscription"),
                 new OverviewAction("대출 리스트", "대출 계약과 서명 진행 상태를 확인합니다.", "/admin/loan"),
-                new OverviewAction("공고 리스트", "노출 중인 공고와 모집 유형을 확인합니다.", "/admin?section=announcement"),
-                new OverviewAction("지원제도 리스트", "노출 중인 지원제도와 모집 유형을 확인합니다.", "/admin?section=policy")
+                new OverviewAction("공고 리스트", "노출 중인 공고와 모집 유형을 확인합니다.", "/admin/announcements"),
+                new OverviewAction("지원제도 리스트", "노출 중인 지원제도와 모집 유형을 확인합니다.", "/admin/policies")
         );
     }
 
