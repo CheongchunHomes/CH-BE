@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
@@ -19,8 +20,11 @@ public class NoticeAdminController {
     private final NoticeService noticeService;
 
     @PostMapping("/admin/notice/write")
-    public String createNotice(NoticeCreateRequestDTO request) {
-        noticeService.createNoticeFromAdmin(request);
+    public String createNotice(
+            NoticeCreateRequestDTO request,
+            @RequestParam(value = "important", required = false) List<String> importantValues
+    ) {
+        noticeService.createNoticeFromAdmin(normalizeImportant(request, importantValues));
 
         return "redirect:/admin?section=notice&saved=true";
     }
@@ -34,9 +38,10 @@ public class NoticeAdminController {
     @PostMapping("/admin/notice/{noticeId}/edit")
     public String updateNotice(
             @PathVariable Long noticeId,
-            NoticeCreateRequestDTO request
+            NoticeCreateRequestDTO request,
+            @RequestParam(value = "important", required = false) List<String> importantValues
     ) {
-        noticeService.updateNoticeFromAdmin(noticeId, request);
+        noticeService.updateNoticeFromAdmin(noticeId, normalizeImportant(request, importantValues));
 
         return "redirect:/admin?section=notice&updated=true";
     }
@@ -46,5 +51,20 @@ public class NoticeAdminController {
         noticeService.deleteNoticeFromAdmin(noticeId);
 
         return "redirect:/admin?section=notice&deleted=true";
+    }
+
+    private NoticeCreateRequestDTO normalizeImportant(
+            NoticeCreateRequestDTO request,
+            List<String> importantValues
+    ) {
+        boolean important = importantValues != null && importantValues.contains("true");
+
+        return new NoticeCreateRequestDTO(
+                request.category(),
+                request.title(),
+                request.summary(),
+                request.content(),
+                important
+        );
     }
 }

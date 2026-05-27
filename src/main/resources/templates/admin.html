@@ -439,6 +439,7 @@
             }
         }
     </style>
+    <th:block th:if="${section == 'notice'}" th:replace="~{admin/notice-fragments :: styles}"></th:block>
 </head>
 <body>
 <div class="layout">
@@ -475,6 +476,15 @@
                 </p>
             </div>
             <div class="hero-actions">
+                <button
+                        type="button"
+                        class="button"
+                        th:if="${section == 'notice'}"
+                        onclick="showNoticeWritePanel()"
+                        style="border: 0; cursor: pointer;"
+                >
+                    공지사항 등록
+                </button>
                 <span class="pill">실시간 반영</span>
                 <a class="button" th:href="@{/admin(section=${section})}">새로고침</a>
             </div>
@@ -522,11 +532,15 @@
                     <h3 th:text="${sectionTitle}">리스트</h3>
                     <p th:text="${sectionDescription}">설명</p>
                 </div>
-                <span class="pill">총 <span th:text="${#lists.size(tableRows)}">0</span>건</span>
+                <div class="hero-actions">
+                    <span class="pill" th:if="${section == 'notice' and noticeUpdated}">공지사항이 수정되었습니다.</span>
+                    <span class="pill" th:if="${section == 'notice' and noticeDeleted}">공지사항이 삭제되었습니다.</span>
+                    <span class="pill">총 <span th:text="${#lists.size(tableRows)}">0</span>건</span>
+                </div>
             </div>
 
             <div class="table-scroll" th:if="${!#lists.isEmpty(tableRows)}">
-                <table>
+                <table th:if="${section != 'notice'}">
                     <thead>
                     <tr>
                         <th th:each="header : ${tableHeaders}" th:text="${header}">헤더</th>
@@ -555,13 +569,18 @@
                     </tr>
                     </tbody>
                 </table>
+
+                <th:block th:if="${section == 'notice'}" th:replace="~{admin/notice-fragments :: noticeTable}"></th:block>
             </div>
 
             <div class="empty-state" th:if="${#lists.isEmpty(tableRows)}">
                 표시할 데이터가 아직 없습니다.
             </div>
         </section>
+
+        <th:block th:if="${section == 'notice'}" th:replace="~{admin/notice-fragments :: noticePanels}"></th:block>
     </main>
 </div>
+<th:block th:if="${section == 'notice'}" th:replace="~{admin/notice-fragments :: noticeScript}"></th:block>
 </body>
 </html>

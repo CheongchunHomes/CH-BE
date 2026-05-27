@@ -42,7 +42,7 @@ public class NoticeService {
                 .title(request.title())
                 .summary(request.summary())
                 .content(request.content())
-                .important(request.important())
+                .important(Boolean.TRUE.equals(request.important()))
                 .viewCount(0)
                 .build();
 
@@ -61,7 +61,7 @@ public class NoticeService {
                 request.title(),
                 request.summary(),
                 request.content(),
-                request.important()
+                Boolean.TRUE.equals(request.important())
         );
 
         return NoticeResponseDTO.from(notice);

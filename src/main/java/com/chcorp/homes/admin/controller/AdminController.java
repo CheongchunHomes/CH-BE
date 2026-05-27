@@ -44,7 +44,13 @@ public class AdminController {
     private final NoticeRepository noticeRepository;
 
     @GetMapping
-    public String admin(@RequestParam(value = "section", defaultValue = "overview") String section, Model model) {
+    public String admin(
+            @RequestParam(value = "section", defaultValue = "overview") String section,
+            @RequestParam(value = "saved", defaultValue = "false") boolean saved,
+            @RequestParam(value = "updated", defaultValue = "false") boolean updated,
+            @RequestParam(value = "deleted", defaultValue = "false") boolean deleted,
+            Model model
+    ) {
         String currentSection = normalizeSection(section);
         SectionView sectionView = buildSectionView(currentSection);
 
@@ -59,6 +65,10 @@ public class AdminController {
         model.addAttribute("tableHeaders", sectionView.tableView().headers());
         model.addAttribute("tableRows", sectionView.tableView().rows());
         model.addAttribute("sectionBadge", sectionLabel(currentSection));
+        model.addAttribute("noticeRows", "notice".equals(currentSection) ? buildNoticeRows() : List.of());
+        model.addAttribute("noticeSaved", saved);
+        model.addAttribute("noticeUpdated", updated);
+        model.addAttribute("noticeDeleted", deleted);
 
         return "admin";
     }
@@ -166,7 +176,6 @@ public class AdminController {
                         statusLabel(user.getStatus())
                 ))
                 .toList();
-
         return new TableView(List.of("이메일", "닉네임", "권한", "상태"), rows);
     }
 
@@ -181,7 +190,6 @@ public class AdminController {
                         dateRange(item.getApplyStartDate(), item.getApplyEndDate())
                 ))
                 .toList();
-
         return new TableView(List.of("제목", "지역", "모집유형", "기간"), rows);
     }
 
@@ -196,7 +204,6 @@ public class AdminController {
                         safe(item.getStatus())
                 ))
                 .toList();
-
         return new TableView(List.of("제목", "지역", "모집유형", "상태"), rows);
     }
 
@@ -211,7 +218,6 @@ public class AdminController {
                         safe(item.getStatus())
                 ))
                 .toList();
-
         return new TableView(List.of("제목", "대분류", "소분류", "상태"), rows);
     }
 
@@ -221,7 +227,6 @@ public class AdminController {
         rows.add(row("신혼부부전용 전세자금대출", "PDF 생성 완료", "검토 필요", "15분 전"));
         rows.add(row("중소기업취업청년 전월세 보증금", "저장 완료", "진행 중", "31분 전"));
         rows.add(row("일반 버팀목전세자금대출", "다음 페이지 이동", "완료", "1시간 전"));
-
         return new TableView(List.of("상품", "단계", "상태", "업데이트"), rows);
     }
 
@@ -243,7 +248,21 @@ public class AdminController {
 
         return new TableView(List.of("제목", "분류", "구분", "작성일"), rows);
     }
-
+    private List<AdminNoticeRow> buildNoticeRows() {
+        return noticeRepository.findAll(Sort.by(Sort.Direction.DESC, "noticeId"))
+                .stream()
+                .limit(8)
+                .map(notice -> new AdminNoticeRow(
+                        notice.getNoticeId(),
+                        safe(notice.getTitle()),
+                        safe(notice.getCategory()),
+                        safe(notice.getSummary()),
+                        safe(notice.getContent()),
+                        notice.isImportant(),
+                        formatTime(notice.getCreatedAt())
+                ))
+                .toList();
+    }
     private TableView buildCommunityTable() {
         List<TableRow> rows = communityPostRepository.findAll(Sort.by(Sort.Direction.DESC, "postId"))
                 .stream()
@@ -256,10 +275,8 @@ public class AdminController {
                         String.valueOf(post.getPostId())
                 ))
                 .toList();
-
         return new TableView(List.of("제목", "지역", "조회수", "작성일", "관리"), rows);
     }
-
     private TableView buildStatisticsTable() {
         List<User> users = userRepository.findAll();
 
@@ -279,10 +296,8 @@ public class AdminController {
                 row("탈퇴/비활성 회원", String.valueOf(disabledUsers), "비활성 처리된 회원 수", "대기"),
                 row("상품 클릭률", "-", "상품 클릭 로그 또는 클릭 수 필드 확인 필요", "대기")
         );
-
         return new TableView(List.of("항목", "값", "설명", "상태"), rows);
     }
-
     private List<MenuItem> buildMenuItems(String section) {
         return List.of(
                 menu("관리자 메인", "/admin", "overview".equals(section), "전체 현황"),
@@ -420,4 +435,14 @@ public class AdminController {
     public record TableRow(List<String> columns) {}
 
     public record TableView(List<String> headers, List<TableRow> rows) {}
+
+    public record AdminNoticeRow(
+            Long noticeId,
+            String title,
+            String category,
+            String summary,
+            String content,
+            boolean important,
+            String createdAt
+    ) {}
 }

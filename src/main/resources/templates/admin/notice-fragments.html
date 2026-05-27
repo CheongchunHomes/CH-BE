@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style th:fragment="styles">
+        .notice-action-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        table th:last-child,
+        table td:last-child {
+            text-align: center;
+            width: 150px;
+        }
+
+        .notice-edit-button {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: #ffffff;
+            color: #475569;
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.18s ease;
+        }
+
+        .notice-edit-button:hover {
+            background: #f8fbff;
+        }
+
+        .notice-form-body {
+            padding: 24px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .notice-form-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 210px;
+            gap: 14px;
+            align-items: end;
+        }
+
+        .notice-field {
+            display: grid;
+            gap: 8px;
+        }
+
+        .notice-field label,
+        .notice-check-label {
+            font-weight: 800;
+            color: #334155;
+        }
+
+        .notice-field input,
+        .notice-field select,
+        .notice-field textarea {
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 0 14px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .notice-field input,
+        .notice-field select {
+            height: 48px;
+        }
+
+        .notice-field textarea {
+            min-height: 220px;
+            padding: 14px;
+            resize: vertical;
+            line-height: 1.7;
+        }
+
+        .notice-check-label {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: #f8fbff;
+            white-space: nowrap;
+        }
+
+        .notice-form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 8px;
+        }
+
+        .notice-cancel-button {
+            height: 46px;
+            padding: 0 18px;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+            background: white;
+            color: #475569;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        @media (max-width: 1200px) {
+            .notice-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<th:block th:fragment="noticeTable">
+    <table th:if="${section == 'notice'}">
+        <thead>
+        <tr>
+            <th>제목</th>
+            <th>분류</th>
+            <th>구분</th>
+            <th>작성일</th>
+            <th>관리</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="notice : ${noticeRows}">
+            <td th:text="${notice.title}">공지사항 제목</td>
+            <td th:text="${notice.category}">운영자 안내</td>
+            <td>
+                <span
+                        class="row-badge"
+                        th:text="${notice.important} ? '중요' : '일반'"
+                >
+                    일반
+                </span>
+            </td>
+            <td th:text="${notice.createdAt}">01.01 12:00</td>
+            <td>
+                <div class="notice-action-cell">
+                    <button
+                            type="button"
+                            class="notice-edit-button"
+                            th:data-id="${notice.noticeId}"
+                            th:data-category="${notice.category}"
+                            th:data-title="${notice.title}"
+                            th:data-summary="${notice.summary}"
+                            th:data-content="${notice.content}"
+                            th:data-important="${notice.important}"
+                            onclick="showNoticeEditPanel(this)"
+                    >
+                        수정
+                    </button>
+
+                    <form
+                            class="delete-form"
+                            method="post"
+                            th:action="@{/admin/notice/{noticeId}/delete(noticeId=${notice.noticeId})}"
+                            onsubmit="return confirm('정말 이 공지사항을 삭제하시겠습니까?');"
+                    >
+                        <button type="submit" class="delete-button">삭제</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</th:block>
+
+<th:block th:fragment="noticePanels">
+    <section
+            id="notice-write-panel"
+            class="table-panel"
+            th:if="${section == 'notice'}"
+            style="display: none;"
+    >
+        <div class="table-head">
+            <div>
+                <h3>공지사항 등록</h3>
+                <p>청년홈즈 사용자에게 보여줄 공지사항을 등록합니다.</p>
+            </div>
+            <button type="button" class="button" onclick="showNoticeListPanel()" style="border: 0; cursor: pointer;">
+                목록으로
+            </button>
+        </div>
+
+        <form method="post" action="/admin/notice/write" class="notice-form-body">
+            <div
+                    class="pill"
+                    th:if="${noticeSaved}"
+                    style="display: inline-flex; width: fit-content;"
+            >
+                공지사항이 등록되었습니다.
+            </div>
+
+            <div class="notice-form-grid">
+                <div class="notice-field">
+                    <label>분류</label>
+                    <select name="category">
+                        <option value="운영자 안내">운영자 안내</option>
+                        <option value="정책 변경">정책 변경</option>
+                        <option value="점검">점검</option>
+                        <option value="업데이트">업데이트</option>
+                        <option value="약관 변경">약관 변경</option>
+                    </select>
+                </div>
+
+                <label class="notice-check-label">
+                    <input type="hidden" name="important" value="false">
+                    <input type="checkbox" name="important" value="true">
+                    중요 공지 표시
+                </label>
+            </div>
+
+            <div class="notice-field">
+                <label>제목</label>
+                <input
+                        type="text"
+                        name="title"
+                        maxlength="200"
+                        placeholder="공지사항 제목을 입력하세요."
+                        required
+                >
+            </div>
+
+            <div class="notice-field">
+                <label>요약</label>
+                <input
+                        type="text"
+                        name="summary"
+                        maxlength="50"
+                        placeholder="목록에 표시될 짧은 설명을 입력하세요."
+                        required
+                >
+            </div>
+
+            <div class="notice-field">
+                <label>내용</label>
+                <textarea
+                        name="content"
+                        placeholder="공지사항 상세 내용을 입력하세요."
+                        required
+                ></textarea>
+            </div>
+
+            <div class="notice-form-actions">
+                <button type="button" class="notice-cancel-button" onclick="showNoticeListPanel()">취소</button>
+                <button type="submit" class="button" style="height: 46px; border: 0; cursor: pointer;">등록하기</button>
+            </div>
+        </form>
+    </section>
+
+    <section
+            id="notice-edit-panel"
+            class="table-panel"
+            th:if="${section == 'notice'}"
+            style="display: none;"
+    >
+        <div class="table-head">
+            <div>
+                <h3>공지사항 수정</h3>
+                <p>선택한 공지사항 내용을 수정합니다.</p>
+            </div>
+            <button type="button" class="button" onclick="showNoticeListPanel()" style="border: 0; cursor: pointer;">
+                목록으로
+            </button>
+        </div>
+
+        <form id="notice-edit-form" method="post" action="" class="notice-form-body">
+            <div class="notice-form-grid">
+                <div class="notice-field">
+                    <label>분류</label>
+                    <select id="notice-edit-category" name="category">
+                        <option value="운영자 안내">운영자 안내</option>
+                        <option value="정책 변경">정책 변경</option>
+                        <option value="점검">점검</option>
+                        <option value="업데이트">업데이트</option>
+                        <option value="약관 변경">약관 변경</option>
+                    </select>
+                </div>
+
+                <label class="notice-check-label">
+                    <input type="hidden" name="important" value="false">
+                    <input id="notice-edit-important" type="checkbox" name="important" value="true">
+                    중요 공지 표시
+                </label>
+            </div>
+
+            <div class="notice-field">
+                <label>제목</label>
+                <input id="notice-edit-title" type="text" name="title" maxlength="200" required>
+            </div>
+
+            <div class="notice-field">
+                <label>요약</label>
+                <input id="notice-edit-summary" type="text" name="summary" maxlength="50" required>
+            </div>
+
+            <div class="notice-field">
+                <label>내용</label>
+                <textarea id="notice-edit-content" name="content" required></textarea>
+            </div>
+
+            <div class="notice-form-actions">
+                <button type="button" class="notice-cancel-button" onclick="showNoticeListPanel()">취소</button>
+                <button type="submit" class="button" style="height: 46px; border: 0; cursor: pointer;">수정하기</button>
+            </div>
+        </form>
+    </section>
+</th:block>
+
+<th:block th:fragment="noticeScript">
+    <script th:if="${section == 'notice'}">
+        function showNoticeWritePanel() {
+            const listPanel = document.querySelector('section.table-panel');
+            const writePanel = document.getElementById('notice-write-panel');
+            const editPanel = document.getElementById('notice-edit-panel');
+
+            if (listPanel) {
+                listPanel.style.display = 'none';
+            }
+
+            if (editPanel) {
+                editPanel.style.display = 'none';
+            }
+
+            if (writePanel) {
+                writePanel.style.display = 'block';
+            }
+
+            updateNoticeHero('공지사항 등록', '공지사항 등록', '서비스 공지사항을 새로 등록합니다.');
+        }
+
+        function showNoticeEditPanel(button) {
+            const noticeId = button.dataset.id;
+            const listPanel = document.querySelector('section.table-panel');
+            const writePanel = document.getElementById('notice-write-panel');
+            const editPanel = document.getElementById('notice-edit-panel');
+            const form = document.getElementById('notice-edit-form');
+
+            if (listPanel) {
+                listPanel.style.display = 'none';
+            }
+
+            if (writePanel) {
+                writePanel.style.display = 'none';
+            }
+
+            if (editPanel) {
+                editPanel.style.display = 'block';
+            }
+
+            if (form) {
+                form.action = '/admin/notice/' + noticeId + '/edit';
+            }
+
+            document.getElementById('notice-edit-category').value = button.dataset.category || '운영자 안내';
+            document.getElementById('notice-edit-title').value = button.dataset.title || '';
+            document.getElementById('notice-edit-summary').value = button.dataset.summary || '';
+            document.getElementById('notice-edit-content').value = button.dataset.content || '';
+            document.getElementById('notice-edit-important').checked = button.dataset.important === 'true';
+
+            updateNoticeHero('공지사항 수정', '공지사항 수정', '선택한 공지사항 내용을 수정합니다.');
+        }
+
+        function showNoticeListPanel() {
+            const listPanel = document.querySelector('section.table-panel');
+            const writePanel = document.getElementById('notice-write-panel');
+            const editPanel = document.getElementById('notice-edit-panel');
+
+            if (listPanel) {
+                listPanel.style.display = 'block';
+            }
+
+            if (writePanel) {
+                writePanel.style.display = 'none';
+            }
+
+            if (editPanel) {
+                editPanel.style.display = 'none';
+            }
+
+            updateNoticeHero('공지사항 관리', '공지사항 관리', '서비스 공지사항을 등록하고 확인합니다.');
+        }
+
+        function updateNoticeHero(badgeText, titleText, descText) {
+            const title = document.querySelector('.hero h2');
+            const desc = document.querySelector('.hero p');
+            const badge = document.querySelector('.eyebrow');
+
+            if (badge) {
+                badge.textContent = badgeText;
+            }
+
+            if (title) {
+                title.textContent = titleText;
+            }
+
+            if (desc) {
+                desc.textContent = descText;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            const params = new URLSearchParams(window.location.search);
+
+            if (params.get('saved') === 'true') {
+                showNoticeWritePanel();
+            }
+
+            if (params.get('updated') === 'true' || params.get('deleted') === 'true') {
+                showNoticeListPanel();
+            }
+        });
+    </script>
+</th:block>
+</body>
+</html>
