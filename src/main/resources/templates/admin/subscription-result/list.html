@@ -67,31 +67,9 @@
 </head>
 <body>
 <div class="layout">
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-badge">H</div>
-            <div>
-                <h1>관리자 메인</h1>
-                <p>청년 주거 통합 관리</p>
-            </div>
-        </div>
-        <div>
-            <div class="menu-title">메뉴 리스트</div>
-            <div class="menu-list">
-                <a class="menu-item" href="/admin"><strong>관리자 메인</strong><span>전체 현황</span></a>
-                <a class="menu-item" href="/admin?section=users"><strong>유저</strong><span>유저 리스트</span></a>
-                <a class="menu-item" href="/admin?section=subscription"><strong>청약</strong><span>청약 리스트</span></a>
-                <a class="menu-item" href="/admin?section=loan"><strong>대출</strong><span>대출 리스트</span></a>
-                <a class="menu-item" href="/admin/announcements"><strong>공고</strong><span>공고 리스트</span></a>
-                <a class="menu-item" href="/admin/policies"><strong>제도</strong><span>지원제도 리스트</span></a>
-                <a class="menu-item" href="/admin?section=community"><strong>커뮤니티</strong><span>게시글 관리</span></a>
-                <a class="menu-item" href="/admin?section=notice"><strong>공지사항</strong><span>공지사항 관리</span></a>
-                <a class="menu-item" href="/admin?section=statistics"><strong>통계</strong><span>통계 리포트</span></a>
-                <a class="menu-item active" href="/admin/subscription-result"><strong>청약결과</strong><span>신청내역/당첨낙첨</span></a>
-                <a class="menu-item" href="/admin?section=settings"><strong>설정</strong><span>권한 / 시스템</span></a>
-            </div>
-        </div>
-    </aside>
+
+    <!-- 공통 사이드바 fragment로 교체 -->
+    <aside th:replace="~{admin/fragments/layout :: sidebar('subscription_result')}"></aside>
 
     <main class="content">
         <section class="hero">
@@ -117,7 +95,6 @@
 
         <section class="table-panel">
             <div class="table-head">
-
                 <div>
                     <h3>청약 신청 목록</h3>
                     <p>신청한 유저의 당첨 · 낙첨 결과를 처리합니다.</p>
