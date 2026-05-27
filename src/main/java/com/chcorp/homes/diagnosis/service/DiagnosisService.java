@@ -123,10 +123,9 @@ public class DiagnosisService {
 
 
     // ── 프로필 조회 ──────────────────────────────
-    public UserProfileResponseDTO getMyProfile(Long userId) {
-        UserProfile profile = userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("프로필이 없습니다."));
-        return UserProfileResponseDTO.from(profile);
+    public Optional<UserProfileResponseDTO> getMyProfile(Long userId) {
+        return userProfileRepository.findByUserId(userId)
+                .map(UserProfileResponseDTO::from);
     }
 
 }
