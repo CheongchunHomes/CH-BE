@@ -1,7 +1,9 @@
 package com.chcorp.homes.admin.controller;
 
-
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
+import com.chcorp.homes.community.repository.CommunityPostRepository;
+import com.chcorp.homes.community.service.CommunityService;
+import com.chcorp.homes.notice.repository.NoticeRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
 import com.chcorp.homes.properties.repository.PropertyRepository;
 import com.chcorp.homes.subscription.repository.SubscriptionRepository;
@@ -26,9 +28,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -43,6 +42,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final AnnouncementRepository announcementRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final PropertyRepository propertyRepository;
     private final PolicyRepository policyRepository;
     private final CommunityPostRepository communityPostRepository;
     private final CommunityService communityService;
@@ -116,7 +116,6 @@ public class AdminController {
                     "노출 중인 공고의 지역, 유형, 상태를 관리합니다.",
                     buildAnnouncementTable()
             );
-
             case "policy" -> new SectionView(
                     "지원제도 리스트",
                     "노출 중인 지원제도의 유형, 상태를 관리합니다.",
@@ -192,6 +191,7 @@ public class AdminController {
                         statusLabel(user.getStatus())
                 ))
                 .toList();
+
         return new TableView(List.of("이메일", "닉네임", "권한", "상태"), rows);
     }
 
@@ -300,13 +300,10 @@ public class AdminController {
 
     private TableView buildStatisticsTable() {
         List<User> users = userRepository.findAll();
-
         long totalUsers = users.size();
-
         long enabledUsers = users.stream()
                 .filter(user -> user.getStatus() == UserStatus.enabled)
                 .count();
-
         long disabledUsers = users.stream()
                 .filter(user -> user.getStatus() == UserStatus.disabled)
                 .count();
@@ -317,10 +314,8 @@ public class AdminController {
                 row("탈퇴/비활성 회원", String.valueOf(disabledUsers), "비활성 처리된 회원 수", "대기"),
                 row("상품 클릭률", "-", "상품 클릭 로그 또는 클릭 수 필드 확인 필요", "대기")
         );
-    }
 
-    private TableView buildStaticTable(List<String> headers, List<TableRow> rows) {
-        return new TableView(headers, rows);
+        return new TableView(List.of("항목", "값", "설명", "상태"), rows);
     }
 
     private List<MenuItem> buildMenuItems(String section) {
@@ -328,7 +323,8 @@ public class AdminController {
                 menu("관리자 메인", "/admin", "overview".equals(section), "전체 현황"),
                 menu("유저", "/admin?section=users", "users".equals(section), "유저 리스트"),
                 menu("물건 관리", "/admin/properties", false, "임대 물건 관리"),
-                menu("대출", "/admin?section=loan", "loan".equals(section), "대출 리스트"),
+                menu("청약", "/admin?section=subscription", "subscription".equals(section), "청약 리스트"),
+                menu("대출", "/admin/loan", "loan".equals(section), "대출 허브"),
                 menu("공고", "/admin/announcements", "announcement".equals(section), "공고 리스트"),
                 menu("제도", "/admin/policies", "policy".equals(section), "지원제도 리스트"),
                 menu("자산", "/admin?section=asset", "asset".equals(section), "파일 관리"),
@@ -336,7 +332,8 @@ public class AdminController {
                 menu("공지사항", "/admin?section=notice", "notice".equals(section), "공지사항 관리"),
                 menu("시뮬레이션", "/admin?section=simulation", "simulation".equals(section), "진단 / 계산"),
                 menu("통계 리포트", "/admin?section=statistics", "statistics".equals(section), "로그 / 통계"),
-                menu("설정", "/admin?section=settings", "settings".equals(section), "권한 / 시스템")
+                menu("설정", "/admin?section=settings", "settings".equals(section), "권한 / 시스템"),
+                menu("청약결과", "/admin/subscription-result", "subscription_result".equals(section), "신청내역/당첨낙첨")
         );
     }
 
@@ -344,19 +341,19 @@ public class AdminController {
         return List.of(
                 new StatCard("등록 유저", String.valueOf(userRepository.count()), "전체"),
                 new StatCard("임대 물건", String.valueOf(propertyRepository.count()), "전체"),
-                new StatCard("노출 공고", String.valueOf(announcementRepository.count()), "전체"),
-                new StatCard("노출 제도", String.valueOf(policyRepository.count()), "전체"),
-                new StatCard("계약 진행", "27", "오늘")
+                new StatCard("청약 공고", String.valueOf(subscriptionRepository.count()), "누적"),
+                new StatCard("노출 공고", String.valueOf(announcementRepository.count()), "누적"),
+                new StatCard("노출 제도", String.valueOf(policyRepository.count()), "누적")
         );
     }
 
     private List<OverviewAction> buildOverviewActions() {
         return List.of(
                 new OverviewAction("유저 리스트", "가입 유저의 권한과 상태를 확인합니다.", "/admin?section=users"),
-                new OverviewAction("물건 관리", "지도와 상세페이지에 노출될 임대 물건을 관리합니다.", "/admin/properties"),
-                new OverviewAction("대출 리스트", "대출 계약과 서명 진행 상태를 확인합니다.", "/admin?section=loan"),
-                new OverviewAction("공고 리스트", "노출 중인 공고와 모집 유형을 확인합니다.", "/admin/announcements"),
-                new OverviewAction("지원제도 리스트", "노출 중인 지원제도와 모집 유형을 확인합니다.", "/admin/policies")
+                new OverviewAction("물건 관리", "지도와 상세페이지에 노출할 임대 물건을 관리합니다.", "/admin/properties"),
+                new OverviewAction("청약 리스트", "청약 공고와 모집 기간을 확인합니다.", "/admin?section=subscription"),
+                new OverviewAction("대출 리스트", "대출 계약과 서명 진행 상태를 확인합니다.", "/admin/loan"),
+                new OverviewAction("공고 리스트", "노출 중인 공고와 모집 유형을 확인합니다.", "/admin/announcements")
         );
     }
 
@@ -369,13 +366,54 @@ public class AdminController {
         );
     }
 
+    private long pagedTotalCount(String section) {
+        return switch (section) {
+            case "notice" -> noticeRepository.count();
+            case "community" -> communityPostRepository.count();
+            default -> 0;
+        };
+    }
+
+    private int normalizePage(int page, long totalCount) {
+        int maxPage = totalPages(totalCount);
+        int requestedPage = Math.max(page, 1);
+        return Math.min(requestedPage, maxPage);
+    }
+
+    private int totalPages(long totalCount) {
+        if (totalCount <= 0) {
+            return 1;
+        }
+
+        int calculatedPages = (int) Math.ceil((double) totalCount / ADMIN_PAGE_SIZE);
+        return Math.min(calculatedPages, ADMIN_MAX_PAGES);
+    }
+
+    private PaginationView buildPagination(String section, int currentPage, long totalCount) {
+        int totalPages = totalPages(totalCount);
+        List<Integer> pageNumbers = totalCount <= 0
+                ? List.of()
+                : java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList();
+
+        return new PaginationView(
+                section,
+                currentPage,
+                totalPages,
+                pageNumbers,
+                totalCount > 0 && currentPage > 1,
+                totalCount > 0 && currentPage < totalPages
+        );
+    }
+
     private String normalizeSection(String section) {
         if (section == null || section.isBlank()) {
             return "overview";
         }
 
         return switch (section) {
-            case "overview", "users", "subscription", "loan", "announcement", "policy", "asset", "notice", "community", "simulation", "statistics", "settings" -> section;            default -> "overview";
+            case "overview", "users", "subscription", "subscription_result", "loan", "announcement", "policy",
+                 "asset", "notice", "community", "simulation", "statistics", "settings" -> section;
+            default -> "overview";
         };
     }
 
@@ -383,6 +421,7 @@ public class AdminController {
         return switch (section) {
             case "users" -> "유저 리스트";
             case "subscription" -> "청약 리스트";
+            case "subscription_result" -> "청약 결과";
             case "loan" -> "대출 리스트";
             case "announcement" -> "공고 리스트";
             case "policy" -> "지원제도 리스트";
@@ -443,17 +482,45 @@ public class AdminController {
         return new TableRow(List.of(cells));
     }
 
-    private record SectionView(String title, String description, TableView tableView) {}
+    private record SectionView(String title, String description, TableView tableView) {
+    }
 
-    public record MenuItem(String label, String href, boolean active, String description) {}
+    public record MenuItem(String label, String href, boolean active, String description) {
+    }
 
-    public record StatCard(String label, String value, String meta) {}
+    public record StatCard(String label, String value, String meta) {
+    }
 
-    public record OverviewAction(String title, String description, String href) {}
+    public record OverviewAction(String title, String description, String href) {
+    }
 
-    public record RecentLog(String title, String detail, String time) {}
+    public record RecentLog(String title, String detail, String time) {
+    }
 
-    public record TableRow(List<String> columns) {}
+    public record TableRow(List<String> columns) {
+    }
 
-    public record TableView(List<String> headers, List<TableRow> rows) {}
+    public record TableView(List<String> headers, List<TableRow> rows) {
+    }
+
+    public record PaginationView(
+            String section,
+            int currentPage,
+            int totalPages,
+            List<Integer> pageNumbers,
+            boolean hasPrevious,
+            boolean hasNext
+    ) {
+    }
+
+    public record AdminNoticeRow(
+            Long noticeId,
+            String title,
+            String category,
+            String summary,
+            String content,
+            boolean important,
+            String createdAt
+    ) {
+    }
 }
