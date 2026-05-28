@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequiredArgsConstructor
@@ -51,10 +50,9 @@ public class AdminPropertyController {
 
     @PostMapping
     public String create(@ModelAttribute("form") AdminPropertyRequestDTO dto,
-                         @RequestParam(value = "thumbnailFile", required = false) MultipartFile thumbnailFile,
                          Model model) {
         try {
-            adminPropertyService.register(dto, thumbnailFile);
+            adminPropertyService.register(dto);
             return "redirect:/admin/properties";
         } catch (RuntimeException e) {
             model.addAttribute("isEdit", false);
@@ -70,16 +68,16 @@ public class AdminPropertyController {
         model.addAttribute("form", toForm(property));
         model.addAttribute("isEdit", true);
         model.addAttribute("propertyId", id);
+        model.addAttribute("thumbnailPreviewUrl", adminPropertyService.resolveThumbnailPreviewUrl(property.getThumbnailUrl()));
         return "admin/properties/form";
     }
 
     @PostMapping("/{id}/edit")
     public String update(@PathVariable Long id,
                          @ModelAttribute("form") AdminPropertyRequestDTO dto,
-                         @RequestParam(value = "thumbnailFile", required = false) MultipartFile thumbnailFile,
                          Model model) {
         try {
-            adminPropertyService.update(id, dto, thumbnailFile);
+            adminPropertyService.update(id, dto);
             return "redirect:/admin/properties";
         } catch (RuntimeException e) {
             model.addAttribute("isEdit", true);

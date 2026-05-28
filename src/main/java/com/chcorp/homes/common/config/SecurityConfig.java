@@ -41,8 +41,9 @@ public class SecurityConfig {
             "/ws/map-chat/**",
             "/policies",
             "/policies/**",
-            "/simulator/**"
-            ,"/**"   // 임시
+            "/simulator/**",
+            "/files/property-images/**"
+            //"/**"   // 임시
     };
 
     @Bean

@@ -1,8 +1,10 @@
 package com.chcorp.homes.admin.controller;
 
-
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
+import com.chcorp.homes.community.repository.CommunityPostRepository;
+import com.chcorp.homes.notice.repository.NoticeRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
+import com.chcorp.homes.properties.repository.PropertyRepository;
 import com.chcorp.homes.subscription.repository.SubscriptionRepository;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.entity.UserRole;
@@ -37,6 +39,7 @@ public class AdminController {
     private final UserRepository userRepository;
     private final AnnouncementRepository announcementRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final PropertyRepository propertyRepository;
     private final PolicyRepository policyRepository;
     private final CommunityPostRepository communityPostRepository;
     private final NoticeRepository noticeRepository;
@@ -65,17 +68,17 @@ public class AdminController {
         return switch (section) {
             case "users" -> new SectionView(
                     "유저 리스트",
-                    "가입 유저의 계정, 권한, 상태를 확인할 수 있습니다.",
+                    "가입 유저의 계정, 권한, 상태를 확인합니다.",
                     buildUserTable()
             );
             case "subscription" -> new SectionView(
                     "청약 리스트",
-                    "청약 공고와 모집 기간을 빠르게 확인할 수 있습니다.",
+                    "청약 공고와 모집 기간을 확인합니다.",
                     buildSubscriptionTable()
             );
             case "loan" -> new SectionView(
                     "대출 리스트",
-                    "대출 계약, 서명, PDF 저장 상태를 한눈에 확인합니다.",
+                    "대출 계약, 서명, PDF 저장 상태를 확인합니다.",
                     buildLoanTable()
             );
             case "announcement" -> new SectionView(
@@ -83,10 +86,9 @@ public class AdminController {
                     "노출 중인 공고의 지역, 유형, 상태를 관리합니다.",
                     buildAnnouncementTable()
             );
-
             case "policy" -> new SectionView(
                     "지원제도 리스트",
-                    "노출 중인 지원제도의 유형, 상태를 관리합니다.",
+                    "노출 중인 지원제도의 유형과 상태를 관리합니다.",
                     buildPolicyTable()
             );
             case "notice" -> new SectionView(
@@ -96,7 +98,7 @@ public class AdminController {
             );
             case "asset" -> new SectionView(
                     "자산 리스트",
-                    "이미지, PDF, 첨부 자산의 저장 상태를 점검합니다.",
+                    "이미지, PDF, 첨부 자산의 저장 상태를 확인합니다.",
                     buildStaticTable(
                             List.of("파일명", "분류", "상태", "메모"),
                             List.of(
@@ -113,7 +115,7 @@ public class AdminController {
             );
             case "simulation" -> new SectionView(
                     "시뮬레이션 리스트",
-                    "조건 진단과 대출 계산 시뮬레이션 요청을 확인합니다.",
+                    "조건 진단과 대출 계산 요청을 확인합니다.",
                     buildStaticTable(
                             List.of("이름", "유형", "상태", "업데이트"),
                             List.of(
@@ -125,7 +127,7 @@ public class AdminController {
             );
             case "statistics" -> new SectionView(
                     "통계 리포트",
-                    "가입/탈퇴 현황과 상품 클릭률을 확인하고 리포트를 다운로드합니다.",
+                    "가입/탈퇴 현황과 상품 클릭 흐름을 확인합니다.",
                     buildStatisticsTable()
             );
             case "settings" -> new SectionView(
@@ -142,7 +144,7 @@ public class AdminController {
             );
             default -> new SectionView(
                     "관리자 메인",
-                    "유저, 청약, 대출, 공고, 자산을 한눈에 확인하는 관리자 홈입니다.",
+                    "유저, 물건, 대출, 공고, 자산을 한눈에 확인하는 관리자 홈입니다.",
                     new TableView(List.of(), List.of())
             );
         };
@@ -205,16 +207,15 @@ public class AdminController {
     }
 
     private TableView buildLoanTable() {
-        List<TableRow> rows = new ArrayList<>();
-        rows.add(row("신생아 특례 버팀목대출", "계약서 작성 중", "전자서명 대기", "오늘"));
-        rows.add(row("신혼부부전용 전세자금대출", "PDF 생성 완료", "검토 필요", "15분 전"));
-        rows.add(row("중소기업취업청년 전월세 보증금", "저장 완료", "진행 중", "31분 전"));
-        rows.add(row("일반 버팀목전세자금대출", "다음 페이지 이동", "완료", "1시간 전"));
-        return new TableView(List.of("상품", "단계", "상태", "업데이트"), rows);
-    }
-
-    private TableView buildStaticTable(List<String> headers, List<TableRow> rows) {
-        return new TableView(headers, rows);
+        return new TableView(
+                List.of("상품", "단계", "상태", "업데이트"),
+                List.of(
+                        row("청년 버팀목 대출", "계약서 작성 중", "전자서명 대기", "오늘"),
+                        row("신혼부부 전세자금대출", "PDF 생성 완료", "검토 필요", "15분 전"),
+                        row("중소기업취업청년 전월세보증금", "저장 완료", "진행 중", "31분 전"),
+                        row("일반 버팀목전세자금대출", "다음 페이지 이동", "완료", "1시간 전")
+                )
+        );
     }
 
     private TableView buildNoticeTable() {
@@ -246,35 +247,39 @@ public class AdminController {
 
         return new TableView(List.of("제목", "지역", "조회수", "작성일"), rows);
     }
+
     private TableView buildStatisticsTable() {
         List<User> users = userRepository.findAll();
 
         long totalUsers = users.size();
-
         long enabledUsers = users.stream()
                 .filter(user -> user.getStatus() == UserStatus.enabled)
                 .count();
-
         long disabledUsers = users.stream()
                 .filter(user -> user.getStatus() == UserStatus.disabled)
                 .count();
 
-        List<TableRow> rows = List.of(
-                row("전체 가입 회원", String.valueOf(totalUsers), "전체 가입 유저 수", "대기"),
-                row("활성 회원", String.valueOf(enabledUsers), "현재 활성 상태 회원 수", "대기"),
-                row("탈퇴/비활성 회원", String.valueOf(disabledUsers), "비활성 처리된 회원 수", "대기"),
-                row("상품 클릭률", "-", "상품 클릭 로그 또는 클릭 수 필드 확인 필요", "대기")
+        return new TableView(
+                List.of("항목", "값", "설명", "상태"),
+                List.of(
+                        row("전체 가입 회원", String.valueOf(totalUsers), "전체 가입 유저 수", "대기"),
+                        row("활성 회원", String.valueOf(enabledUsers), "현재 활성 상태 회원 수", "대기"),
+                        row("탈퇴/비활성 회원", String.valueOf(disabledUsers), "비활성 처리 회원 수", "대기"),
+                        row("상품 클릭률", "-", "상품 클릭 로그 또는 클릭 테이블 확인 필요", "대기")
+                )
         );
+    }
 
-        return new TableView(List.of("항목", "값", "설명", "상태"), rows);
+    private TableView buildStaticTable(List<String> headers, List<TableRow> rows) {
+        return new TableView(headers, rows);
     }
 
     private List<MenuItem> buildMenuItems(String section) {
         return List.of(
                 menu("관리자 메인", "/admin", "overview".equals(section), "전체 현황"),
                 menu("유저", "/admin?section=users", "users".equals(section), "유저 리스트"),
-                menu("청약", "/admin?section=subscription", "subscription".equals(section), "청약 리스트"),
-                menu("대출", "/admin/loan", "loan".equals(section), "대출 허브"),
+                menu("물건 관리", "/admin/properties", false, "임대 물건 관리"),
+                menu("대출", "/admin?section=loan", "loan".equals(section), "대출 리스트"),
                 menu("공고", "/admin/announcements", "announcement".equals(section), "공고 리스트"),
                 menu("제도", "/admin/policies", "policy".equals(section), "지원제도 리스트"),
                 menu("자산", "/admin?section=asset", "asset".equals(section), "파일 관리"),
@@ -289,9 +294,9 @@ public class AdminController {
     private List<StatCard> buildStats() {
         return List.of(
                 new StatCard("등록 유저", String.valueOf(userRepository.count()), "전체"),
-                new StatCard("청약 공고", String.valueOf(subscriptionRepository.count()), "누적"),
-                new StatCard("노출 공고", String.valueOf(announcementRepository.count()), "누적"),
-                new StatCard("노출 제도", String.valueOf(policyRepository.count()), "누적"),
+                new StatCard("임대 물건", String.valueOf(propertyRepository.count()), "전체"),
+                new StatCard("노출 공고", String.valueOf(announcementRepository.count()), "전체"),
+                new StatCard("노출 제도", String.valueOf(policyRepository.count()), "전체"),
                 new StatCard("계약 진행", "27", "오늘")
         );
     }
@@ -299,18 +304,18 @@ public class AdminController {
     private List<OverviewAction> buildOverviewActions() {
         return List.of(
                 new OverviewAction("유저 리스트", "가입 유저의 권한과 상태를 확인합니다.", "/admin?section=users"),
-                new OverviewAction("청약 리스트", "청약 공고와 모집 기간을 확인합니다.", "/admin?section=subscription"),
-                new OverviewAction("대출 리스트", "대출 계약과 서명 진행 상태를 확인합니다.", "/admin/loan"),
+                new OverviewAction("물건 관리", "지도와 상세페이지에 노출될 임대 물건을 관리합니다.", "/admin/properties"),
+                new OverviewAction("대출 리스트", "대출 계약과 서명 진행 상태를 확인합니다.", "/admin?section=loan"),
                 new OverviewAction("공고 리스트", "노출 중인 공고와 모집 유형을 확인합니다.", "/admin/announcements"),
-                new OverviewAction("지원제도 리스트", "노출 중인 지원제도와 모집 유형을 확인합니다.", "/admin/policies")
+                new OverviewAction("지원제도 리스트", "노출 중인 지원제도의 유형을 확인합니다.", "/admin/policies")
         );
     }
 
     private List<RecentLog> buildRecentLogs() {
         return List.of(
-                new RecentLog("신생아 특례 버팀목대출", "계약서 생성 완료", "2분 전"),
-                new RecentLog("버팀목 전세자금대출", "전자서명 대기", "15분 전"),
-                new RecentLog("중소기업취업청년 전월세보증금", "PDF 저장 완료", "31분 전"),
+                new RecentLog("청년 버팀목 대출", "계약서 생성 완료", "2분 전"),
+                new RecentLog("전세자금대출", "전자서명 대기", "15분 전"),
+                new RecentLog("중소기업취업청년 보증금", "PDF 저장 완료", "31분 전"),
                 new RecentLog("일반 버팀목전세자금대출", "다음 페이지 이동", "1시간 전")
         );
     }
@@ -319,8 +324,11 @@ public class AdminController {
         if (section == null || section.isBlank()) {
             return "overview";
         }
+
         return switch (section) {
-            case "overview", "users", "subscription", "loan", "announcement", "policy", "asset", "notice", "community", "simulation", "statistics", "settings" -> section;            default -> "overview";
+            case "overview", "users", "subscription", "loan", "announcement", "policy",
+                 "asset", "notice", "community", "simulation", "statistics", "settings" -> section;
+            default -> "overview";
         };
     }
 
@@ -345,6 +353,7 @@ public class AdminController {
         if (role == null) {
             return "-";
         }
+
         return switch (role) {
             case ADMIN -> "관리자";
             case USER -> "일반";
@@ -355,6 +364,7 @@ public class AdminController {
         if (status == null) {
             return "-";
         }
+
         return switch (status) {
             case enabled -> "활성";
             case disabled -> "비활성";
@@ -373,6 +383,7 @@ public class AdminController {
         if (instant == null) {
             return "-";
         }
+
         return TIME_FMT.format(instant.atZone(ZoneId.of("Asia/Seoul")));
     }
 
@@ -388,17 +399,24 @@ public class AdminController {
         return new TableRow(List.of(cells));
     }
 
-    private record SectionView(String title, String description, TableView tableView) {}
+    private record SectionView(String title, String description, TableView tableView) {
+    }
 
-    public record MenuItem(String label, String href, boolean active, String description) {}
+    public record MenuItem(String label, String href, boolean active, String description) {
+    }
 
-    public record StatCard(String label, String value, String meta) {}
+    public record StatCard(String label, String value, String meta) {
+    }
 
-    public record OverviewAction(String title, String description, String href) {}
+    public record OverviewAction(String title, String description, String href) {
+    }
 
-    public record RecentLog(String title, String detail, String time) {}
+    public record RecentLog(String title, String detail, String time) {
+    }
 
-    public record TableRow(List<String> columns) {}
+    public record TableRow(List<String> columns) {
+    }
 
-    public record TableView(List<String> headers, List<TableRow> rows) {}
+    public record TableView(List<String> headers, List<TableRow> rows) {
+    }
 }

@@ -1,5 +1,6 @@
 package com.chcorp.homes.properties.service;
 
+import com.chcorp.homes.files.service.FileService;
 import com.chcorp.homes.properties.dto.AdminPropertyRequestDTO;
 import com.chcorp.homes.properties.entity.Property;
 import com.chcorp.homes.properties.repository.PropertyRepository;
@@ -13,28 +14,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Locale;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class AdminPropertyService {
 
-    private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024L * 1024L;
-
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final KakaoAddressGeocodingService geocodingService;
-    private final Path propertyUploadDirectory = Paths.get("uploads", "properties")
-            .toAbsolutePath()
-            .normalize();
+    private final FileService fileService;
 
     @Transactional(readOnly = true)
     public Page<Property> getList(String keyword, String category, String dealType, int page, int size) {
@@ -54,11 +44,11 @@ public class AdminPropertyService {
     }
 
     @Transactional
-    public void register(AdminPropertyRequestDTO dto, MultipartFile thumbnailFile) {
+    public void register(AdminPropertyRequestDTO dto) {
         validate(dto);
 
         KakaoAddressGeocodingService.Coordinates coordinates = resolveCoordinates(dto.getAddress());
-        String thumbnailUrl = resolveThumbnailUrl(dto.getThumbnailUrl(), thumbnailFile);
+        String thumbnailUrl = resolveThumbnailUrl(dto.getThumbnailUrl());
 
         Property property = Property.builder()
                 .title(dto.getTitle().trim())
@@ -99,12 +89,12 @@ public class AdminPropertyService {
     }
 
     @Transactional
-    public void update(Long id, AdminPropertyRequestDTO dto, MultipartFile thumbnailFile) {
+    public void update(Long id, AdminPropertyRequestDTO dto) {
         validate(dto);
 
         Property property = getOne(id);
         KakaoAddressGeocodingService.Coordinates coordinates = resolveCoordinatesForUpdate(property, dto.getAddress());
-        String thumbnailUrl = resolveThumbnailUrl(dto.getThumbnailUrl(), thumbnailFile);
+        String thumbnailUrl = resolveThumbnailUrl(dto.getThumbnailUrl());
 
         property.updateAdminFields(
                 dto.getTitle().trim(),
@@ -146,6 +136,16 @@ public class AdminPropertyService {
     public void delete(Long id) {
         Property property = getOne(id);
         propertyRepository.delete(property);
+    }
+
+    @Transactional(readOnly = true)
+    public String resolveThumbnailPreviewUrl(String thumbnailUrl) {
+        Long fileId = fileService.parseFileReference(thumbnailUrl);
+        if (fileId == null) {
+            return thumbnailUrl;
+        }
+
+        return fileService.createPublicSignedDownloadUrl(fileId).signedUrl();
     }
 
     private void validate(AdminPropertyRequestDTO dto) {
@@ -213,58 +213,8 @@ public class AdminPropertyService {
         return normalized.replaceAll("\\s*,\\s*", ",");
     }
 
-    private String resolveThumbnailUrl(String thumbnailUrl, MultipartFile thumbnailFile) {
-        if (thumbnailFile == null || thumbnailFile.isEmpty()) {
-            return normalize(thumbnailUrl);
-        }
-
-        validateImageFile(thumbnailFile);
-
-        try {
-            Files.createDirectories(propertyUploadDirectory);
-
-            String extension = extractExtension(thumbnailFile.getOriginalFilename());
-            String filename = UUID.randomUUID() + extension;
-            Path targetPath = propertyUploadDirectory.resolve(filename).normalize();
-
-            if (!targetPath.startsWith(propertyUploadDirectory)) {
-                throw new IllegalArgumentException("이미지 파일명을 확인해 주세요.");
-            }
-
-            thumbnailFile.transferTo(targetPath);
-            return "/properties/uploads/" + filename;
-        } catch (IOException e) {
-            throw new IllegalStateException("이미지 파일 저장에 실패했습니다.");
-        }
-    }
-
-    private void validateImageFile(MultipartFile file) {
-        if (file.getSize() > MAX_IMAGE_SIZE_BYTES) {
-            throw new IllegalArgumentException("이미지는 10MB 이하만 업로드할 수 있습니다.");
-        }
-
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new IllegalArgumentException("이미지 파일만 업로드할 수 있습니다.");
-        }
-    }
-
-    private String extractExtension(String originalFilename) {
-        if (originalFilename == null || originalFilename.isBlank()) {
-            return "";
-        }
-
-        String filename = originalFilename.trim();
-        int dotIndex = filename.lastIndexOf('.');
-        if (dotIndex < 0 || dotIndex == filename.length() - 1) {
-            return "";
-        }
-
-        String extension = filename.substring(dotIndex + 1)
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]", "");
-
-        return extension.isBlank() ? "" : "." + extension;
+    private String resolveThumbnailUrl(String thumbnailUrl) {
+        return normalize(thumbnailUrl);
     }
 
     private Specification<Property> buildSearchSpec(String keyword, String category, String dealType) {

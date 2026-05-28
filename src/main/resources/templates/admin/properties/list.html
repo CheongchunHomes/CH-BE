@@ -4,102 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>물건 관리</title>
-    <style>
-        :root {
-            --bg: #eef3ff; --card: #ffffff; --line: #d9e3f6;
-            --text: #0f172a; --muted: #64748b;
-            --blue: #2563eb; --blue-soft: #eaf1ff;
-            --green: #10b981; --green-soft: #e7fbf2;
-            --red: #ef4444; --shadow: 0 14px 42px rgba(15,23,42,0.08);
-        }
-        * { box-sizing: border-box; }
-        body {
-            margin: 0; font-family: "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
-            color: var(--text); background: linear-gradient(180deg, #f7f9ff 0%, var(--bg) 100%);
-            min-height: 100vh;
-        }
-        a { color: inherit; text-decoration: none; }
-        .layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; padding: 24px; min-height: 100vh; }
-        .sidebar, .panel, .hero { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); }
-        .sidebar { padding: 22px 18px; align-self: start; display: grid; gap: 18px; }
-        .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148,163,184,0.25); }
-        .brand-badge { width: 44px; height: 44px; border-radius: 16px; display: grid; place-items: center; background: #eaf1ff; color: var(--blue); font-weight: 900; }
-        .brand h1 { margin: 0; font-size: 19px; }
-        .brand p { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
-        .menu-title { font-size: 12px; letter-spacing: .08em; color: var(--muted); font-weight: 800; }
-        .menu-list { display: grid; gap: 10px; }
-        .menu-item { padding: 14px 16px; border-radius: 16px; border: 1px solid #dbe5ff; background: #f7fbff; display: grid; gap: 4px; }
-        .menu-item strong { font-size: 15px; }
-        .menu-item span { font-size: 12px; color: var(--muted); }
-        .menu-item.active { background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; border-color: transparent; }
-        .menu-item.active span { color: rgba(255,255,255,.86); }
-        .content { display: grid; gap: 18px; align-content: start; }
-        .hero { padding: 24px 28px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
-        .eyebrow { display: inline-flex; padding: 8px 12px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-weight: 800; font-size: 13px; margin-bottom: 10px; }
-        .hero h2 { margin: 0; font-size: 30px; }
-        .hero p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
-        .button { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 14px; background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; font-weight: 800; font-size: 14px; border: none; cursor: pointer; }
-        .button.ghost { background: white; border: 1px solid var(--line); color: var(--text); }
-        .button.danger { background: linear-gradient(135deg, var(--red), #f87171); }
-        .button.sm { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
-        .search-panel { padding: 20px 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
-        .search-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 150px; }
-        .search-group label { font-size: 12px; font-weight: 800; color: var(--muted); }
-        .search-group input, .search-group select { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); font-size: 14px; background: #f8fbff; }
-        .table-head { display: flex; justify-content: space-between; align-items: center; padding: 22px 24px 16px; }
-        .table-head h3 { margin: 0; font-size: 22px; }
-        .table-head p { margin: 6px 0 0; color: var(--muted); }
-        .pill { padding: 10px 14px; border-radius: 999px; background: var(--green-soft); color: #059669; font-size: 13px; font-weight: 800; }
-        .table-scroll { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 860px; table-layout: fixed; }
-        th, td { padding: 10px 10px; border-top: 1px solid var(--line); text-align: left; vertical-align: middle; font-size: 13px; }
-        th { background: #f8fbff; color: #334155; font-weight: 800; }
-        tbody tr:nth-child(even) td { background: #fcfdff; }
-        th:nth-child(1), td:nth-child(1) { width: 72px; }
-        th:nth-child(2), td:nth-child(2) { width: 170px; }
-        th:nth-child(3), td:nth-child(3) { width: 230px; }
-        th:nth-child(4), td:nth-child(4) { width: 72px; }
-        th:nth-child(5), td:nth-child(5) { width: 145px; }
-        th:nth-child(6), td:nth-child(6) { width: 90px; }
-        th:nth-child(7), td:nth-child(7) { width: 145px; }
-        th:nth-child(8), td:nth-child(8) { width: 120px; }
-        td { overflow: hidden; text-overflow: ellipsis; }
-        .thumb { width: 52px; height: 40px; border-radius: 8px; object-fit: cover; background: #e2e8f0; display: block; }
-        .actions { display: flex; gap: 6px; flex-wrap: wrap; }
-        .empty-state { padding: 36px 20px; text-align: center; color: var(--muted); border-top: 1px solid var(--line); }
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 8px; padding: 20px; flex-wrap: wrap; }
-        .page-btn { padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: white; font-weight: 700; }
-        .page-btn.active { background: var(--blue); color: white; border-color: transparent; }
-        .page-btn.disabled { opacity: .4; pointer-events: none; }
-        .price-cell { display: grid; gap: 4px; line-height: 1.25; }
-        .price-cell span { white-space: nowrap; }
-        .page-info { color: var(--muted); font-size: 13px; font-weight: 800; }
-    </style>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
 </head>
 <body>
 <div class="layout">
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-badge">H</div>
-            <div>
-                <h1>관리자 메인</h1>
-                <p>청년 주거 통합 관리</p>
-            </div>
-        </div>
-        <div>
-            <div class="menu-title">메뉴 리스트</div>
-            <div class="menu-list">
-                <a class="menu-item" href="/admin"><strong>관리자 메인</strong><span>전체 현황</span></a>
-                <a class="menu-item" href="/admin?section=users"><strong>유저</strong><span>유저 리스트</span></a>
-                <a class="menu-item active" href="/admin/properties"><strong>물건 관리</strong><span>임대 물건 관리</span></a>
-                <a class="menu-item" href="/admin?section=loan"><strong>대출</strong><span>대출 리스트</span></a>
-                <a class="menu-item" href="/admin/announcements"><strong>공고</strong><span>공고 리스트</span></a>
-                <a class="menu-item" href="/admin/policies"><strong>제도</strong><span>지원제도 리스트</span></a>
-                <a class="menu-item" href="/admin?section=community"><strong>커뮤니티</strong><span>게시글 관리</span></a>
-                <a class="menu-item" href="/admin?section=settings"><strong>설정</strong><span>권한 / 시스템</span></a>
-            </div>
-        </div>
-    </aside>
+    <aside th:replace="~{admin/fragments/layout :: sidebar('property')}"></aside>
 
     <main class="content">
         <section class="hero">
@@ -108,10 +17,12 @@
                 <h2>임대 물건 리스트</h2>
                 <p>지도와 상세페이지에 노출될 임대 물건 정보를 관리합니다.</p>
             </div>
-            <a class="button" th:href="@{/admin/properties/new}">+ 물건 등록</a>
+            <div class="hero-actions">
+                <a class="button" th:href="@{/admin/properties/new}">+ 물건 등록</a>
+            </div>
         </section>
 
-        <form class="panel search-panel" th:action="@{/admin/properties}" method="get">
+        <form class="search-panel" th:action="@{/admin/properties}" method="get">
             <div class="search-group">
                 <label>검색어</label>
                 <input type="text" name="keyword" th:value="${keyword}" placeholder="물건명, 주소 검색">
@@ -138,7 +49,7 @@
             <a class="button ghost" th:href="@{/admin/properties}">초기화</a>
         </form>
 
-        <section class="panel">
+        <section class="table-panel">
             <div class="table-head">
                 <div>
                     <h3>물건 리스트</h3>
@@ -148,7 +59,7 @@
             </div>
 
             <div class="table-scroll" th:if="${!properties.content.isEmpty()}">
-                <table>
+                <table class="property-table">
                     <thead>
                     <tr>
                         <th>이미지</th>
@@ -164,7 +75,7 @@
                     <tbody>
                     <tr th:each="item : ${properties.content}">
                         <td>
-                            <img class="thumb" th:if="${item.thumbnailUrl != null}" th:src="${item.thumbnailUrl}" alt="">
+                            <img class="property-thumb" th:if="${item.thumbnailUrl != null}" th:src="${item.thumbnailUrl}" alt="">
                             <span th:if="${item.thumbnailUrl == null}">-</span>
                         </td>
                         <td th:text="${item.title}">물건명</td>
@@ -181,7 +92,7 @@
                             <span th:text="${item.longitude}">0</span>
                         </td>
                         <td>
-                            <div class="actions">
+                            <div class="action-group">
                                 <a class="button sm ghost" th:href="@{/admin/properties/{id}/edit(id=${item.id})}">수정</a>
                                 <form th:action="@{/admin/properties/{id}/delete(id=${item.id})}" method="post" onsubmit="return confirm('물건을 삭제하시겠습니까?')">
                                     <button class="button sm danger" type="submit">삭제</button>

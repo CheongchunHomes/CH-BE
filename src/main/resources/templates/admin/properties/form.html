@@ -4,94 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${isEdit} ? '물건 수정' : '물건 등록'">물건 등록</title>
-    <style>
-        :root {
-            --bg: #eef3ff; --card: #ffffff; --line: #d9e3f6;
-            --text: #0f172a; --muted: #64748b; --blue: #2563eb;
-            --blue-soft: #eaf1ff; --red: #ef4444; --red-soft: #fef2f2;
-            --shadow: 0 14px 42px rgba(15,23,42,0.08);
-        }
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif; color: var(--text); background: linear-gradient(180deg, #f7f9ff 0%, var(--bg) 100%); min-height: 100vh; }
-        a { color: inherit; text-decoration: none; }
-        .layout { display: grid; grid-template-columns: 260px 1fr; gap: 24px; padding: 24px; min-height: 100vh; }
-        .sidebar, .panel, .hero { background: var(--card); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); }
-        .sidebar { padding: 22px 18px; align-self: start; display: grid; gap: 18px; }
-        .brand { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(148,163,184,.25); }
-        .brand-badge { width: 44px; height: 44px; border-radius: 16px; display: grid; place-items: center; background: #eaf1ff; color: var(--blue); font-weight: 900; }
-        .brand h1 { margin: 0; font-size: 19px; }
-        .brand p { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
-        .menu-title { font-size: 12px; letter-spacing: .08em; color: var(--muted); font-weight: 800; }
-        .menu-list { display: grid; gap: 10px; }
-        .menu-item { padding: 14px 16px; border-radius: 16px; border: 1px solid #dbe5ff; background: #f7fbff; display: grid; gap: 4px; }
-        .menu-item strong { font-size: 15px; }
-        .menu-item span { font-size: 12px; color: var(--muted); }
-        .menu-item.active { background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; border-color: transparent; }
-        .menu-item.active span { color: rgba(255,255,255,.86); }
-        .content { display: grid; gap: 18px; align-content: start; }
-        .hero { padding: 24px 28px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
-        .eyebrow { display: inline-flex; padding: 8px 12px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-weight: 800; font-size: 13px; margin-bottom: 10px; }
-        .hero h2 { margin: 0; font-size: 30px; }
-        .hero p { margin: 8px 0 0; color: var(--muted); }
-        .button { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 14px; background: linear-gradient(135deg, var(--blue), #4f7cff); color: white; font-weight: 800; font-size: 14px; border: none; cursor: pointer; }
-        .button.ghost { background: white; border: 1px solid var(--line); color: var(--text); }
-        .panel { padding: 24px; }
-        .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-        .full { grid-column: 1 / -1; }
-        .field { display: grid; gap: 8px; }
-        .field label { font-size: 13px; font-weight: 900; color: #334155; }
-        .field input, .field select, .field textarea {
-            width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
-            background: #f8fbff; color: var(--text); font-size: 14px;
-        }
-        .money-input { position: relative; }
-        .money-input input { padding-right: 52px; }
-        .money-input span {
-            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-            color: var(--muted); font-size: 13px; font-weight: 900; pointer-events: none;
-        }
-        .field textarea { min-height: 140px; resize: vertical; }
-        .section-title { grid-column: 1 / -1; margin: 10px 0 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: 18px; font-weight: 900; }
-        .toggle-grid { display: flex; gap: 10px; flex-wrap: wrap; }
-        .toggle-button { border: 1px solid var(--line); background: #f1f5f9; color: #0f172a; padding: 10px 14px; border-radius: 999px; font-weight: 800; cursor: pointer; }
-        .toggle-button.active { background: var(--blue); border-color: var(--blue); color: white; }
-        .drop-zone { border: 2px dashed #b6c5e6; border-radius: 18px; padding: 24px; display: grid; gap: 12px; place-items: center; background: #f8fbff; color: var(--muted); text-align: center; cursor: pointer; }
-        .drop-zone.dragover { border-color: var(--blue); background: var(--blue-soft); }
-        .preview { width: 180px; height: 120px; object-fit: cover; border-radius: 14px; background: #e2e8f0; display: none; }
-        .preview.visible { display: block; }
-        .file-name { color: var(--blue); font-size: 13px; font-weight: 900; }
-        .error { padding: 14px 16px; border-radius: 14px; background: var(--red-soft); color: var(--red); font-weight: 800; }
-        .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
-        @media (max-width: 980px) {
-            .layout { grid-template-columns: 1fr; }
-            .form-grid { grid-template-columns: 1fr; }
-        }
-    </style>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
 </head>
 <body>
 <div class="layout">
-    <aside class="sidebar">
-        <div class="brand">
-            <div class="brand-badge">H</div>
-            <div>
-                <h1>관리자 메인</h1>
-                <p>청년 주거 통합 관리</p>
-            </div>
-        </div>
-        <div>
-            <div class="menu-title">메뉴 리스트</div>
-            <div class="menu-list">
-                <a class="menu-item" href="/admin"><strong>관리자 메인</strong><span>전체 현황</span></a>
-                <a class="menu-item" href="/admin?section=users"><strong>유저</strong><span>유저 리스트</span></a>
-                <a class="menu-item active" href="/admin/properties"><strong>물건 관리</strong><span>임대 물건 관리</span></a>
-                <a class="menu-item" href="/admin?section=loan"><strong>대출</strong><span>대출 리스트</span></a>
-                <a class="menu-item" href="/admin/announcements"><strong>공고</strong><span>공고 리스트</span></a>
-                <a class="menu-item" href="/admin/policies"><strong>제도</strong><span>지원제도 리스트</span></a>
-                <a class="menu-item" href="/admin?section=community"><strong>커뮤니티</strong><span>게시글 관리</span></a>
-                <a class="menu-item" href="/admin?section=settings"><strong>설정</strong><span>권한 / 시스템</span></a>
-            </div>
-        </div>
-    </aside>
+    <aside th:replace="~{admin/fragments/layout :: sidebar('property')}"></aside>
 
     <main class="content">
         <section class="hero">
@@ -100,21 +17,24 @@
                 <h2 th:text="${isEdit} ? '임대 물건 수정' : '임대 물건 등록'">임대 물건 등록</h2>
                 <p>주소만 입력하면 저장 시 카카오 주소 API로 위도와 경도를 자동 저장합니다.</p>
             </div>
-            <a class="button ghost" th:href="@{/admin/properties}">목록</a>
+            <div class="hero-actions">
+                <a class="button ghost" th:href="@{/admin/properties}">목록</a>
+            </div>
         </section>
 
-        <section class="panel">
+        <section class="form-panel">
             <div class="error" th:if="${errorMessage != null}" th:text="${errorMessage}">오류 메시지</div>
 
             <form class="form-grid"
+                  id="propertyForm"
                   th:action="${isEdit} ? @{/admin/properties/{id}/edit(id=${propertyId})} : @{/admin/properties}"
+                  th:data-property-id="${propertyId}"
                   th:object="${form}"
-                  method="post"
-                  enctype="multipart/form-data">
+                  method="post">
                 <div class="section-title">기본 정보</div>
                 <div class="field">
                     <label>물건명</label>
-                    <input type="text" th:field="*{title}" required placeholder="예: 광진 창문 우미린 근처 원룸">
+                    <input type="text" th:field="*{title}" required placeholder="예: 광진 창문 열린 근처 원룸">
                 </div>
                 <div class="field">
                     <label>임대인 ID</label>
@@ -287,9 +207,11 @@
                 </div>
                 <div class="field full">
                     <label>대표 이미지 업로드</label>
-                    <input type="file" id="thumbnailFile" name="thumbnailFile" accept="image/*" hidden>
+                    <input type="file" id="thumbnailFile" accept="image/*" hidden>
                     <div class="drop-zone" id="dropZone">
-                        <img class="preview" id="preview" th:classappend="${form.thumbnailUrl != null} ? ' visible' : ''" th:src="${form.thumbnailUrl}" alt="">
+                        <img class="preview" id="preview"
+                             th:classappend="${(thumbnailPreviewUrl != null) or (form.thumbnailUrl != null)} ? ' visible' : ''"
+                             th:src="${thumbnailPreviewUrl != null ? thumbnailPreviewUrl : form.thumbnailUrl}" alt="">
                         <span>이미지 파일을 드래그하거나 클릭해서 선택하세요.</span>
                         <strong class="file-name" id="fileName"></strong>
                     </div>
@@ -299,7 +221,7 @@
                     <textarea th:field="*{description}" placeholder="상세 설명을 입력해 주세요."></textarea>
                 </div>
 
-                <div class="actions full">
+                <div class="form-actions full">
                     <a class="button ghost" th:href="@{/admin/properties}">취소</a>
                     <button class="button" type="submit" th:text="${isEdit} ? '수정 저장' : '등록 저장'">등록 저장</button>
                 </div>
@@ -333,10 +255,12 @@
     });
 
     const dropZone = document.getElementById("dropZone");
+    const propertyForm = document.getElementById("propertyForm");
     const preview = document.getElementById("preview");
     const thumbnailUrl = document.getElementById("thumbnailUrl");
     const thumbnailFile = document.getElementById("thumbnailFile");
     const fileName = document.getElementById("fileName");
+    let selectedImageFile = null;
 
     thumbnailUrl.addEventListener("input", () => {
         if (!thumbnailUrl.value) {
@@ -346,6 +270,7 @@
         }
         preview.src = thumbnailUrl.value;
         preview.classList.add("visible");
+        selectedImageFile = null;
     });
 
     ["dragenter", "dragover"].forEach((eventName) => {
@@ -386,6 +311,7 @@
             return;
         }
 
+        selectedImageFile = file;
         const reader = new FileReader();
         reader.onload = () => {
             preview.src = reader.result;
@@ -394,6 +320,90 @@
             thumbnailUrl.value = "";
         };
         reader.readAsDataURL(file);
+    }
+
+    propertyForm.addEventListener("submit", async (event) => {
+        if (!selectedImageFile) {
+            return;
+        }
+
+        event.preventDefault();
+        fileName.textContent = "이미지 업로드 중입니다.";
+
+        try {
+            const fileId = await uploadSelectedImage(selectedImageFile);
+            thumbnailUrl.value = `file:${fileId}`;
+            selectedImageFile = null;
+            thumbnailFile.value = "";
+            propertyForm.submit();
+        } catch (error) {
+            fileName.textContent = error.message || "이미지 업로드에 실패했습니다.";
+        }
+    });
+
+    async function uploadSelectedImage(file) {
+        const uploadUrlResponse = await fetch("/files/property-images/upload-url", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                originalFilename: file.name,
+                contentType: "IMAGE",
+                sizeBytes: file.size,
+                purpose: "PROPERTY_IMAGE",
+                propertyId: parsePropertyId()
+            })
+        });
+
+        if (!uploadUrlResponse.ok) {
+            throw new Error("업로드 URL 발급에 실패했습니다.");
+        }
+
+        const uploadInfo = await uploadUrlResponse.json();
+        await uploadToSupabase(uploadInfo.signedUploadUrl, file);
+        await completeUpload(uploadInfo.fileId);
+        return uploadInfo.fileId;
+    }
+
+    async function uploadToSupabase(signedUploadUrl, file) {
+        let response = await fetch(signedUploadUrl, {
+            method: "PUT",
+            headers: {"Content-Type": file.type || "application/octet-stream"},
+            body: file
+        });
+
+        if (response.status === 405) {
+            response = await fetch(signedUploadUrl, {
+                method: "POST",
+                headers: {"Content-Type": file.type || "application/octet-stream"},
+                body: file
+            });
+        }
+
+        if (!response.ok) {
+            throw new Error("Supabase 이미지 업로드에 실패했습니다.");
+        }
+    }
+
+    async function completeUpload(fileId) {
+        const response = await fetch(`/files/property-images/${fileId}/complete`, {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error("이미지 업로드 완료 처리에 실패했습니다.");
+        }
+    }
+
+    function parsePropertyId() {
+        const value = propertyForm.dataset.propertyId;
+        if (!value) {
+            return null;
+        }
+
+        const propertyId = Number(value);
+        return Number.isFinite(propertyId) ? propertyId : null;
     }
 </script>
 </body>
