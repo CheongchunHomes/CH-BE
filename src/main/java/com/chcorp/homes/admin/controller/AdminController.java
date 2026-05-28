@@ -11,6 +11,7 @@ import com.chcorp.homes.users.entity.UserRole;
 import com.chcorp.homes.users.entity.UserStatus;
 import com.chcorp.homes.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,6 +35,8 @@ public class AdminController {
 
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("MM.dd HH:mm");
+    private static final int ADMIN_PAGE_SIZE = 10;
+    private static final int ADMIN_MAX_PAGES = 10;
 
     private final UserRepository userRepository;
     private final AnnouncementRepository announcementRepository;
@@ -46,13 +49,16 @@ public class AdminController {
     @GetMapping
     public String admin(
             @RequestParam(value = "section", defaultValue = "overview") String section,
+            @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "saved", defaultValue = "false") boolean saved,
             @RequestParam(value = "updated", defaultValue = "false") boolean updated,
             @RequestParam(value = "deleted", defaultValue = "false") boolean deleted,
             Model model
     ) {
         String currentSection = normalizeSection(section);
-        SectionView sectionView = buildSectionView(currentSection);
+        long pagedTotalCount = pagedTotalCount(currentSection);
+        int currentPage = normalizePage(page, pagedTotalCount);
+        SectionView sectionView = buildSectionView(currentSection, currentPage);
 
         model.addAttribute("section", currentSection);
         model.addAttribute("isOverview", "overview".equals(currentSection));
@@ -65,10 +71,17 @@ public class AdminController {
         model.addAttribute("tableHeaders", sectionView.tableView().headers());
         model.addAttribute("tableRows", sectionView.tableView().rows());
         model.addAttribute("sectionBadge", sectionLabel(currentSection));
-        model.addAttribute("noticeRows", "notice".equals(currentSection) ? buildNoticeRows() : List.of());
+        model.addAttribute("noticeRows", "notice".equals(currentSection) ? buildNoticeRows(currentPage) : List.of());
+        model.addAttribute("noticeTotalCount", "notice".equals(currentSection) ? pagedTotalCount : 0);
+        model.addAttribute("tableTotalCount", "community".equals(currentSection) ? pagedTotalCount : sectionView.tableView().rows().size());
+        model.addAttribute("pagination", buildPagination(currentSection, currentPage, pagedTotalCount));
         model.addAttribute("noticeSaved", saved);
         model.addAttribute("noticeUpdated", updated);
         model.addAttribute("noticeDeleted", deleted);
+
+        if ("notice".equals(currentSection) || "community".equals(currentSection)) {
+            return "admin/communitynotice/admin-section";
+        }
 
         return "admin";
     }
@@ -79,7 +92,7 @@ public class AdminController {
         return "redirect:/admin?section=community";
     }
 
-    private SectionView buildSectionView(String section) {
+    private SectionView buildSectionView(String section, int currentPage) {
         return switch (section) {
             case "users" -> new SectionView(
                     "유저 리스트",
@@ -109,7 +122,7 @@ public class AdminController {
             case "notice" -> new SectionView(
                     "공지사항 관리",
                     "서비스 공지사항을 등록하고 확인합니다.",
-                    buildNoticeTable()
+                    buildNoticeTable(currentPage)
             );
             case "asset" -> new SectionView(
                     "자산 리스트",
@@ -126,7 +139,7 @@ public class AdminController {
             case "community" -> new SectionView(
                     "커뮤니티 리스트",
                     "등록된 커뮤니티 게시글을 확인합니다.",
-                    buildCommunityTable()
+                    buildCommunityTable(currentPage)
             );
             case "simulation" -> new SectionView(
                     "시뮬레이션 리스트",
@@ -176,6 +189,7 @@ public class AdminController {
                         statusLabel(user.getStatus())
                 ))
                 .toList();
+
         return new TableView(List.of("이메일", "닉네임", "권한", "상태"), rows);
     }
 
@@ -190,6 +204,7 @@ public class AdminController {
                         dateRange(item.getApplyStartDate(), item.getApplyEndDate())
                 ))
                 .toList();
+
         return new TableView(List.of("제목", "지역", "모집유형", "기간"), rows);
     }
 
@@ -204,6 +219,7 @@ public class AdminController {
                         safe(item.getStatus())
                 ))
                 .toList();
+
         return new TableView(List.of("제목", "지역", "모집유형", "상태"), rows);
     }
 
@@ -218,6 +234,7 @@ public class AdminController {
                         safe(item.getStatus())
                 ))
                 .toList();
+
         return new TableView(List.of("제목", "대분류", "소분류", "상태"), rows);
     }
 
@@ -227,6 +244,7 @@ public class AdminController {
         rows.add(row("신혼부부전용 전세자금대출", "PDF 생성 완료", "검토 필요", "15분 전"));
         rows.add(row("중소기업취업청년 전월세 보증금", "저장 완료", "진행 중", "31분 전"));
         rows.add(row("일반 버팀목전세자금대출", "다음 페이지 이동", "완료", "1시간 전"));
+
         return new TableView(List.of("상품", "단계", "상태", "업데이트"), rows);
     }
 
@@ -234,10 +252,9 @@ public class AdminController {
         return new TableView(headers, rows);
     }
 
-    private TableView buildNoticeTable() {
-        List<TableRow> rows = noticeRepository.findAll(Sort.by(Sort.Direction.DESC, "noticeId"))
+    private TableView buildNoticeTable(int currentPage) {
+        List<TableRow> rows = noticeRepository.findAll(PageRequest.of(currentPage - 1, ADMIN_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "noticeId")))
                 .stream()
-                .limit(8)
                 .map(notice -> row(
                         safe(notice.getTitle()),
                         safe(notice.getCategory()),
@@ -248,10 +265,10 @@ public class AdminController {
 
         return new TableView(List.of("제목", "분류", "구분", "작성일"), rows);
     }
-    private List<AdminNoticeRow> buildNoticeRows() {
-        return noticeRepository.findAll(Sort.by(Sort.Direction.DESC, "noticeId"))
+
+    private List<AdminNoticeRow> buildNoticeRows(int currentPage) {
+        return noticeRepository.findAll(PageRequest.of(currentPage - 1, ADMIN_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "noticeId")))
                 .stream()
-                .limit(8)
                 .map(notice -> new AdminNoticeRow(
                         notice.getNoticeId(),
                         safe(notice.getTitle()),
@@ -263,10 +280,10 @@ public class AdminController {
                 ))
                 .toList();
     }
-    private TableView buildCommunityTable() {
-        List<TableRow> rows = communityPostRepository.findAll(Sort.by(Sort.Direction.DESC, "postId"))
+
+    private TableView buildCommunityTable(int currentPage) {
+        List<TableRow> rows = communityPostRepository.findAll(PageRequest.of(currentPage - 1, ADMIN_PAGE_SIZE, Sort.by(Sort.Direction.DESC, "postId")))
                 .stream()
-                .limit(8)
                 .map(post -> row(
                         safe(post.getTitle()),
                         safe(post.getRegion()),
@@ -275,8 +292,10 @@ public class AdminController {
                         String.valueOf(post.getPostId())
                 ))
                 .toList();
+
         return new TableView(List.of("제목", "지역", "조회수", "작성일", "관리"), rows);
     }
+
     private TableView buildStatisticsTable() {
         List<User> users = userRepository.findAll();
 
@@ -296,8 +315,10 @@ public class AdminController {
                 row("탈퇴/비활성 회원", String.valueOf(disabledUsers), "비활성 처리된 회원 수", "대기"),
                 row("상품 클릭률", "-", "상품 클릭 로그 또는 클릭 수 필드 확인 필요", "대기")
         );
+
         return new TableView(List.of("항목", "값", "설명", "상태"), rows);
     }
+
     private List<MenuItem> buildMenuItems(String section) {
         return List.of(
                 menu("관리자 메인", "/admin", "overview".equals(section), "전체 현황"),
@@ -341,6 +362,47 @@ public class AdminController {
                 new RecentLog("버팀목 전세자금대출", "전자서명 대기", "15분 전"),
                 new RecentLog("중소기업취업청년 전월세보증금", "PDF 저장 완료", "31분 전"),
                 new RecentLog("일반 버팀목전세자금대출", "다음 페이지 이동", "1시간 전")
+        );
+    }
+
+    private long pagedTotalCount(String section) {
+        return switch (section) {
+            case "notice" -> noticeRepository.count();
+            case "community" -> communityPostRepository.count();
+            default -> 0;
+        };
+    }
+
+    private int normalizePage(int page, long totalCount) {
+        int maxPage = totalPages(totalCount);
+        int requestedPage = Math.max(page, 1);
+
+        return Math.min(requestedPage, maxPage);
+    }
+
+    private int totalPages(long totalCount) {
+        if (totalCount <= 0) {
+            return 1;
+        }
+
+        int calculatedPages = (int) Math.ceil((double) totalCount / ADMIN_PAGE_SIZE);
+
+        return Math.min(calculatedPages, ADMIN_MAX_PAGES);
+    }
+
+    private PaginationView buildPagination(String section, int currentPage, long totalCount) {
+        int totalPages = totalPages(totalCount);
+        List<Integer> pageNumbers = totalCount <= 0
+                ? List.of()
+                : java.util.stream.IntStream.rangeClosed(1, totalPages).boxed().toList();
+
+        return new PaginationView(
+                section,
+                currentPage,
+                totalPages,
+                pageNumbers,
+                totalCount > 0 && currentPage > 1,
+                totalCount > 0 && currentPage < totalPages
         );
     }
 
@@ -435,6 +497,15 @@ public class AdminController {
     public record TableRow(List<String> columns) {}
 
     public record TableView(List<String> headers, List<TableRow> rows) {}
+
+    public record PaginationView(
+            String section,
+            int currentPage,
+            int totalPages,
+            List<Integer> pageNumbers,
+            boolean hasPrevious,
+            boolean hasNext
+    ) {}
 
     public record AdminNoticeRow(
             Long noticeId,
