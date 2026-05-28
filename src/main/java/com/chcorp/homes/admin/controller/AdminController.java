@@ -1,5 +1,7 @@
 package com.chcorp.homes.admin.controller;
 
+
+import com.chcorp.homes.admin.repository.AdminSubscriptionResultRepository;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
 import com.chcorp.homes.community.repository.CommunityPostRepository;
 import com.chcorp.homes.community.service.CommunityService;
@@ -27,6 +29,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -114,6 +119,7 @@ public class AdminController {
                     "노출 중인 공고의 지역, 유형, 상태를 관리합니다.",
                     buildAnnouncementTable()
             );
+
             case "policy" -> new SectionView(
                     "지원제도 리스트",
                     "노출 중인 지원제도의 유형, 상태를 관리합니다.",
@@ -152,11 +158,6 @@ public class AdminController {
                                     row("계약서 생성", "문서", "완료", "31분 전")
                             )
                     )
-            );
-            case "statistics" -> new SectionView(
-                    "통계 리포트",
-                    "가입/탈퇴 현황과 상품 클릭률을 확인하고 리포트를 다운로드합니다.",
-                    buildStatisticsTable()
             );
             case "settings" -> new SectionView(
                     "설정",
@@ -331,8 +332,9 @@ public class AdminController {
                 menu("커뮤니티", "/admin?section=community", "community".equals(section), "게시글 관리"),
                 menu("공지사항", "/admin?section=notice", "notice".equals(section), "공지사항 관리"),
                 menu("시뮬레이션", "/admin?section=simulation", "simulation".equals(section), "진단 / 계산"),
-                menu("통계 리포트", "/admin?section=statistics", "statistics".equals(section), "로그 / 통계"),
-                menu("설정", "/admin?section=settings", "settings".equals(section), "권한 / 시스템")
+                menu("설정", "/admin?section=settings", "settings".equals(section), "권한 / 시스템"),
+                menu("청약결과", "/admin/subscription-result",
+                        "subscription_result".equals(section), "신청내역/당첨낙첨")
         );
     }
 
@@ -412,7 +414,8 @@ public class AdminController {
         }
 
         return switch (section) {
-            case "overview", "users", "subscription", "loan", "announcement", "policy", "asset", "notice", "community", "simulation", "statistics", "settings" -> section;
+            case "overview", "users", "subscription", "subscription_result","loan", "announcement",  "policy","asset",
+                 "notice", "community", "simulation", "statistics", "settings" -> section;
             default -> "overview";
         };
     }
@@ -421,6 +424,7 @@ public class AdminController {
         return switch (section) {
             case "users" -> "유저 리스트";
             case "subscription" -> "청약 리스트";
+            case "subscription_result" -> "청약 결과";
             case "loan" -> "대출 리스트";
             case "announcement" -> "공고 리스트";
             case "policy" -> "지원제도 리스트";
@@ -438,7 +442,6 @@ public class AdminController {
         if (role == null) {
             return "-";
         }
-
         return switch (role) {
             case ADMIN -> "관리자";
             case USER -> "일반";
@@ -449,7 +452,6 @@ public class AdminController {
         if (status == null) {
             return "-";
         }
-
         return switch (status) {
             case enabled -> "활성";
             case disabled -> "비활성";
@@ -468,7 +470,6 @@ public class AdminController {
         if (instant == null) {
             return "-";
         }
-
         return TIME_FMT.format(instant.atZone(ZoneId.of("Asia/Seoul")));
     }
 
