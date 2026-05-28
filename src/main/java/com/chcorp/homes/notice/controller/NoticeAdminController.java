@@ -53,6 +53,40 @@ public class NoticeAdminController {
         return "redirect:/admin?section=notice&deleted=true";
     }
 
+    @PostMapping("/admin/community/notice/write")
+    public String createCommunityNotice(
+            NoticeCreateRequestDTO request,
+            @RequestParam(value = "important", required = false) List<String> importantValues
+    ) {
+        noticeService.createCommunityNoticeFromAdmin(normalizeImportant(request, importantValues));
+
+        return "redirect:/admin?section=community&communityNoticeSaved=true";
+    }
+
+    @GetMapping("/admin/community/notice/list")
+    @ResponseBody
+    public List<NoticeResponseDTO> getCommunityNoticesForAdmin() {
+        return noticeService.getCommunityNoticesForAdmin();
+    }
+
+    @PostMapping("/admin/community/notice/{noticeId}/edit")
+    public String updateCommunityNotice(
+            @PathVariable Long noticeId,
+            NoticeCreateRequestDTO request,
+            @RequestParam(value = "important", required = false) List<String> importantValues
+    ) {
+        noticeService.updateCommunityNoticeFromAdmin(noticeId, normalizeImportant(request, importantValues));
+
+        return "redirect:/admin?section=community&communityNoticeUpdated=true";
+    }
+
+    @PostMapping("/admin/community/notice/{noticeId}/delete")
+    public String deleteCommunityNotice(@PathVariable Long noticeId) {
+        noticeService.deleteCommunityNoticeFromAdmin(noticeId);
+
+        return "redirect:/admin?section=community&communityNoticeDeleted=true";
+    }
+
     private NoticeCreateRequestDTO normalizeImportant(
             NoticeCreateRequestDTO request,
             List<String> importantValues

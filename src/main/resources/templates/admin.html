@@ -439,7 +439,7 @@
             }
         }
     </style>
-    <th:block th:if="${section == 'notice'}" th:replace="~{admin/notice-fragments :: styles}"></th:block>
+    <th:block th:if="${section == 'notice' or section == 'community'}" th:replace="~{admin/notice-fragments :: styles}"></th:block>
 </head>
 <body>
 <div class="layout">
@@ -476,15 +476,6 @@
                 </p>
             </div>
             <div class="hero-actions">
-                <button
-                        type="button"
-                        class="button"
-                        th:if="${section == 'notice'}"
-                        onclick="showNoticeWritePanel()"
-                        style="border: 0; cursor: pointer;"
-                >
-                    공지사항 등록
-                </button>
                 <span class="pill">실시간 반영</span>
                 <a class="button" th:href="@{/admin(section=${section})}">새로고침</a>
             </div>
@@ -536,6 +527,16 @@
                     <span class="pill" th:if="${section == 'notice' and noticeUpdated}">공지사항이 수정되었습니다.</span>
                     <span class="pill" th:if="${section == 'notice' and noticeDeleted}">공지사항이 삭제되었습니다.</span>
                     <span class="pill">총 <span th:text="${#lists.size(tableRows)}">0</span>건</span>
+
+                    <button
+                            type="button"
+                            class="button"
+                            th:if="${section == 'notice'}"
+                            onclick="showNoticeWritePanel()"
+                            style="border: 0; cursor: pointer;"
+                    >
+                        공지사항 등록
+                    </button>
                 </div>
             </div>
 
@@ -579,8 +580,11 @@
         </section>
 
         <th:block th:if="${section == 'notice'}" th:replace="~{admin/notice-fragments :: noticePanels}"></th:block>
+        <th:block th:if="${section == 'community'}" th:replace="~{admin/notice-fragments :: communityNoticeTable}"></th:block>
+        <th:block th:if="${section == 'community'}" th:replace="~{admin/notice-fragments :: communityNoticePanels}"></th:block>
     </main>
 </div>
 <th:block th:if="${section == 'notice'}" th:replace="~{admin/notice-fragments :: noticeScript}"></th:block>
+<th:block th:if="${section == 'community'}" th:replace="~{admin/notice-fragments :: communityNoticeScript}"></th:block>
 </body>
 </html>
