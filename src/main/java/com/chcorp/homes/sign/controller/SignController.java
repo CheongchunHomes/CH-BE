@@ -1,6 +1,7 @@
 package com.chcorp.homes.sign.controller;
 
 import com.chcorp.homes.sign.dto.request.SignCreateRequestDTO;
+import com.chcorp.homes.sign.dto.response.BrokerSignImageResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignContractResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignResponseDTO;
 import com.chcorp.homes.sign.service.SignService;
@@ -42,6 +43,16 @@ public class SignController {
         Long currentUserId = Long.valueOf(authentication.getName());
 
         return ResponseEntity.ok(signService.contractDetail(currentUserId, signId));
+    }
+
+    /**
+     * 공인중개사 서명 이미지
+     * */
+    @GetMapping("/broker-sign")
+    public ResponseEntity<BrokerSignImageResponseDTO> brokerSignImage(Authentication authentication) {
+        Long currentUserId = Long.valueOf(authentication.getName());
+
+        return ResponseEntity.ok(signService.brokerSignImage(currentUserId));
     }
 
 

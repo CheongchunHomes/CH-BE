@@ -4,7 +4,9 @@ import com.chcorp.homes.properties.entity.Property;
 import com.chcorp.homes.properties.repository.PropertyRepository;
 import com.chcorp.homes.diagnosis.entity.UserProfile;
 import com.chcorp.homes.diagnosis.repository.UserProfileRepository;
+import com.chcorp.homes.files.service.SupabaseStorageClient;
 import com.chcorp.homes.sign.dto.request.SignCreateRequestDTO;
+import com.chcorp.homes.sign.dto.response.BrokerSignImageResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignContractResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignResponseDTO;
 import com.chcorp.homes.sign.entity.SignRequest;
@@ -26,11 +28,16 @@ import java.util.NoSuchElementException;
 @RequiredArgsConstructor
 @Service
 public class SignService {
+    private static final String BROKER_SIGN_OBJECT_PATH = "common/broker_sign.png";
+    private static final String BROKER_SIGN_FILENAME = "broker_sign.png";
+    private static final String BROKER_SIGN_CONTENT_TYPE = "image/png";
+
     private final SignRepository signRepository;
     private final UserRepository userRepository;
     private final PropertyRepository propertyRepository;
     private final PersonalInfoRepository personalInfoRepository;
     private final UserProfileRepository userProfileRepository;
+    private final SupabaseStorageClient supabaseStorageClient;
 
     @Transactional(readOnly = true)
     public List<SignResponseDTO> myList(Long currentUserId) {
@@ -62,6 +69,19 @@ public class SignService {
                 .orElse(null);
 
         return SignContractResponseDTO.from(signRequest, providerInfo, customerInfo, providerProfile, customerProfile);
+    }
+
+    @Transactional(readOnly = true)
+    public BrokerSignImageResponseDTO brokerSignImage(Long currentUserId) {
+        validateCurrentUserId(currentUserId);
+
+        return new BrokerSignImageResponseDTO(
+                BROKER_SIGN_OBJECT_PATH,
+                supabaseStorageClient.createSignedDownloadUrl(BROKER_SIGN_OBJECT_PATH),
+                supabaseStorageClient.signedDownloadTtlSeconds(),
+                BROKER_SIGN_CONTENT_TYPE,
+                BROKER_SIGN_FILENAME
+        );
     }
 
     @Transactional
