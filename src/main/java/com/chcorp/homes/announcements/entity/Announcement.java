@@ -25,7 +25,6 @@ public class Announcement extends MutableBaseEntity {
     @Column(name = "external_id")
     private String externalId;      // API의 pblanId
 
-
     @Column(name = "pblanc_no")
     private String pblancNo;         // 청약홈 공고번호
 
@@ -115,8 +114,7 @@ public class Announcement extends MutableBaseEntity {
     private LocalDate przwnerPresnatnDe;    // 당첨자 발표일
 
     @Column(name = "surlus")
-    private Integer surlus;
-
+    private Integer surlus;         //  잔여세대 수 (예: "10세대")
 
 
     // =======================
@@ -149,5 +147,4 @@ public class Announcement extends MutableBaseEntity {
         this.applyStartDate = applyStartDate;
         this.applyEndDate = applyEndDate;
     }
-
 }

@@ -4,6 +4,7 @@ import com.chcorp.homes.policies.dto.PublicServiceApiResponse;
 import com.chcorp.homes.policies.dto.PublicServiceDetailApiResponse;
 import com.chcorp.homes.policies.dto.YouthPolicyApiResponse;
 import com.chcorp.homes.policies.entity.Policy;
+import com.chcorp.homes.policies.repository.PolicyQueryRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,12 @@ import org.springframework.data.domain.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -25,6 +30,7 @@ public class PolicyService {
 
     private final RestTemplate restTemplate;
     private final PolicyRepository repository;
+    private final PolicyQueryRepository queryRepository;
 
     // 기존 공고 api와 행안부 공공서비스 api 인증키 동일
     @Value("${api.public.service-key}")
@@ -48,6 +54,9 @@ public class PolicyService {
 
     private static final int NUM_OF_ROWS = 100;
 
+    private static final String YOUTH_POLICY_SOURCE_TYPE = "청년정책API";
+    private static final String PUBLIC_SERVICE_SOURCE_TYPE = "공공서비스API";
+
     // =========================
     // 청년정책 API 수집
     // =========================
@@ -55,17 +64,28 @@ public class PolicyService {
     public void fetchYouthPolicies() {
         int pageNo = 1;
 
+        int totalSavedCount = 0;
+        int totalDuplicatedCount = 0;
+        int totalFilteredCount = 0;
+        int totalInvalidCount = 0;
+
         while (true) {
             try {
-                String url = YOUTH_POLICY_BASE_URL
-                        + "?apiKeyNm=" + youthPolicyServiceKey
-                        + "&pageNum=" + pageNo
-                        + "&pageSize=" + NUM_OF_ROWS
-                        + "&pageType=1"
-                        + "&rtnType=json";
+                URI uri = UriComponentsBuilder
+                        .fromUriString(YOUTH_POLICY_BASE_URL)
+                        .queryParam("apiKeyNm", youthPolicyServiceKey)
+                        .queryParam("pageNum", pageNo)
+                        .queryParam("pageSize", NUM_OF_ROWS)
+                        .queryParam("pageType", 1)
+                        .queryParam("rtnType", "json")
+                        .build()
+                        .encode()
+                        .toUri();
+
+                log.info("[청년정책] {}페이지 요청 URL={}", pageNo, uri);
 
                 ResponseEntity<YouthPolicyApiResponse> response =
-                        restTemplate.getForEntity(url, YouthPolicyApiResponse.class);
+                        restTemplate.getForEntity(uri, YouthPolicyApiResponse.class);
 
                 YouthPolicyApiResponse apiResponse = response.getBody();
 
@@ -85,37 +105,77 @@ public class PolicyService {
                     log.info("[청년정책] 전체 {}건 수집 시작", totalCount);
                 }
 
+                int savedCount = 0;
+                int duplicatedCount = 0;
+                int filteredCount = 0;
+                int invalidCount = 0;
+
                 for (YouthPolicyApiResponse.Item item : items) {
                     String externalId = item.getPlcyNo();
 
                     if (externalId == null || externalId.isBlank()) {
+                        invalidCount++;
                         log.warn("[청년정책] {}페이지 plcyNo 없음 - 저장 건너뜀", pageNo);
                         continue;
                     }
 
-                    if (repository.existsBySourceTypeAndExternalId("청년정책API", externalId)) {
+                    if (repository.existsBySourceTypeAndExternalId(YOUTH_POLICY_SOURCE_TYPE, externalId)) {
+                        duplicatedCount++;
                         continue;
                     }
 
                     if (!isHousingRelatedYouthPolicy(item)) {
+                        filteredCount++;
                         continue;
                     }
 
                     repository.save(toYouthPolicyEntity(item));
+                    savedCount++;
                 }
 
-                log.info("[청년정책] {}페이지 완료", pageNo);
+                totalSavedCount += savedCount;
+                totalDuplicatedCount += duplicatedCount;
+                totalFilteredCount += filteredCount;
+                totalInvalidCount += invalidCount;
+
+                log.info(
+                        "[청년정책] {}페이지 완료 - 저장 {}건, 중복 {}건, 필터제외 {}건, ID없음 {}건",
+                        pageNo,
+                        savedCount,
+                        duplicatedCount,
+                        filteredCount,
+                        invalidCount
+                );
+
                 pageNo++;
 
+            } catch (HttpClientErrorException.BadRequest e) {
+                log.info(
+                        "[청년정책] {}페이지 - API 요청 범위 종료 또는 잘못된 페이지 응답으로 수집 종료",
+                        pageNo
+                );
+                break;
+
+            } catch (HttpServerErrorException.InternalServerError e) {
+                log.warn(
+                        "[청년정책] {}페이지 - 외부 API 서버 오류로 수집 중단. 응답이 HTML 에러 페이지로 반환됨.",
+                        pageNo
+                );
+                break;
+
             } catch (Exception e) {
-                if (e.getMessage() != null && e.getMessage().contains("400")) {
-                    log.info("[청년정책] {}페이지 - 마지막 페이지 도달, 수집 완료", pageNo);
-                } else {
-                    log.error("[청년정책] {}페이지 실패: {}", pageNo, e.getMessage(), e);
-                }
+                log.error("[청년정책] {}페이지 실패: {}", pageNo, e.getMessage(), e);
                 break;
             }
         }
+
+        log.info(
+                "[청년정책] 전체 수집 결과 - 저장 {}건, 중복 {}건, 필터제외 {}건, ID없음 {}건",
+                totalSavedCount,
+                totalDuplicatedCount,
+                totalFilteredCount,
+                totalInvalidCount
+        );
     }
 
     // =========================
@@ -125,6 +185,12 @@ public class PolicyService {
     public void fetchPublicServices() {
         int pageNo = 1;
         int totalCount = 0;
+
+        int totalSavedCount = 0;
+        int totalDuplicatedCount = 0;
+        int totalFilteredCount = 0;
+        int totalInvalidCount = 0;
+        int totalDetailFailCount = 0;
 
         do {
             try {
@@ -158,34 +224,60 @@ public class PolicyService {
                     break;
                 }
 
+                int savedCount = 0;
+                int duplicatedCount = 0;
+                int filteredCount = 0;
+                int invalidCount = 0;
+                int detailFailCount = 0;
+
                 for (PublicServiceApiResponse.Item item : items) {
                     String externalId = item.getServiceId();
 
                     if (externalId == null || externalId.isBlank()) {
+                        invalidCount++;
                         log.warn("[공공서비스] {}페이지 serviceId 없음 - 저장 건너뜀", pageNo);
                         continue;
                     }
 
-                    if (repository.existsBySourceTypeAndExternalId("공공서비스API", externalId)) {
+                    if (repository.existsBySourceTypeAndExternalId(PUBLIC_SERVICE_SOURCE_TYPE, externalId)) {
+                        duplicatedCount++;
                         continue;
                     }
 
                     // 목록 단계에서 주거/자립 관련 후보만 상세조회
                     if (!isHousingRelatedPublicService(item)) {
+                        filteredCount++;
                         continue;
                     }
 
                     PublicServiceDetailApiResponse.Item detail = fetchPublicServiceDetail(externalId);
 
                     if (detail == null) {
+                        detailFailCount++;
                         log.warn("[공공서비스] serviceId={} 상세조회 실패 - 저장 건너뜀", externalId);
                         continue;
                     }
 
                     repository.save(toPublicServiceEntity(item, detail));
+                    savedCount++;
                 }
 
-                log.info("[공공서비스] {}페이지 완료", pageNo);
+                totalSavedCount += savedCount;
+                totalDuplicatedCount += duplicatedCount;
+                totalFilteredCount += filteredCount;
+                totalInvalidCount += invalidCount;
+                totalDetailFailCount += detailFailCount;
+
+                log.info(
+                        "[공공서비스] {}페이지 완료 - 저장 {}건, 중복 {}건, 필터제외 {}건, ID없음 {}건, 상세실패 {}건",
+                        pageNo,
+                        savedCount,
+                        duplicatedCount,
+                        filteredCount,
+                        invalidCount,
+                        detailFailCount
+                );
+
                 pageNo++;
 
             } catch (Exception e) {
@@ -194,6 +286,15 @@ public class PolicyService {
             }
 
         } while ((pageNo - 1) * NUM_OF_ROWS < totalCount);
+
+        log.info(
+                "[공공서비스] 전체 수집 결과 - 저장 {}건, 중복 {}건, 필터제외 {}건, ID없음 {}건, 상세실패 {}건",
+                totalSavedCount,
+                totalDuplicatedCount,
+                totalFilteredCount,
+                totalInvalidCount,
+                totalDetailFailCount
+        );
     }
 
     // 행안부 공공서비스 상세 조회
@@ -204,6 +305,7 @@ public class PolicyService {
                     + "&page=1"
                     + "&perPage=1"
                     + "&cond[서비스ID::EQ]=" + serviceId;
+
             log.info("[공공서비스 상세] 요청 URL={}", url);
 
             ResponseEntity<PublicServiceDetailApiResponse> response =
@@ -248,7 +350,7 @@ public class PolicyService {
 
         return Policy.builder()
                 .externalId(item.getPlcyNo())
-                .sourceType("청년정책API")
+                .sourceType(YOUTH_POLICY_SOURCE_TYPE)
                 .title(item.getPlcyNm())
                 .region(extractRegionFromText(
                         item.getSprvsnInstCdNm(),
@@ -321,7 +423,7 @@ public class PolicyService {
 
         return Policy.builder()
                 .externalId(listItem.getServiceId())
-                .sourceType("공공서비스API")
+                .sourceType(PUBLIC_SERVICE_SOURCE_TYPE)
                 .title(firstNotBlank(detail.getServiceName(), listItem.getServiceName()))
                 .region(extractRegionFromText(
                         listItem.getSupervisingInstitution(),
@@ -370,6 +472,8 @@ public class PolicyService {
 
     // =========================
     // 목록 조회
+    // 사용자 화면에서는 isVisible = true인 제도만 조회
+    // QueryDSL로 조건 검색 + 페이지네이션 처리
     // =========================
     @Transactional(readOnly = true)
     public Page<Policy> getList(
@@ -382,40 +486,16 @@ public class PolicyService {
             int page,
             int size
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("policyId").descending());
-
-        mainCategory = normalize(mainCategory);
-        subCategory = normalize(subCategory);
-        region = normalize(region);
-        status = normalize(status);
-        supportType = normalize(supportType);
-        keyword = normalize(keyword);
-
-        String finalMainCategory = mainCategory;
-        String finalSubCategory = subCategory;
-        String finalRegion = region;
-        String finalStatus = status;
-        String finalSupportType = supportType;
-        String finalKeyword = keyword;
-
-        List<Policy> filtered = repository
-                .findByIsVisibleTrue(Sort.by("policyId").descending())
-                .stream()
-                .filter(p -> finalMainCategory == null || finalMainCategory.equals(p.getMainCategory()))
-                .filter(p -> finalSubCategory == null || finalSubCategory.equals(p.getSubCategory()))
-                .filter(p -> finalRegion == null || finalRegion.equals(p.getRegion()))
-                .filter(p -> finalStatus == null || finalStatus.equals(p.getStatus()))
-                .filter(p -> finalSupportType == null || containsIgnoreCase(p.getSupportType(), finalSupportType))
-                .filter(p -> finalKeyword == null || matchesKeyword(p, finalKeyword))
-                .toList();
-
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), filtered.size());
-
-        List<Policy> pageContent =
-                start >= filtered.size() ? List.of() : filtered.subList(start, end);
-
-        return new PageImpl<>(pageContent, pageable, filtered.size());
+        return queryRepository.search(
+                normalize(mainCategory),
+                normalize(subCategory),
+                normalize(region),
+                normalize(status),
+                normalize(supportType),
+                normalize(keyword),
+                page,
+                size
+        );
     }
 
     // =========================
@@ -536,7 +616,7 @@ public class PolicyService {
             return "확인필요";
         }
 
-        // 상시 신청은 날짜 비교 업시 상시 신청 처리
+        // 상시 신청은 날짜 비교 없이 상시 신청 처리
         if (value.contains("상시")) {
             return "상시신청";
         }
@@ -653,31 +733,6 @@ public class PolicyService {
         return false;
     }
 
-    private boolean containsIgnoreCase(String value, String keyword) {
-        if (value == null || keyword == null) {
-            return false;
-        }
-
-        return value.toLowerCase().contains(keyword.toLowerCase());
-    }
-
-    private boolean matchesKeyword(Policy policy, String keyword) {
-        if (keyword == null) {
-            return true;
-        }
-
-        return containsIgnoreCase(policy.getTitle(), keyword)
-                || containsIgnoreCase(policy.getRegion(), keyword)
-                || containsIgnoreCase(policy.getMainCategory(), keyword)
-                || containsIgnoreCase(policy.getSubCategory(), keyword)
-                || containsIgnoreCase(policy.getOriginalCategory(), keyword)
-                || containsIgnoreCase(policy.getKeyword(), keyword)
-                || containsIgnoreCase(policy.getSummary(), keyword)
-                || containsIgnoreCase(policy.getContent(), keyword)
-                || containsIgnoreCase(policy.getTargetDesc(), keyword)
-                || containsIgnoreCase(policy.getSupervisingInstitution(), keyword);
-    }
-
     private String extractRegionFromText(String... values) {
         String text = joinText(values);
 
@@ -755,6 +810,5 @@ public class PolicyService {
         }
 
         return dates;
-
     }
 }

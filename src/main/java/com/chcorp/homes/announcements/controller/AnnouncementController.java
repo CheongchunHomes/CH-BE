@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+
 
 @RequiredArgsConstructor    // AnnouncementService 주입
 @RequestMapping("/announcements")   // Postman 주소 앞 부분 일치
@@ -56,13 +58,30 @@ public class AnnouncementController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String sourceType,
             @RequestParam(required = false) String targetType,
+            @RequestParam(required = false) BigDecimal latitude,
+            @RequestParam(required = false) BigDecimal longitude,
+            @RequestParam(required = false) String locationFilter,
+            @RequestParam(required = false) String areaType,
             @RequestParam(required = false, defaultValue = "false") boolean deadlineSoon,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
         //1. 서비스에서 DB 데이터를 Page 형태로 가져옴
         Page<Announcement> announcements =
-                announcementService.getList(region, status, keyword, sourceType, targetType, deadlineSoon, page, size);
+                announcementService.getList(
+                        region,
+                        status,
+                        keyword,
+                        sourceType,
+                        targetType,
+                        deadlineSoon,
+                        areaType,
+                        latitude,
+                        longitude,
+                        locationFilter,
+                        page,
+                        size
+                );
 
         //2. 가져온 데이터 (announcements)를 DTO로 변환
         Page<AnnouncementListDTO> dto = announcements.map(AnnouncementListDTO::new);
