@@ -41,7 +41,8 @@ public class SecurityConfig {
             "/ws/map-chat/**",
             "/policies",
             "/policies/**",
-            "/simulator/**"
+            "/simulator/**",
+            "/admin/banners/**"
             ,"/**"   // 임시
     };
 

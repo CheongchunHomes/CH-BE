@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit} ? '배너 수정' : '배너 등록'">배너 등록</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+    <style>
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        .left-col, .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .textarea-large {
+            min-height: 200px;
+            resize: vertical;
+            width: 100%;
+            border: 1px solid #dbe5ff;
+            border-radius: 14px;
+            padding: 12px 14px;
+            font: inherit;
+            font-size: 14px;
+            background: #f8fbff;
+            outline: none;
+            line-height: 1.7;
+        }
+        .textarea-large:focus {
+            border-color: #7da2ff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+        .inline-row {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            gap: 12px;
+            align-items: end;
+        }
+    </style>
+</head>
+<body>
+<div class="layout">
+
+    <aside th:replace="~{admin/fragments/layout :: sidebar('banner')}"></aside>
+
+    <main class="content">
+
+        <section class="hero">
+            <div>
+                <div class="eyebrow">배너 관리</div>
+                <h2 th:text="${isEdit} ? '배너 수정' : '배너 등록'">배너 등록</h2>
+                <p th:text="${isEdit} ? '등록된 배너 정보를 수정합니다.' : '메인 화면에 노출할 배너를 등록합니다. 게시 기간을 설정하면 자동으로 노출·종료됩니다.'">
+                    메인 화면에 노출할 배너를 등록합니다.
+                </p>
+            </div>
+        </section>
+
+        <div class="form-panel">
+            <form th:action="${isEdit} ? @{/admin/banners/{id}/edit(id=${bannerId})} : @{/admin/banners/new}"
+                  method="post"
+                  th:object="${dto}">
+
+                <div class="two-col">
+
+                    <!-- 왼쪽: 배너 명칭 + 내용 요약 -->
+                    <div class="left-col">
+
+                        <div class="form-group">
+                            <label>배너 명칭 *</label>
+                            <input type="text" th:field="*{title}"
+                                   placeholder="예) 2025 청년 행복주택 모집 공고" required>
+                            <span th:if="${#fields.hasErrors('title')}"
+                                  th:errors="*{title}"
+                                  style="color:var(--red); font-size:12px;"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>내용 요약</label>
+                            <textarea th:field="*{content}"
+                                      class="textarea-large"
+                                      placeholder="메인 화면 배너에 표시될 홍보 문구를 입력하세요."></textarea>
+                        </div>
+
+                    </div>
+
+                    <!-- 오른쪽: 연결 공지 + 기간 + 순서/노출 -->
+                    <div class="right-col">
+
+                        <!-- 연결 공지 선택 -->
+                        <div class="form-group">
+                            <label>연결 공지 선택</label>
+                            <select th:field="*{linkUrl}">
+                                <option value="">링크 없음</option>
+                                <option th:each="notice : ${notices}"
+                                        th:value="'/site/notices/' + ${notice.noticeId}"
+                                        th:text="${#temporals.format(notice.createdAt, 'MM.dd')} + ' | ' + ${notice.title}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- 게시 시작 일시 -->
+                        <div class="form-group">
+                            <label>게시 시작 일시 *</label>
+                            <input type="datetime-local" th:field="*{startDate}" required>
+                            <span th:if="${#fields.hasErrors('startDate')}"
+                                  th:errors="*{startDate}"
+                                  style="color:var(--red); font-size:12px;"></span>
+                        </div>
+
+                        <!-- 게시 종료 일시 -->
+                        <div class="form-group">
+                            <label>게시 종료 일시 *</label>
+                            <input type="datetime-local" th:field="*{endDate}" required>
+                            <span th:if="${#fields.hasErrors('endDate')}"
+                                  th:errors="*{endDate}"
+                                  style="color:var(--red); font-size:12px;"></span>
+                        </div>
+
+                        <!-- 노출 순서 + 노출 설정 한 라인 -->
+                        <div class="inline-row">
+                            <div class="form-group">
+                                <label>노출 순서 *</label>
+                                <input type="number" th:field="*{sortOrder}" min="1" required>
+                                <span th:if="${#fields.hasErrors('sortOrder')}"
+                                      th:errors="*{sortOrder}"
+                                      style="color:var(--red); font-size:12px;"></span>
+                            </div>
+                            <div class="form-group">
+                                <label>노출 설정</label>
+                                <div class="radio-group">
+                                    <label>
+                                        <input type="radio" th:field="*{visible}" value="true"> 즉시 노출
+                                    </label>
+                                    <label>
+                                        <input type="radio" th:field="*{visible}" value="false"> 숨김
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a class="button ghost" th:href="@{/admin/banners/list}">취소</a>
+                    <button class="button" type="submit"
+                            th:text="${isEdit} ? '수정 완료' : '배너 등록'">배너 등록</button>
+                </div>
+
+            </form>
+        </div>
+
+    </main>
+</div>
+</body>
+</html>
