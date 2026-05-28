@@ -14,23 +14,7 @@ import java.util.List;
 public class RecommendSummaryResponse {
 
     private List<RecommendItemDTO> policies;
-    private DiagnosisResult diagnosis;  // 더미데이터(진단 점수)용
-
-    @Getter
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class DiagnosisResult {
-        private int subscriptionReadinessScore;
-        private int publicRentalFitScore;
-        private int jeonseloanScore;
-        private int saleSubscriptionScore;
-        private String subscriptionReadinessGrade;
-        private String publicRentalFitGrade;
-        private String jeonseloanGrade;
-        private String saleSubscriptionGrade;
+    private String desiredCity;
 
     }
 
-
-}

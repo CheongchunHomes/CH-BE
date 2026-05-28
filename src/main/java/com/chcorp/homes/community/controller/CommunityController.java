@@ -107,4 +107,21 @@ public class CommunityController {
 
         return ResponseEntity.noContent().build();
     }
+    @DeleteMapping("/admin/{postId}")
+    public ResponseEntity<Void> deletePostByAdmin(
+            @PathVariable Long postId
+    ) {
+        communityService.deletePostByAdmin(postId);
+
+        return ResponseEntity.noContent().build();
+    }
+    @PutMapping("/admin/{postId}")
+    public ResponseEntity<CommunityResponseDTO> updatePostByAdmin(
+            @PathVariable Long postId,
+            @RequestBody CommunityUpdateDTO request
+    ) {
+        return ResponseEntity.ok(
+                communityService.updatePostByAdmin(postId, request)
+        );
+    }
 }
