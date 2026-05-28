@@ -24,6 +24,21 @@ public class FileService {
     private final FileAccessPolicy fileAccessPolicy;
     private final SupabaseStorageClient supabaseStorageClient;
 
+    public FileAsset validateReadableDocumentFile(Long userId, Long fileId) {
+        FileAsset fileAsset = findFileAsset(fileId);
+        if (fileAsset.getStatus() != FileStatus.ACTIVE) {
+            throw new IllegalStateException("문서 파일을 사용할 수 없는 상태입니다.");
+        }
+        if (!fileAccessPolicy.canRead(fileAsset, userId)) {
+            throw new AccessDeniedException("파일을 조회할 권한이 없습니다.");
+        }
+        if (fileAsset.getContentType() != FileContentType.DOCUMENT) {
+            throw new IllegalStateException("문서 파일만 사용할 수 있습니다.");
+        }
+
+        return fileAsset;
+    }
+
     @Transactional
     public FileUploadUrlResponseDTO createUploadUrl(Long userId, FileUploadUrlRequestDTO request) {
         String originalFilename = normalizeOriginalFilename(request.originalFilename());

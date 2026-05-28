@@ -4,8 +4,12 @@ import com.chcorp.homes.properties.entity.Property;
 import com.chcorp.homes.properties.repository.PropertyRepository;
 import com.chcorp.homes.diagnosis.entity.UserProfile;
 import com.chcorp.homes.diagnosis.repository.UserProfileRepository;
+import com.chcorp.homes.files.entity.FileAsset;
+import com.chcorp.homes.files.service.FileService;
 import com.chcorp.homes.files.service.SupabaseStorageClient;
+import com.chcorp.homes.sign.dto.request.CustomerSignRequestDTO;
 import com.chcorp.homes.sign.dto.request.SignCreateRequestDTO;
+import com.chcorp.homes.sign.dto.request.ProviderSignRequestDTO;
 import com.chcorp.homes.sign.dto.response.BrokerSignImageResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignContractResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignResponseDTO;
@@ -21,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -37,6 +42,7 @@ public class SignService {
     private final PropertyRepository propertyRepository;
     private final PersonalInfoRepository personalInfoRepository;
     private final UserProfileRepository userProfileRepository;
+    private final FileService fileService;
     private final SupabaseStorageClient supabaseStorageClient;
 
     @Transactional(readOnly = true)
@@ -114,6 +120,52 @@ public class SignService {
     }
 
     @Transactional
+    public SignResponseDTO providerSign(
+            Long currentUserId,
+            Long signId,
+            ProviderSignRequestDTO request
+    ) {
+        validateCurrentUserId(currentUserId);
+        validateProviderSignRequest(request);
+
+        SignRequest signRequest = getSignRequest(signId);
+        validateProvider(signRequest, currentUserId);
+        validateStatus(signRequest, SignStatus.ISSUED, "provider-sign");
+
+        FileAsset providerSignedPdf = fileService.validateReadableDocumentFile(
+                currentUserId,
+                request.providerSignedPdfFileId()
+        );
+
+        signRequest.providerSign(providerSignedPdf.getId(), Instant.now());
+
+        return SignResponseDTO.from(signRequest);
+    }
+
+    @Transactional
+    public SignResponseDTO customerSign(
+            Long currentUserId,
+            Long signId,
+            CustomerSignRequestDTO request
+    ) {
+        validateCurrentUserId(currentUserId);
+        validateCustomerSignRequest(request);
+
+        SignRequest signRequest = getSignRequest(signId);
+        validateCustomer(signRequest, currentUserId);
+        validateStatus(signRequest, SignStatus.PROVIDER_SIGNED, "customer-sign");
+
+        FileAsset completedPdf = fileService.validateReadableDocumentFile(
+                currentUserId,
+                request.completedPdfFileId()
+        );
+
+        signRequest.customerSign(completedPdf.getId(), Instant.now());
+
+        return SignResponseDTO.from(signRequest);
+    }
+
+    @Transactional
     public SignResponseDTO approve(Long currentUserId, Long signId) {
         validateCurrentUserId(currentUserId);
 
@@ -170,6 +222,18 @@ public class SignService {
         }
     }
 
+    private void validateProviderSignRequest(ProviderSignRequestDTO request) {
+        if (request == null || request.providerSignedPdfFileId() == null) {
+            throw new IllegalArgumentException("providerSignedPdfFileId가 필요합니다.");
+        }
+    }
+
+    private void validateCustomerSignRequest(CustomerSignRequestDTO request) {
+        if (request == null || request.completedPdfFileId() == null) {
+            throw new IllegalArgumentException("completedPdfFileId가 필요합니다.");
+        }
+    }
+
     private void validateParticipant(SignRequest signRequest, Long currentUserId) {
         if (!isProvider(signRequest, currentUserId) && !isCustomer(signRequest, currentUserId)) {
             throw new IllegalStateException("계약서를 처리할 권한이 없습니다.");
@@ -185,6 +249,12 @@ public class SignService {
     private void validateCustomer(SignRequest signRequest, Long currentUserId) {
         if (!isCustomer(signRequest, currentUserId)) {
             throw new IllegalStateException("customer만 승인할 수 있습니다.");
+        }
+    }
+
+    private void validateStatus(SignRequest signRequest, SignStatus expectedStatus, String actionName) {
+        if (signRequest.getStatus() != expectedStatus) {
+            throw new IllegalStateException(actionName + "은 " + expectedStatus + " 상태에서만 가능합니다.");
         }
     }
 

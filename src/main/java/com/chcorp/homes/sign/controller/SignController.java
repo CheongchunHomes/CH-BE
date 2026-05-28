@@ -1,6 +1,8 @@
 package com.chcorp.homes.sign.controller;
 
+import com.chcorp.homes.sign.dto.request.CustomerSignRequestDTO;
 import com.chcorp.homes.sign.dto.request.SignCreateRequestDTO;
+import com.chcorp.homes.sign.dto.request.ProviderSignRequestDTO;
 import com.chcorp.homes.sign.dto.response.BrokerSignImageResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignContractResponseDTO;
 import com.chcorp.homes.sign.dto.response.SignResponseDTO;
@@ -69,6 +71,33 @@ public class SignController {
         return ResponseEntity.ok(signService.issue(currentUserId, request));
     }
 
+    /**
+     * provider 서명
+     * */
+    @PostMapping("/{signId}/provider-sign")
+    public ResponseEntity<SignResponseDTO> providerSign(
+            Authentication authentication,
+            @PathVariable Long signId,
+            @RequestBody ProviderSignRequestDTO request
+    ) {
+        Long currentUserId = Long.valueOf(authentication.getName());
+
+        return ResponseEntity.ok(signService.providerSign(currentUserId, signId, request));
+    }
+
+    /**
+     * customer 서명
+     * */
+    @PostMapping("/{signId}/customer-sign")
+    public ResponseEntity<SignResponseDTO> customerSign(
+            Authentication authentication,
+            @PathVariable Long signId,
+            @RequestBody CustomerSignRequestDTO request
+    ) {
+        Long currentUserId = Long.valueOf(authentication.getName());
+
+        return ResponseEntity.ok(signService.customerSign(currentUserId, signId, request));
+    }
 
 
     /**

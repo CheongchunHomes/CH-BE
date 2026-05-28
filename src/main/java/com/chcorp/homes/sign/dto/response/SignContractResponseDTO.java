@@ -17,7 +17,11 @@ public record SignContractResponseDTO(
         Instant updatedAt,
         ContractPropertyDTO property,
         ContractPartyDTO provider,
-        ContractPartyDTO customer
+        ContractPartyDTO customer,
+        Long providerSignedPdfFileId,
+        Long completedPdfFileId,
+        Instant providerSignedAt,
+        Instant customerSignedAt
 ) {
     public static SignContractResponseDTO from(
             SignRequest signRequest,
@@ -33,7 +37,11 @@ public record SignContractResponseDTO(
                 signRequest.getUpdatedAt(),
                 ContractPropertyDTO.from(signRequest.getPropertyId()),
                 ContractPartyDTO.from(signRequest.getProvider().getId(), providerInfo, providerProfile),
-                ContractPartyDTO.from(signRequest.getCustomer().getId(), customerInfo, customerProfile)
+                ContractPartyDTO.from(signRequest.getCustomer().getId(), customerInfo, customerProfile),
+                signRequest.getProviderSignedPdfFileId(),
+                signRequest.getCompletedPdfFileId(),
+                signRequest.getProviderSignedAt(),
+                signRequest.getCustomerSignedAt()
         );
     }
 
