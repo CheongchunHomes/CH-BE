@@ -42,6 +42,7 @@ public class BannerService {
         Banner banner = Banner.builder()
                 .title(dto.getTitle())
                 .content(dto.getContent())
+                .noticeId(dto.getNoticeId())
                 .linkUrl(dto.getLinkUrl())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
@@ -65,6 +66,7 @@ public class BannerService {
         banner.update(
                 dto.getTitle(),
                 dto.getContent(),
+                dto.getNoticeId(),
                 dto.getLinkUrl(),
                 dto.getStartDate(),
                 dto.getEndDate(),
@@ -94,6 +96,15 @@ public class BannerService {
     public List<BannerResponseDto> getActiveBannersToFront() {
         return bannerRepository.findActiveBanners(LocalDateTime.now()).stream()
                 .map(BannerResponseDto::from)
+                .toList();
+    }
+
+    // 이미 배너에 연결된 noticeId 목록 조회 (드롭다운 [배너연결] 표시용)
+    public List<Long> getUsedNoticeIds() {
+        return bannerRepository.findAllByOrderBySortOrderAscIdDesc()
+                .stream()
+                .map(Banner::getNoticeId)
+                .filter(id -> id != null)
                 .toList();
     }
 }

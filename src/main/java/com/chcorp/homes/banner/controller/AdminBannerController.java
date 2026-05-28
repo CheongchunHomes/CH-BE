@@ -33,13 +33,21 @@ public class AdminBannerController {
         return "admin/banners/list";
     }
 
+    // 공지 목록 + 이미 배너 연결된 noticeId 목록 model에 세팅
+    // 드롭다운에서 [배너연결] 표시용
+    private void addNotices(Model model) {
+        model.addAttribute("notices",
+                noticeRepository.findByCategoryNotOrderByNoticeIdDesc("커뮤니티"));
+        model.addAttribute("usedNoticeIds",
+                bannerService.getUsedNoticeIds());
+    }
+
     // 배너 등록 폼
     @GetMapping("/new")
     public String newForm(Model model) {
         model.addAttribute("dto", new BannerRequestDto());
-        model.addAttribute("notices",
-                noticeRepository.findByCategoryNotOrderByNoticeIdDesc("커뮤니티"));
         model.addAttribute("isEdit", false);
+        addNotices(model);
         return "admin/banners/form";
     }
 
@@ -49,9 +57,8 @@ public class AdminBannerController {
                                BindingResult result,
                                Model model) {
         if (result.hasErrors()) {
-            model.addAttribute("notices",
-                    noticeRepository.findByCategoryNotOrderByNoticeIdDesc("커뮤니티"));
             model.addAttribute("isEdit", false);
+            addNotices(model);
             return "admin/banners/form";
         }
         bannerService.createBanner(dto);
@@ -67,7 +74,7 @@ public class AdminBannerController {
         BannerRequestDto dto = new BannerRequestDto();
         dto.setTitle(banner.title());
         dto.setContent(banner.content());
-        dto.setLinkUrl(banner.linkUrl());
+        dto.setNoticeId(banner.noticeId());
         dto.setStartDate(banner.startDate());
         dto.setEndDate(banner.endDate());
         dto.setSortOrder(banner.sortOrder());
@@ -75,9 +82,15 @@ public class AdminBannerController {
 
         model.addAttribute("dto", dto);
         model.addAttribute("bannerId", id);
+        model.addAttribute("isEdit", true);
+        // 수정 폼: 자기 자신 noticeId는 usedNoticeIds에서 제외
         model.addAttribute("notices",
                 noticeRepository.findByCategoryNotOrderByNoticeIdDesc("커뮤니티"));
-        model.addAttribute("isEdit", true);
+        model.addAttribute("usedNoticeIds",
+                bannerService.getUsedNoticeIds().stream()
+                        .filter(noticeId -> !noticeId.equals(banner.noticeId()))
+                        .toList());
+
         return "admin/banners/form";
     }
 
@@ -89,9 +102,8 @@ public class AdminBannerController {
                                Model model) {
         if (result.hasErrors()) {
             model.addAttribute("bannerId", id);
-            model.addAttribute("notices",
-                    noticeRepository.findByCategoryNotOrderByNoticeIdDesc("커뮤니티"));
             model.addAttribute("isEdit", true);
+            addNotices(model);
             return "admin/banners/form";
         }
         bannerService.updateBanner(id, dto);

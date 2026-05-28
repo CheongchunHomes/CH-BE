@@ -6,22 +6,23 @@
   <title>배너 관리</title>
   <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
   <style>
-    .img-thumb {
-        width: 56px; height: 36px;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 1px solid var(--line);
-    }
-    .link-cell {
-        max-width: 200px;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        color: var(--blue); font-size: 12px; display: block;
-    }
-    .date-range { font-size: 12px; color: var(--muted); line-height: 1.7; }
+    .date-cell { font-size: 12px; color: var(--muted); }
+    .date-cell span { display: block; white-space: nowrap; }
+    .date-label { font-size: 11px; color: var(--line); font-weight: 800; }
     .content-cell {
         max-width: 200px;
         overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         font-size: 13px; color: var(--muted);
+    }
+    .notice-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 800;
     }
   </style>
 </head>
@@ -36,7 +37,7 @@
       <div>
         <div class="eyebrow">배너 관리</div>
         <h2>메인 배너 관리</h2>
-        <p>메인 화면에 노출되는 배너를 등록하고 관리합니다.</p>
+        <p>메인 화면에 게시되는 배너를 등록하고 관리합니다.</p>
       </div>
       <div class="hero-actions">
         <span class="pill" th:text="'총 ' + ${#lists.size(banners)} + '개'">총 0개</span>
@@ -48,7 +49,7 @@
       <div class="table-head">
         <div>
           <h3>등록된 배너</h3>
-          <p>노출 순서 오름차순 · 최신 등록순 정렬</p>
+          <p>게시 순서 오름차순 · 최신 등록순 정렬</p>
         </div>
       </div>
 
@@ -60,26 +61,42 @@
         <table>
           <thead>
           <tr>
-            <th style="width:48px;">순서</th>
+            <th style="width:70px; white-space:nowrap;">게시순서</th>
+            <th style="width:90px;">게시상태</th>
+            <th style="width:90px;">공지번호</th>
             <th>배너명</th>
             <th>내용 요약</th>
-            <th>연결 링크</th>
-            <th style="width:170px;">게시 기간</th>
-            <th style="width:90px;">노출 상태</th>
-            <th style="width:160px;">동작</th>
+            <th style="width:130px;">시작일</th>
+            <th style="width:130px;">종료일</th>
+            <th style="width:200px;">동작</th>
           </tr>
           </thead>
           <tbody>
-          <tr th:each="banner, bannerStat : ${banners}">
+          <tr th:each="banner : ${banners}">
 
-            <!-- 순서 -->
-            <td style="font-weight:800; color:var(--muted);"
-                th:text="${bannerStat.count}">1</td>
+            <!-- 게시순서 -->
+            <td style="font-weight:800; text-align:center;"
+                th:text="${banner.sortOrder}">1</td>
+
+            <!-- 게시상태 -->
+            <td>
+              <span class="badge green" th:if="${banner.isVisible}">게시중</span>
+              <span class="badge gray" th:unless="${banner.isVisible}">중지됨</span>
+            </td>
+
+            <!-- 공지번호 -->
+            <td>
+                                <span class="notice-badge"
+                                      th:if="${banner.noticeId != null}"
+                                      th:text="'#' + ${banner.noticeId}">
+                                </span>
+              <span th:unless="${banner.noticeId != null}"
+                    class="muted" style="font-size:12px;">—</span>
+            </td>
 
             <!-- 배너명 -->
             <td>
               <strong th:text="${banner.title}">배너명</strong>
-              <div class="subtext" th:text="'ID: ' + ${banner.id}">ID: 1</div>
             </td>
 
             <!-- 내용 요약 -->
@@ -89,50 +106,34 @@
                                 </span>
             </td>
 
-            <!-- 연결 링크 -->
+            <!-- 시작일 -->
             <td>
-              <a th:if="${banner.linkUrl != null and !banner.linkUrl.isEmpty()}"
-                 th:href="${banner.linkUrl}"
-                 th:text="${banner.linkUrl}"
-                 class="link-cell"
-                 target="_blank"></a>
-              <span th:unless="${banner.linkUrl != null and !banner.linkUrl.isEmpty()}"
-                    class="muted" style="font-size:12px;">—</span>
+              <div class="date-cell">
+                <span th:text="${#temporals.format(banner.startDate, 'yyyy.MM.dd HH:mm')}"></span>
+              </div>
             </td>
 
-            <!-- 게시 기간 -->
+            <!-- 종료일 -->
             <td>
-              <div class="date-range">
-                <span th:text="${#temporals.format(banner.startDate, 'yyyy.MM.dd HH:mm')}"></span><br>
-                <span style="font-size:10px; color:var(--line);">~</span><br>
+              <div class="date-cell">
                 <span th:text="${#temporals.format(banner.endDate, 'yyyy.MM.dd HH:mm')}"></span>
               </div>
             </td>
 
-            <!-- 노출 상태 -->
-            <td>
-              <span class="badge green" th:if="${banner.isVisible}">노출중</span>
-              <span class="badge gray" th:unless="${banner.isVisible}">중지됨</span>
-            </td>
-
             <!-- 동작 -->
             <td>
-              <div class="action-group">
-                <!-- 수정 -->
+              <div class="action-group" style="flex-wrap:nowrap;">
                 <a class="button ghost sm"
                    th:href="@{/admin/banners/{id}/edit(id=${banner.id})}">수정</a>
-
-                <!-- 노출 토글 -->
                 <form th:action="@{/admin/banners/{id}/toggle(id=${banner.id})}"
-                      method="post">
-                  <button type="submit" class="button sm"
-                          th:classappend="${banner.isVisible} ? ' danger' : ''"
-                          th:text="${banner.isVisible} ? '중지' : '노출'">중지</button>
+                      method="post" style="display:inline;">
+                  <button type="submit"
+                          th:class="${banner.isVisible} ? 'button sm danger' : 'button sm'"
+                          th:text="${banner.isVisible} ? '중지' : '게시'">중지</button>
                 </form>
-
-                <!-- 삭제 -->
                 <form th:action="@{/admin/banners/{id}/delete(id=${banner.id})}"
                       method="post"
+                      style="display:inline;"
                       onsubmit="return confirm('정말 삭제하시겠습니까?')">
                   <button type="submit" class="button sm danger">삭제</button>
                 </form>

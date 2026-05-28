@@ -11,12 +11,13 @@ import java.time.LocalDateTime;
  */
 public record BannerResponseDto(
         Long id,
-        String title,            // 배너 명칭
-        String content,          // 배너 본문 요약 텍스트 (홍보 문구)
-        String linkUrl,          // 클릭 시 이동할 링크 주소
+        String title,            // 배너 제목
+        String content,          // 배너 본문 요약 텍스트
+        Long noticeId,           // 연결된 공지 ID (null 가능)
+        String linkUrl,          // 링크
         LocalDateTime startDate, // 게시 시작 일시
         LocalDateTime endDate,   // 게시 종료 일시
-        Integer sortOrder,       // 노출 우선순위 (낮을수록 먼저 노출)
+        Integer sortOrder,       // 노출 우선순위
         boolean isVisible,       // 현재 수동 노출 활성화 여부
         Instant createdAt        // 등록 일시
 ) {
@@ -28,6 +29,7 @@ public record BannerResponseDto(
                 banner.getId(),
                 banner.getTitle(),
                 banner.getContent(),
+                banner.getNoticeId(),
                 banner.getLinkUrl(),
                 banner.getStartDate(),
                 banner.getEndDate(),

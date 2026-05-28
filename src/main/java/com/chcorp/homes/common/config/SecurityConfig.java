@@ -42,7 +42,8 @@ public class SecurityConfig {
             "/policies",
             "/policies/**",
             "/simulator/**",
-            "/admin/banners/**"
+            "/admin/banners/**",
+            "/banners"
             ,"/**"   // 임시
     };
 
