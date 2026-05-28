@@ -57,6 +57,10 @@
                 <strong>통계 리포트</strong>
                 <span>로그 / 통계</span>
             </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'settings'} ? ' active' : ''" th:href="@{/admin/subscription-result}">
+                <strong>청약 관리</strong>
+                <span>신청 상태 확인</span>
+            </a>
             <a class="menu-item" th:classappend="${activeMenu == 'settings'} ? ' active' : ''" th:href="@{/admin(section='settings')}">
                 <strong>설정</strong>
                 <span>권한 / 시스템</span>

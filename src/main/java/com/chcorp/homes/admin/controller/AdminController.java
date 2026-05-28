@@ -1,6 +1,7 @@
 package com.chcorp.homes.admin.controller;
 
 
+import com.chcorp.homes.admin.repository.AdminSubscriptionResultRepository;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
 import com.chcorp.homes.subscription.repository.SubscriptionRepository;
@@ -15,8 +16,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import com.chcorp.homes.community.repository.CommunityPostRepository;
-import com.chcorp.homes.notice.repository.NoticeRepository;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -25,6 +24,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -38,8 +39,6 @@ public class AdminController {
     private final AnnouncementRepository announcementRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final PolicyRepository policyRepository;
-    private final CommunityPostRepository communityPostRepository;
-    private final NoticeRepository noticeRepository;
 
     @GetMapping
     public String admin(@RequestParam(value = "section", defaultValue = "overview") String section, Model model) {
@@ -89,11 +88,7 @@ public class AdminController {
                     "노출 중인 지원제도의 유형, 상태를 관리합니다.",
                     buildPolicyTable()
             );
-            case "notice" -> new SectionView(
-                    "공지사항 관리",
-                    "서비스 공지사항을 등록하고 확인합니다.",
-                    buildNoticeTable()
-            );
+
             case "asset" -> new SectionView(
                     "자산 리스트",
                     "이미지, PDF, 첨부 자산의 저장 상태를 점검합니다.",
@@ -108,8 +103,15 @@ public class AdminController {
             );
             case "community" -> new SectionView(
                     "커뮤니티 리스트",
-                    "등록된 커뮤니티 게시글을 확인합니다.",
-                    buildCommunityTable()
+                    "게시글, 댓글, 신고 현황을 관리합니다.",
+                    buildStaticTable(
+                            List.of("제목", "분류", "상태", "업데이트"),
+                            List.of(
+                                    row("질문 #1204", "질문", "대기", "2분 전"),
+                                    row("후기 #892", "후기", "승인", "15분 전"),
+                                    row("공지 #331", "운영", "게시", "31분 전")
+                            )
+                    )
             );
             case "simulation" -> new SectionView(
                     "시뮬레이션 리스트",
@@ -122,11 +124,6 @@ public class AdminController {
                                     row("계약서 생성", "문서", "완료", "31분 전")
                             )
                     )
-            );
-            case "statistics" -> new SectionView(
-                    "통계 리포트",
-                    "가입/탈퇴 현황과 상품 클릭률을 확인하고 리포트를 다운로드합니다.",
-                    buildStatisticsTable()
             );
             case "settings" -> new SectionView(
                     "설정",
@@ -176,6 +173,7 @@ public class AdminController {
         return new TableView(List.of("제목", "지역", "모집유형", "기간"), rows);
     }
 
+
     private TableView buildAnnouncementTable() {
         List<TableRow> rows = announcementRepository.findAll(Sort.by(Sort.Direction.DESC, "announcementId"))
                 .stream()
@@ -217,58 +215,6 @@ public class AdminController {
         return new TableView(headers, rows);
     }
 
-    private TableView buildNoticeTable() {
-        List<TableRow> rows = noticeRepository.findAll(Sort.by(Sort.Direction.DESC, "noticeId"))
-                .stream()
-                .limit(8)
-                .map(notice -> row(
-                        safe(notice.getTitle()),
-                        safe(notice.getCategory()),
-                        notice.isImportant() ? "중요" : "일반",
-                        formatTime(notice.getCreatedAt())
-                ))
-                .toList();
-
-        return new TableView(List.of("제목", "분류", "구분", "작성일"), rows);
-    }
-
-    private TableView buildCommunityTable() {
-        List<TableRow> rows = communityPostRepository.findAll(Sort.by(Sort.Direction.DESC, "postId"))
-                .stream()
-                .limit(8)
-                .map(post -> row(
-                        safe(post.getTitle()),
-                        safe(post.getRegion()),
-                        String.valueOf(post.getViewCount()),
-                        formatTime(post.getCreatedAt())
-                ))
-                .toList();
-
-        return new TableView(List.of("제목", "지역", "조회수", "작성일"), rows);
-    }
-    private TableView buildStatisticsTable() {
-        List<User> users = userRepository.findAll();
-
-        long totalUsers = users.size();
-
-        long enabledUsers = users.stream()
-                .filter(user -> user.getStatus() == UserStatus.enabled)
-                .count();
-
-        long disabledUsers = users.stream()
-                .filter(user -> user.getStatus() == UserStatus.disabled)
-                .count();
-
-        List<TableRow> rows = List.of(
-                row("전체 가입 회원", String.valueOf(totalUsers), "전체 가입 유저 수", "대기"),
-                row("활성 회원", String.valueOf(enabledUsers), "현재 활성 상태 회원 수", "대기"),
-                row("탈퇴/비활성 회원", String.valueOf(disabledUsers), "비활성 처리된 회원 수", "대기"),
-                row("상품 클릭률", "-", "상품 클릭 로그 또는 클릭 수 필드 확인 필요", "대기")
-        );
-
-        return new TableView(List.of("항목", "값", "설명", "상태"), rows);
-    }
-
     private List<MenuItem> buildMenuItems(String section) {
         return List.of(
                 menu("관리자 메인", "/admin", "overview".equals(section), "전체 현황"),
@@ -279,10 +225,10 @@ public class AdminController {
                 menu("제도", "/admin/policies", "policy".equals(section), "지원제도 리스트"),
                 menu("자산", "/admin?section=asset", "asset".equals(section), "파일 관리"),
                 menu("커뮤니티", "/admin?section=community", "community".equals(section), "게시글 관리"),
-                menu("공지사항", "/admin?section=notice", "notice".equals(section), "공지사항 관리"),
                 menu("시뮬레이션", "/admin?section=simulation", "simulation".equals(section), "진단 / 계산"),
-                menu("통계 리포트", "/admin?section=statistics", "statistics".equals(section), "로그 / 통계"),
-                menu("설정", "/admin?section=settings", "settings".equals(section), "권한 / 시스템")
+                menu("설정", "/admin?section=settings", "settings".equals(section), "권한 / 시스템"),
+                menu("청약결과", "/admin/subscription-result",
+                        "subscription_result".equals(section), "신청내역/당첨낙첨")
         );
     }
 
@@ -320,7 +266,8 @@ public class AdminController {
             return "overview";
         }
         return switch (section) {
-            case "overview", "users", "subscription", "loan", "announcement", "policy", "asset", "notice", "community", "simulation", "statistics", "settings" -> section;            default -> "overview";
+            case "overview", "users", "subscription", "subscription_result","loan", "announcement",  "policy","asset", "community", "simulation", "settings" -> section;
+            default -> "overview";
         };
     }
 
@@ -328,14 +275,13 @@ public class AdminController {
         return switch (section) {
             case "users" -> "유저 리스트";
             case "subscription" -> "청약 리스트";
+            case "subscription_result" -> "청약 결과";
             case "loan" -> "대출 리스트";
             case "announcement" -> "공고 리스트";
             case "policy" -> "지원제도 리스트";
-            case "notice" -> "공지사항 관리";
             case "asset" -> "자산 리스트";
             case "community" -> "커뮤니티 리스트";
             case "simulation" -> "시뮬레이션";
-            case "statistics" -> "통계 리포트";
             case "settings" -> "설정";
             default -> "관리자 메인";
         };
