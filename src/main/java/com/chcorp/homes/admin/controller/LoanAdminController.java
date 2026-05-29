@@ -1,25 +1,32 @@
 package com.chcorp.homes.admin.controller;
 
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
+import com.chcorp.homes.alarm.service.AlarmNotificationService;
 import com.chcorp.homes.loans.entity.LoanApplication;
 import com.chcorp.homes.loans.entity.LoanApplicationStatus;
 import com.chcorp.homes.loans.entity.LoanProduct;
 import com.chcorp.homes.loans.repository.LoanApplicationRepository;
 import com.chcorp.homes.loans.repository.LoanProductRepository;
 import com.chcorp.homes.policies.repository.PolicyRepository;
+import com.chcorp.homes.files.entity.FileAsset;
+import com.chcorp.homes.files.repository.FileAssetRepository;
+import com.chcorp.homes.files.service.SupabaseStorageClient;
 import com.chcorp.homes.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Map;
 import java.util.List;
 
 @Controller
@@ -32,6 +39,9 @@ public class LoanAdminController {
     private final PolicyRepository policyRepository;
     private final LoanProductRepository loanProductRepository;
     private final LoanApplicationRepository loanApplicationRepository;
+    private final AlarmNotificationService alarmNotificationService;
+    private final FileAssetRepository fileAssetRepository;
+    private final SupabaseStorageClient supabaseStorageClient;
 
     @GetMapping("/loan")
     public String loanHub(Model model) {
@@ -139,15 +149,40 @@ public class LoanAdminController {
         return "admin-loan-applications";
     }
 
+    @GetMapping("/loan-applications/{applicationId}/contract-preview")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> contractPreview(@PathVariable Long applicationId) {
+        LoanApplication application = loanApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + applicationId));
+
+        if (application.getAddress() == null || application.getAddress().isBlank()) {
+            throw new IllegalStateException("Contract file id is missing for application: " + applicationId);
+        }
+
+        Long fileId = Long.valueOf(application.getAddress().trim());
+        FileAsset fileAsset = fileAssetRepository.findById(fileId)
+                .orElseThrow(() -> new IllegalArgumentException("File asset not found: " + fileId));
+
+        String signedUrl = supabaseStorageClient.createSignedDownloadUrl(fileAsset.getObjectPath());
+
+        return ResponseEntity.ok(Map.of(
+                "fileId", fileAsset.getId(),
+                "signedUrl", signedUrl,
+                "contentType", fileAsset.getContentType().name(),
+                "originalFilename", fileAsset.getOriginalFilename()
+        ));
+    }
+
     @PostMapping("/loan-applications/{applicationId}/status")
     public String updateLoanApplicationStatus(
             @PathVariable Long applicationId,
             @RequestParam String status
     ) {
-        LoanApplication application = loanApplicationRepository.findById(applicationId)
+        LoanApplication application = loanApplicationRepository.findByApplicationIdWithUser(applicationId)
                 .orElseThrow(() -> new IllegalArgumentException("Loan application not found: " + applicationId));
 
         LoanApplicationStatus nextStatus = LoanApplicationStatus.valueOf(status);
+        LoanApplicationStatus previousStatus = application.getStatus();
         application.setStatus(nextStatus);
 
         if (nextStatus == LoanApplicationStatus.PAYMENT_APPROVED
@@ -158,6 +193,12 @@ public class LoanAdminController {
         }
 
         loanApplicationRepository.save(application);
+
+        if (previousStatus != LoanApplicationStatus.PAYMENT_APPROVED
+                && nextStatus == LoanApplicationStatus.PAYMENT_APPROVED) {
+            alarmNotificationService.createLoanApprovedAlarm(application.getUser().getId());
+        }
+
         return "redirect:/admin/loan-applications";
     }
 
