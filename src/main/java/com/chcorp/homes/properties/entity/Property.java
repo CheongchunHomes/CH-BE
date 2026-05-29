@@ -126,5 +126,72 @@ public class Property extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    public void updateAdminFields(
+            String title,
+            String address,
+            String region,
+            Long landlordUserId,
+            Double latitude,
+            Double longitude,
+            String category,
+            String dealType,
+            Integer depositAmount,
+            Integer monthlyRentAmount,
+            Integer maintenanceFee,
+            String roomType,
+            BigDecimal exclusiveAreaM2,
+            BigDecimal supplyAreaM2,
+            Integer roomCount,
+            Integer bathroomCount,
+            Integer floor,
+            Integer totalFloor,
+            String direction,
+            String heatingType,
+            Boolean elevatorAvailable,
+            Integer totalParkingCount,
+            String buildingUse,
+            String moveInType,
+            LocalDate moveInDate,
+            LocalDate approvalDate,
+            LocalDate firstRegistrationDate,
+            String tag,
+            String options,
+            String securityFacilities,
+            String thumbnailUrl,
+            String description
+    ) {
+        this.title = title;
+        this.address = address;
+        this.region = region;
+        this.landlordUserId = landlordUserId;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.category = category;
+        this.dealType = dealType;
+        this.depositAmount = depositAmount;
+        this.monthlyRentAmount = monthlyRentAmount;
+        this.maintenanceFee = maintenanceFee;
+        this.roomType = roomType;
+        this.exclusiveAreaM2 = exclusiveAreaM2;
+        this.supplyAreaM2 = supplyAreaM2;
+        this.roomCount = roomCount;
+        this.bathroomCount = bathroomCount;
+        this.floor = floor;
+        this.totalFloor = totalFloor;
+        this.direction = direction;
+        this.heatingType = heatingType;
+        this.elevatorAvailable = elevatorAvailable;
+        this.totalParkingCount = totalParkingCount;
+        this.buildingUse = buildingUse;
+        this.moveInType = moveInType;
+        this.moveInDate = moveInDate;
+        this.approvalDate = approvalDate;
+        this.firstRegistrationDate = firstRegistrationDate;
+        this.tag = tag;
+        this.options = options;
+        this.securityFacilities = securityFacilities;
+        this.thumbnailUrl = thumbnailUrl;
+        this.description = description;
+    }
 
 }

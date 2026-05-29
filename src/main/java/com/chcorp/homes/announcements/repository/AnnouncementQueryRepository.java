@@ -168,6 +168,14 @@ public class AnnouncementQueryRepository {
             if ("10km 이내".equals(locationFilter)) {
                 condition.and(distanceExpression.loe(10.0));
             }
+
+            if ("30km 이내".equals(locationFilter)) {
+                condition.and(distanceExpression.loe(30.0));
+            }
+
+            if ("50km 이내".equals(locationFilter)) {
+                condition.and(distanceExpression.loe(50.0));
+            }
         }
 
         JPAQuery<Announcement> query = queryFactory

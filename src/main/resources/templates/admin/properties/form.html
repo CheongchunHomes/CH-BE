@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit} ? '물건 수정' : '물건 등록'">물건 등록</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('property')}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">물건 관리</div>
+                <h2 th:text="${isEdit} ? '임대 물건 수정' : '임대 물건 등록'">임대 물건 등록</h2>
+                <p>주소만 입력하면 저장 시 카카오 주소 API로 위도와 경도를 자동 저장합니다.</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button ghost" th:href="@{/admin/properties}">목록</a>
+            </div>
+        </section>
+
+        <section class="form-panel">
+            <div class="error" th:if="${errorMessage != null}" th:text="${errorMessage}">오류 메시지</div>
+
+            <form class="form-grid"
+                  id="propertyForm"
+                  th:action="${isEdit} ? @{/admin/properties/{id}/edit(id=${propertyId})} : @{/admin/properties}"
+                  th:data-property-id="${propertyId}"
+                  th:object="${form}"
+                  method="post">
+                <div class="section-title">기본 정보</div>
+                <div class="field">
+                    <label>물건명</label>
+                    <input type="text" th:field="*{title}" required placeholder="예: 광진 창문 열린 근처 원룸">
+                </div>
+                <div class="field">
+                    <label>임대인 ID</label>
+                    <input type="number" th:field="*{landlordUserId}" required placeholder="회원 ID 번호">
+                </div>
+                <div class="field full">
+                    <label>주소</label>
+                    <input type="text" th:field="*{address}" required placeholder="예: 서울 광진구 능동로 120">
+                </div>
+                <div class="field">
+                    <label>지역</label>
+                    <input type="text" th:field="*{region}" placeholder="예: 서울 광진구">
+                </div>
+                <div class="field">
+                    <label>분류</label>
+                    <select th:field="*{category}">
+                        <option value="">선택</option>
+                        <option value="원룸/투룸">원룸/투룸</option>
+                        <option value="아파트">아파트</option>
+                        <option value="주택/빌라">주택/빌라</option>
+                        <option value="오피스텔">오피스텔</option>
+                    </select>
+                </div>
+
+                <div class="section-title">금액 정보</div>
+                <div class="field">
+                    <label>거래 유형</label>
+                    <select th:field="*{dealType}">
+                        <option value="monthly_rent">월세</option>
+                        <option value="jeonse">전세</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>보증금</label>
+                    <div class="money-input">
+                        <input type="number" th:field="*{depositAmount}" min="0">
+                        <span>만원</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>월세</label>
+                    <div class="money-input">
+                        <input type="number" th:field="*{monthlyRentAmount}" min="0">
+                        <span>만원</span>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>관리비</label>
+                    <div class="money-input">
+                        <input type="number" th:field="*{maintenanceFee}" min="0">
+                        <span>만원</span>
+                    </div>
+                </div>
+
+                <div class="section-title">상세 정보</div>
+                <div class="field">
+                    <label>방 종류</label>
+                    <input type="text" th:field="*{roomType}" placeholder="예: 쓰리룸">
+                </div>
+                <div class="field">
+                    <label>전용면적(m²)</label>
+                    <input type="number" step="0.01" th:field="*{exclusiveAreaM2}">
+                </div>
+                <div class="field">
+                    <label>공급면적(m²)</label>
+                    <input type="number" step="0.01" th:field="*{supplyAreaM2}">
+                </div>
+                <div class="field">
+                    <label>방 개수</label>
+                    <input type="number" th:field="*{roomCount}" min="0">
+                </div>
+                <div class="field">
+                    <label>욕실 개수</label>
+                    <input type="number" th:field="*{bathroomCount}" min="0">
+                </div>
+                <div class="field">
+                    <label>층</label>
+                    <input type="number" th:field="*{floor}">
+                </div>
+                <div class="field">
+                    <label>총 층</label>
+                    <input type="number" th:field="*{totalFloor}">
+                </div>
+                <div class="field">
+                    <label>방향</label>
+                    <input type="text" th:field="*{direction}" placeholder="예: 남향">
+                </div>
+                <div class="field">
+                    <label>난방</label>
+                    <input type="text" th:field="*{heatingType}" placeholder="예: 중앙난방">
+                </div>
+                <div class="field">
+                    <label>엘리베이터</label>
+                    <select th:field="*{elevatorAvailable}">
+                        <option value="true">있음</option>
+                        <option value="false">없음</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>총 주차대수</label>
+                    <input type="number" th:field="*{totalParkingCount}" min="0">
+                </div>
+                <div class="field">
+                    <label>건축물 용도</label>
+                    <input type="text" th:field="*{buildingUse}" placeholder="예: 다세대주택">
+                </div>
+
+                <div class="section-title">입주 및 등록 정보</div>
+                <div class="field">
+                    <label>입주 유형</label>
+                    <input type="text" th:field="*{moveInType}" placeholder="예: 협의입주">
+                </div>
+                <div class="field">
+                    <label>입주 가능일</label>
+                    <input type="date" th:field="*{moveInDate}">
+                </div>
+                <div class="field">
+                    <label>사용승인일</label>
+                    <input type="date" th:field="*{approvalDate}">
+                </div>
+                <div class="field">
+                    <label>최초등록일</label>
+                    <input type="date" th:field="*{firstRegistrationDate}">
+                </div>
+
+                <div class="section-title">태그 / 옵션 / 보안시설</div>
+                <div class="field full">
+                    <label>태그</label>
+                    <input type="hidden" th:field="*{tag}" data-toggle-target="tag">
+                    <div class="toggle-grid" data-toggle-group="tag">
+                        <button type="button" class="toggle-button" data-value="관리비저렴">관리비저렴</button>
+                        <button type="button" class="toggle-button" data-value="역세권">역세권</button>
+                        <button type="button" class="toggle-button" data-value="신축">신축</button>
+                        <button type="button" class="toggle-button" data-value="풀옵션">풀옵션</button>
+                        <button type="button" class="toggle-button" data-value="주차가능">주차가능</button>
+                        <button type="button" class="toggle-button" data-value="엘리베이터">엘리베이터</button>
+                        <button type="button" class="toggle-button" data-value="빌라">빌라</button>
+                    </div>
+                </div>
+                <div class="field full">
+                    <label>옵션</label>
+                    <input type="hidden" th:field="*{options}" data-toggle-target="options">
+                    <div class="toggle-grid" data-toggle-group="options">
+                        <button type="button" class="toggle-button" data-value="냉장고">냉장고</button>
+                        <button type="button" class="toggle-button" data-value="에어컨">에어컨</button>
+                        <button type="button" class="toggle-button" data-value="세탁기">세탁기</button>
+                        <button type="button" class="toggle-button" data-value="TV">TV</button>
+                        <button type="button" class="toggle-button" data-value="침대">침대</button>
+                        <button type="button" class="toggle-button" data-value="인덕션">인덕션</button>
+                        <button type="button" class="toggle-button" data-value="신발장">신발장</button>
+                    </div>
+                </div>
+                <div class="field full">
+                    <label>보안시설</label>
+                    <input type="hidden" th:field="*{securityFacilities}" data-toggle-target="securityFacilities">
+                    <div class="toggle-grid" data-toggle-group="securityFacilities">
+                        <button type="button" class="toggle-button" data-value="인터폰">인터폰</button>
+                        <button type="button" class="toggle-button" data-value="현관보안">현관보안</button>
+                        <button type="button" class="toggle-button" data-value="CCTV">CCTV</button>
+                        <button type="button" class="toggle-button" data-value="공동현관">공동현관</button>
+                        <button type="button" class="toggle-button" data-value="도어락">도어락</button>
+                        <button type="button" class="toggle-button" data-value="경비실">경비실</button>
+                    </div>
+                </div>
+
+                <div class="section-title">이미지 / 설명</div>
+                <div class="field full">
+                    <label>대표 이미지 URL</label>
+                    <input type="text" th:field="*{thumbnailUrl}" id="thumbnailUrl" placeholder="이미지를 드래그하면 자동 저장 경로로 대체됩니다.">
+                </div>
+                <div class="field full">
+                    <label>대표 이미지 업로드</label>
+                    <input type="file" id="thumbnailFile" accept="image/*" hidden>
+                    <div class="drop-zone" id="dropZone">
+                        <img class="preview" id="preview"
+                             th:classappend="${(thumbnailPreviewUrl != null) or (form.thumbnailUrl != null)} ? ' visible' : ''"
+                             th:src="${thumbnailPreviewUrl != null ? thumbnailPreviewUrl : form.thumbnailUrl}" alt="">
+                        <span>이미지 파일을 드래그하거나 클릭해서 선택하세요.</span>
+                        <strong class="file-name" id="fileName"></strong>
+                    </div>
+                </div>
+                <div class="field full">
+                    <label>매물 설명</label>
+                    <textarea th:field="*{description}" placeholder="상세 설명을 입력해 주세요."></textarea>
+                </div>
+
+                <div class="form-actions full">
+                    <a class="button ghost" th:href="@{/admin/properties}">취소</a>
+                    <button class="button" type="submit" th:text="${isEdit} ? '수정 저장' : '등록 저장'">등록 저장</button>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+
+<script>
+    document.querySelectorAll("[data-toggle-group]").forEach((group) => {
+        const name = group.dataset.toggleGroup;
+        const input = document.querySelector(`[data-toggle-target="${name}"]`);
+        const selected = new Set((input.value || "").split(",").map((item) => item.trim()).filter(Boolean));
+
+        group.querySelectorAll(".toggle-button").forEach((button) => {
+            if (selected.has(button.dataset.value)) {
+                button.classList.add("active");
+            }
+            button.addEventListener("click", () => {
+                const value = button.dataset.value;
+                if (selected.has(value)) {
+                    selected.delete(value);
+                    button.classList.remove("active");
+                } else {
+                    selected.add(value);
+                    button.classList.add("active");
+                }
+                input.value = Array.from(selected).join(",");
+            });
+        });
+    });
+
+    const dropZone = document.getElementById("dropZone");
+    const propertyForm = document.getElementById("propertyForm");
+    const preview = document.getElementById("preview");
+    const thumbnailUrl = document.getElementById("thumbnailUrl");
+    const thumbnailFile = document.getElementById("thumbnailFile");
+    const fileName = document.getElementById("fileName");
+    let selectedImageFile = null;
+
+    thumbnailUrl.addEventListener("input", () => {
+        if (!thumbnailUrl.value) {
+            preview.classList.remove("visible");
+            preview.removeAttribute("src");
+            return;
+        }
+        preview.src = thumbnailUrl.value;
+        preview.classList.add("visible");
+        selectedImageFile = null;
+    });
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dropZone.classList.add("dragover");
+        });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+        dropZone.addEventListener(eventName, (event) => {
+            event.preventDefault();
+            dropZone.classList.remove("dragover");
+        });
+    });
+
+    dropZone.addEventListener("click", () => thumbnailFile.click());
+
+    thumbnailFile.addEventListener("change", () => {
+        renderSelectedImage(thumbnailFile.files[0]);
+    });
+
+    dropZone.addEventListener("drop", (event) => {
+        const file = event.dataTransfer.files[0];
+        if (!file) {
+            return;
+        }
+
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        thumbnailFile.files = dataTransfer.files;
+        renderSelectedImage(file);
+    });
+
+    function renderSelectedImage(file) {
+        if (!file || !file.type.startsWith("image/")) {
+            fileName.textContent = "이미지 파일만 선택할 수 있습니다.";
+            return;
+        }
+
+        selectedImageFile = file;
+        const reader = new FileReader();
+        reader.onload = () => {
+            preview.src = reader.result;
+            preview.classList.add("visible");
+            fileName.textContent = file.name;
+            thumbnailUrl.value = "";
+        };
+        reader.readAsDataURL(file);
+    }
+
+    propertyForm.addEventListener("submit", async (event) => {
+        if (!selectedImageFile) {
+            return;
+        }
+
+        event.preventDefault();
+        fileName.textContent = "이미지 업로드 중입니다.";
+
+        try {
+            const fileId = await uploadSelectedImage(selectedImageFile);
+            thumbnailUrl.value = `file:${fileId}`;
+            selectedImageFile = null;
+            thumbnailFile.value = "";
+            propertyForm.submit();
+        } catch (error) {
+            fileName.textContent = error.message || "이미지 업로드에 실패했습니다.";
+        }
+    });
+
+    async function uploadSelectedImage(file) {
+        const uploadUrlResponse = await fetch("/files/property-images/upload-url", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                originalFilename: file.name,
+                contentType: "IMAGE",
+                sizeBytes: file.size,
+                purpose: "PROPERTY_IMAGE",
+                propertyId: parsePropertyId()
+            })
+        });
+
+        if (!uploadUrlResponse.ok) {
+            throw new Error("업로드 URL 발급에 실패했습니다.");
+        }
+
+        const uploadInfo = await uploadUrlResponse.json();
+        await uploadToSupabase(uploadInfo.signedUploadUrl, file);
+        await completeUpload(uploadInfo.fileId);
+        return uploadInfo.fileId;
+    }
+
+    async function uploadToSupabase(signedUploadUrl, file) {
+        let response = await fetch(signedUploadUrl, {
+            method: "PUT",
+            headers: {"Content-Type": file.type || "application/octet-stream"},
+            body: file
+        });
+
+        if (response.status === 405) {
+            response = await fetch(signedUploadUrl, {
+                method: "POST",
+                headers: {"Content-Type": file.type || "application/octet-stream"},
+                body: file
+            });
+        }
+
+        if (!response.ok) {
+            throw new Error("Supabase 이미지 업로드에 실패했습니다.");
+        }
+    }
+
+    async function completeUpload(fileId) {
+        const response = await fetch(`/files/property-images/${fileId}/complete`, {
+            method: "POST"
+        });
+
+        if (!response.ok) {
+            throw new Error("이미지 업로드 완료 처리에 실패했습니다.");
+        }
+    }
+
+    function parsePropertyId() {
+        const value = propertyForm.dataset.propertyId;
+        if (!value) {
+            return null;
+        }
+
+        const propertyId = Number(value);
+        return Number.isFinite(propertyId) ? propertyId : null;
+    }
+</script>
+</body>
+</html>
