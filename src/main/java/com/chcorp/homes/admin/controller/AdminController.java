@@ -157,7 +157,7 @@ public class AdminController {
             );
             case "statistics" -> new SectionView(
                     "통계 리포트",
-                    "가입/탈퇴 현황과 상품 클릭률을 확인하고 리포트를 다운로드합니다.",
+                    "관리자 메인 지표를 기준으로 주요 운영 수치를 확인합니다.",
                     buildStatisticsTable()
             );
             case "settings" -> new SectionView(
@@ -299,23 +299,16 @@ public class AdminController {
     }
 
     private TableView buildStatisticsTable() {
-        List<User> users = userRepository.findAll();
-        long totalUsers = users.size();
-        long enabledUsers = users.stream()
-                .filter(user -> user.getStatus() == UserStatus.enabled)
-                .count();
-        long disabledUsers = users.stream()
-                .filter(user -> user.getStatus() == UserStatus.disabled)
-                .count();
+        List<TableRow> rows = buildStats().stream()
+                .map(card -> row(
+                        card.label(),
+                        card.value(),
+                        card.meta(),
+                        "집계 완료"
+                ))
+                .toList();
 
-        List<TableRow> rows = List.of(
-                row("전체 가입 회원", String.valueOf(totalUsers), "전체 가입 유저 수", "대기"),
-                row("활성 회원", String.valueOf(enabledUsers), "현재 활성 상태 회원 수", "대기"),
-                row("탈퇴/비활성 회원", String.valueOf(disabledUsers), "비활성 처리된 회원 수", "대기"),
-                row("상품 클릭률", "-", "상품 클릭 로그 또는 클릭 수 필드 확인 필요", "대기")
-        );
-
-        return new TableView(List.of("항목", "값", "설명", "상태"), rows);
+        return new TableView(List.of("지표", "값", "기준", "상태"), rows);
     }
 
     private List<MenuItem> buildMenuItems(String section) {
