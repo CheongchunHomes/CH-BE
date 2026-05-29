@@ -1,5 +1,6 @@
 package com.chcorp.homes.sign.controller;
 
+import com.chcorp.homes.files.dto.response.FileSignedUrlResponseDTO;
 import com.chcorp.homes.sign.dto.request.CustomerSignRequestDTO;
 import com.chcorp.homes.sign.dto.request.SignCreateRequestDTO;
 import com.chcorp.homes.sign.dto.request.ProviderSignRequestDTO;
@@ -55,6 +56,32 @@ public class SignController {
         Long currentUserId = Long.valueOf(authentication.getName());
 
         return ResponseEntity.ok(signService.brokerSignImage(currentUserId));
+    }
+
+    /**
+     * provider 서명 PDF signed-url
+     * */
+    @GetMapping("/{signId}/provider-signed-pdf/signed-url")
+    public ResponseEntity<FileSignedUrlResponseDTO> providerSignedPdfSignedUrl(
+            Authentication authentication,
+            @PathVariable Long signId
+    ) {
+        Long currentUserId = Long.valueOf(authentication.getName());
+
+        return ResponseEntity.ok(signService.providerSignedPdfSignedUrl(currentUserId, signId));
+    }
+
+    /**
+     * 완료 계약 PDF signed-url
+     * */
+    @GetMapping("/{signId}/completed-pdf/signed-url")
+    public ResponseEntity<FileSignedUrlResponseDTO> completedPdfSignedUrl(
+            Authentication authentication,
+            @PathVariable Long signId
+    ) {
+        Long currentUserId = Long.valueOf(authentication.getName());
+
+        return ResponseEntity.ok(signService.completedPdfSignedUrl(currentUserId, signId));
     }
 
 

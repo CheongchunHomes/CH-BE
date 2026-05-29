@@ -4,7 +4,11 @@ import com.chcorp.homes.properties.entity.Property;
 import com.chcorp.homes.properties.repository.PropertyRepository;
 import com.chcorp.homes.diagnosis.entity.UserProfile;
 import com.chcorp.homes.diagnosis.repository.UserProfileRepository;
+import com.chcorp.homes.files.dto.response.FileSignedUrlResponseDTO;
 import com.chcorp.homes.files.entity.FileAsset;
+import com.chcorp.homes.files.entity.FileContentType;
+import com.chcorp.homes.files.entity.FileStatus;
+import com.chcorp.homes.files.repository.FileAssetRepository;
 import com.chcorp.homes.files.service.FileService;
 import com.chcorp.homes.files.service.SupabaseStorageClient;
 import com.chcorp.homes.sign.dto.request.CustomerSignRequestDTO;
@@ -42,6 +46,7 @@ public class SignService {
     private final PropertyRepository propertyRepository;
     private final PersonalInfoRepository personalInfoRepository;
     private final UserProfileRepository userProfileRepository;
+    private final FileAssetRepository fileAssetRepository;
     private final FileService fileService;
     private final SupabaseStorageClient supabaseStorageClient;
 
@@ -88,6 +93,36 @@ public class SignService {
                 BROKER_SIGN_CONTENT_TYPE,
                 BROKER_SIGN_FILENAME
         );
+    }
+
+    @Transactional(readOnly = true)
+    public FileSignedUrlResponseDTO providerSignedPdfSignedUrl(Long currentUserId, Long signId) {
+        validateCurrentUserId(currentUserId);
+
+        SignRequest signRequest = getSignRequest(signId);
+        validateParticipant(signRequest, currentUserId);
+
+        Long fileId = signRequest.getProviderSignedPdfFileId();
+        if (fileId == null) {
+            throw new IllegalStateException("provider signed PDF 파일이 없습니다.");
+        }
+
+        return createContractPdfSignedUrl(fileId);
+    }
+
+    @Transactional(readOnly = true)
+    public FileSignedUrlResponseDTO completedPdfSignedUrl(Long currentUserId, Long signId) {
+        validateCurrentUserId(currentUserId);
+
+        SignRequest signRequest = getSignRequest(signId);
+        validateParticipant(signRequest, currentUserId);
+
+        Long fileId = signRequest.getCompletedPdfFileId();
+        if (fileId == null) {
+            throw new IllegalStateException("completed PDF 파일이 없습니다.");
+        }
+
+        return createContractPdfSignedUrl(fileId);
     }
 
     @Transactional
@@ -263,6 +298,27 @@ public class SignService {
                 || signRequest.getStatus() == SignStatus.CANCELED) {
             throw new IllegalStateException("취소할 수 없는 계약 상태입니다.");
         }
+    }
+
+    private FileSignedUrlResponseDTO createContractPdfSignedUrl(Long fileId) {
+        FileAsset fileAsset = fileAssetRepository.findById(fileId)
+                .orElseThrow(() -> new NoSuchElementException("계약 PDF 파일을 찾을 수 없습니다."));
+
+        if (fileAsset.getStatus() != FileStatus.ACTIVE) {
+            throw new IllegalStateException("다운로드 URL을 발급할 수 없는 파일 상태입니다.");
+        }
+        if (fileAsset.getContentType() != FileContentType.DOCUMENT) {
+            throw new IllegalStateException("계약 PDF 파일이 문서 형식이 아닙니다.");
+        }
+
+        return new FileSignedUrlResponseDTO(
+                fileAsset.getId(),
+                supabaseStorageClient.createSignedDownloadUrl(fileAsset.getObjectPath()),
+                supabaseStorageClient.signedDownloadTtlSeconds(),
+                fileAsset.getContentType(),
+                fileAsset.getOriginalFilename(),
+                fileAsset.getSizeBytes()
+        );
     }
 
     private boolean isProvider(SignRequest signRequest, Long currentUserId) {
