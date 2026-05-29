@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대출신청 관리 | 관리자</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('loan')}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">대출신청 관리</div>
+                <h2>대출신청 목록</h2>
+                <p>결제대기 상태로 들어온 신청을 확인하고, 승인 또는 거부 처리 후 처리 시간을 남깁니다.</p>
+            </div>
+            <div class="hero-actions">
+                <span class="pill">실시간 반영</span>
+                <a class="button ghost" href="/admin/loan">대출 허브</a>
+            </div>
+        </section>
+
+        <section class="stats-grid two-column">
+            <article class="card stat-card">
+                <div class="label">신청 건수</div>
+                <div class="value" th:text="${applicationCount}">0</div>
+                <div class="meta">전체</div>
+            </article>
+            <article class="card stat-card">
+                <div class="label">기본 상태</div>
+                <div class="value">결제대기</div>
+                <div class="meta">디폴트</div>
+            </article>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3>대출신청 리스트</h3>
+                    <p>상태는 결제대기 / 결제승인 / 결제거부로 관리하며, 승인 또는 거부 시 처리 시간을 기록합니다.</p>
+                </div>
+                <span class="pill">총 <span th:text="${applicationCount}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!#lists.isEmpty(applications)}">
+                <table class="table-wide">
+                    <thead>
+                    <tr>
+                        <th>신청ID</th>
+                        <th>유저</th>
+                        <th>상품</th>
+                        <th>신청금액(만원)</th>
+                        <th>상태</th>
+                        <th>신청일</th>
+                        <th>처리일</th>
+                        <th>상태변경</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="application : ${applications}">
+                        <td th:text="${application.applicationId}">1</td>
+                        <td>
+                            <div th:text="${application.user.nickname}">홍길동</div>
+                            <div class="subtext" th:text="${application.user.email}">test@example.com</div>
+                        </td>
+                        <td>
+                            <div th:text="${application.loanProduct.name}">상품명</div>
+                            <div class="subtext" th:text="${application.loanProduct.provider}">제공기관</div>
+                        </td>
+                        <td th:text="${application.applyAmount != null ? application.applyAmount + '' : '-'}">0</td>
+                        <td>
+                            <span class="status-badge"
+                                  th:classappend="${application.status.name() == 'PAYMENT_APPROVED'} ? ' status-approved' : (${application.status.name() == 'PAYMENT_REJECTED'} ? ' status-rejected' : ' status-pending')"
+                                  th:text="${application.status.dbValue}">결제대기</span>
+                        </td>
+                        <td th:text="${application.createdAt}">-</td>
+                        <td th:text="${application.decisionAt != null ? application.decisionAt : '-'}">-</td>
+                        <td>
+                            <form class="status-form" th:action="@{/admin/loan-applications/{applicationId}/status(applicationId=${application.applicationId})}" method="post">
+                                <select name="status">
+                                    <option th:each="status : ${statusOptions}"
+                                            th:value="${status.name()}"
+                                            th:text="${status.dbValue}"
+                                            th:selected="${status == application.status}">
+                                    </option>
+                                </select>
+                                <button type="submit">변경</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${#lists.isEmpty(applications)}">
+                대출신청이 없습니다.
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

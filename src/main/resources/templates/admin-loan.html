@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대출 관리 | 관리자</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('loan')}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">대출 관리</div>
+                <h2>대출 허브</h2>
+                <p>대출 상품과 신청을 분리해서 관리합니다.</p>
+            </div>
+            <div class="hero-actions">
+                <span class="pill">실시간 반영</span>
+                <a class="button ghost" href="/admin/loan">새로고침</a>
+            </div>
+        </section>
+
+        <section class="stats-grid">
+            <article class="card stat-card">
+                <div class="label">등록 유저</div>
+                <div class="value" th:text="${registeredUserCount}">0</div>
+                <div class="meta">전체</div>
+            </article>
+            <article class="card stat-card">
+                <div class="label">상품 수</div>
+                <div class="value" th:text="${productCount}">0</div>
+                <div class="meta">누적</div>
+            </article>
+            <article class="card stat-card">
+                <div class="label">신청 수</div>
+                <div class="value" th:text="${applicationCount}">0</div>
+                <div class="meta">누적</div>
+            </article>
+        </section>
+
+        <section class="hub-grid">
+            <article class="hub-card">
+                <div>
+                    <div class="tag">상품 관리</div>
+                    <strong>대출상품 관리</strong>
+                    <p>대출 상품 목록을 확인하고, 기존 상품을 등록하거나 수정합니다.</p>
+                </div>
+                <div class="actions">
+                    <a class="button" href="/admin/loan-products">대출상품 관리</a>
+                </div>
+            </article>
+
+            <article class="hub-card">
+                <div>
+                    <div class="tag">신청 관리</div>
+                    <strong>대출신청 관리</strong>
+                    <p>사용자 신청 목록을 확인하고, 승인/반려 상태를 변경합니다.</p>
+                </div>
+                <div class="actions">
+                    <a class="button" href="/admin/loan-applications">대출신청 관리</a>
+                </div>
+            </article>
+        </section>
+    </main>
+</div>
+</body>
+</html>

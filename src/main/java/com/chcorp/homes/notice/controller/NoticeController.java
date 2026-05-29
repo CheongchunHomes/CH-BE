@@ -20,6 +20,11 @@ public class NoticeController {
         return ResponseEntity.ok(noticeService.getNotices());
     }
 
+    @GetMapping("/community/latest")
+    public ResponseEntity<List<NoticeResponseDTO>> getLatestCommunityNotices() {
+        return ResponseEntity.ok(noticeService.getLatestCommunityNotices());
+    }
+
     @GetMapping("/{noticeId}")
     public ResponseEntity<NoticeResponseDTO> getNotice(@PathVariable Long noticeId) {
         return ResponseEntity.ok(noticeService.getNotice(noticeId));

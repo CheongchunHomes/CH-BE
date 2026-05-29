@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대출상품 관리 | 관리자</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('loan')}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">대출상품 관리</div>
+                <h2>대출상품 목록</h2>
+                <p>DB에 저장된 대출상품을 확인하고, 새 상품 등록과 기존 상품 수정을 진행합니다.</p>
+            </div>
+            <div class="hero-actions">
+                <span class="pill">만원 단위</span>
+                <a class="button ghost" href="/admin/loan">대출 허브</a>
+            </div>
+        </section>
+
+        <section class="stats-grid">
+            <article class="card stat-card">
+                <div class="label">등록 상품 수</div>
+                <div class="value" th:text="${productCount}">0</div>
+                <div class="meta">전체</div>
+            </article>
+            <article class="card stat-card">
+                <div class="label">입력 방식</div>
+                <div class="value">만원</div>
+                <div class="meta">금액 통일</div>
+            </article>
+            <article class="card stat-card">
+                <div class="label">관리 화면</div>
+                <div class="value">수정</div>
+                <div class="meta">상품별 편집</div>
+            </article>
+        </section>
+
+        <section class="panel">
+            <h3>대출상품 등록</h3>
+            <p>상품명, 제공기관, 유형, 금리, 최저금리, 최대한도, 소득한도는 입력값으로 받고, 정책과 노출은 아래 yes/no로 선택합니다.</p>
+
+            <form th:action="@{/admin/loan-products}" method="post">
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="externalCode">외부코드</label>
+                        <input id="externalCode" name="externalCode" type="text" placeholder="예: HF-2026-001" required>
+                    </div>
+                    <div class="field">
+                        <label for="provider">제공기관</label>
+                        <input id="provider" name="provider" type="text" placeholder="예: 주택도시보증공사" required>
+                    </div>
+                    <div class="field">
+                        <label for="name">상품명</label>
+                        <input id="name" name="name" type="text" placeholder="예: 신생아 특례 버팀목대출" required>
+                    </div>
+                    <div class="field">
+                        <label for="loanType">유형</label>
+                        <input id="loanType" name="loanType" type="text" placeholder="예: 전세자금대출" required>
+                    </div>
+                    <div class="field">
+                        <label for="interestRate">금리(%)</label>
+                        <input id="interestRate" name="interestRate" type="number" step="0.001" placeholder="예: 1.800">
+                    </div>
+                    <div class="field">
+                        <label for="interestRateMin">최저금리(%)</label>
+                        <input id="interestRateMin" name="interestRateMin" type="number" step="0.001" placeholder="예: 1.500">
+                    </div>
+                    <div class="field">
+                        <label for="maxAmount">최대한도(만원)</label>
+                        <input id="maxAmount" name="maxAmount" type="number" placeholder="예: 10000">
+                    </div>
+                    <div class="field">
+                        <label for="incomeLimit">소득한도(만원)</label>
+                        <input id="incomeLimit" name="incomeLimit" type="number" placeholder="예: 8500">
+                    </div>
+                    <div class="field full">
+                        <label for="conditions">조건</label>
+                        <textarea id="conditions" name="conditions" placeholder="상품 조건을 입력하세요."></textarea>
+                    </div>
+                </div>
+
+                <div class="radio-row">
+                    <div>
+                        <div class="hint">정책대출</div>
+                        <div class="radio-group">
+                            <label><input type="radio" name="policyLoan" value="true"> 예</label>
+                            <label><input type="radio" name="policyLoan" value="false" checked> 아니오</label>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="hint">노출</div>
+                        <div class="radio-group">
+                            <label><input type="radio" name="visible" value="true" checked> 예</label>
+                            <label><input type="radio" name="visible" value="false"> 아니오</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-actions">
+                    <a class="button ghost" href="/admin/loan">취소</a>
+                    <button class="button" type="submit">대출상품 등록</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3>등록된 대출상품</h3>
+                    <p>목록에서 확인하고 각 상품별 수정 화면으로 이동할 수 있습니다.</p>
+                </div>
+                <span class="pill">총 <span th:text="${productCount}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!#lists.isEmpty(products)}">
+                <table class="table-wide">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>상품명</th>
+                        <th>제공기관</th>
+                        <th>유형</th>
+                        <th>금리</th>
+                        <th>최저금리</th>
+                        <th>최대한도(만원)</th>
+                        <th>소득한도(만원)</th>
+                        <th>정책</th>
+                        <th>노출</th>
+                        <th>수정</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="product : ${products}">
+                        <td th:text="${product.loanId}">1</td>
+                        <td th:text="${product.name}">상품명</td>
+                        <td th:text="${product.provider}">제공기관</td>
+                        <td th:text="${product.loanType}">유형</td>
+                        <td th:text="${product.interestRate != null ? product.interestRate + '%' : '-'}">-</td>
+                        <td th:text="${product.interestRateMin != null ? product.interestRateMin + '%' : '-'}">-</td>
+                        <td th:text="${product.maxAmount != null ? product.maxAmount + '' : '-'}">-</td>
+                        <td th:text="${product.incomeLimit != null ? product.incomeLimit + '' : '-'}">-</td>
+                        <td>
+                            <span class="badge" th:classappend="${product.policyLoan} ? ' green' : ' gray'" th:text="${product.policyLoan ? '예' : '아니오'}">예</span>
+                        </td>
+                        <td>
+                            <span class="badge" th:classappend="${product.visible} ? ' blue' : ' gray'" th:text="${product.visible ? '예' : '아니오'}">예</span>
+                        </td>
+                        <td>
+                            <a class="action-link" th:href="@{/admin/loan-products/{loanId}/edit(loanId=${product.loanId})}">수정</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${#lists.isEmpty(products)}">
+                등록된 대출상품이 없습니다.
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>
