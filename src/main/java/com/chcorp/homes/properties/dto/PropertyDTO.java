@@ -50,6 +50,10 @@ public record PropertyDTO(
         String description
 ) {
     public static PropertyDTO from(Property property) {
+        return from(property, property.getThumbnailUrl());
+    }
+
+    public static PropertyDTO from(Property property, String thumbnailUrl) {
         return new PropertyDTO(
                 property.getId(),
                 property.getTitle(),
@@ -89,7 +93,7 @@ public record PropertyDTO(
                 splitText(property.getOptions()),
                 splitText(property.getSecurityFacilities()),
 
-                property.getThumbnailUrl(),
+                thumbnailUrl,
                 property.getDescription()
         );
     }

@@ -5,6 +5,6 @@ public record NoticeCreateRequestDTO(
         String title,
         String summary,
         String content,
-        boolean important
+        Boolean important
 ) {
 }
