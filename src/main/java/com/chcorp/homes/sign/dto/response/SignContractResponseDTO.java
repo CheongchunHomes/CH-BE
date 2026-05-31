@@ -1,6 +1,7 @@
 package com.chcorp.homes.sign.dto.response;
 
 import com.chcorp.homes.properties.entity.Property;
+import com.chcorp.homes.sign.entity.SignContract;
 import com.chcorp.homes.sign.entity.SignRequest;
 import com.chcorp.homes.sign.entity.SignStatus;
 import com.chcorp.homes.diagnosis.entity.UserProfile;
@@ -18,13 +19,11 @@ public record SignContractResponseDTO(
         ContractPropertyDTO property,
         ContractPartyDTO provider,
         ContractPartyDTO customer,
-        Long providerSignedPdfFileId,
-        Long completedPdfFileId,
-        Instant providerSignedAt,
-        Instant customerSignedAt
+        ContractFormDTO contract
 ) {
     public static SignContractResponseDTO from(
             SignRequest signRequest,
+            SignContract signContract,
             PersonalInfo providerInfo,
             PersonalInfo customerInfo,
             UserProfile providerProfile,
@@ -38,10 +37,7 @@ public record SignContractResponseDTO(
                 ContractPropertyDTO.from(signRequest.getPropertyId()),
                 ContractPartyDTO.from(signRequest.getProvider().getId(), providerInfo, providerProfile),
                 ContractPartyDTO.from(signRequest.getCustomer().getId(), customerInfo, customerProfile),
-                signRequest.getProviderSignedPdfFileId(),
-                signRequest.getCompletedPdfFileId(),
-                signRequest.getProviderSignedAt(),
-                signRequest.getCustomerSignedAt()
+                ContractFormDTO.from(signContract)
         );
     }
 
@@ -87,6 +83,52 @@ public record SignContractResponseDTO(
                     personalInfo.getAddress(),
                     personalInfo.getPhone(),
                     birthDate
+            );
+        }
+    }
+
+    public record ContractFormDTO(
+            LocalDate leaseEndDate,
+            Long contractAmount,
+            Long interimAmount1,
+            LocalDate interimAmount1Date,
+            Long interimAmount2,
+            LocalDate interimAmount2Date,
+            Long balanceAmount,
+            LocalDate balanceDate,
+            String specialTerms,
+            String buildingDong,
+            String unitHo,
+            String rentedPart,
+            Long providerSignatureFileId,
+            Long customerSignatureFileId,
+            Long completedPdfFileId,
+            Instant providerSignedAt,
+            Instant customerSignedAt
+    ) {
+        public static ContractFormDTO from(SignContract signContract) {
+            if (signContract == null) {
+                return null;
+            }
+
+            return new ContractFormDTO(
+                    signContract.getLeaseEndDate(),
+                    signContract.getContractAmount(),
+                    signContract.getInterimAmount1(),
+                    signContract.getInterimAmount1Date(),
+                    signContract.getInterimAmount2(),
+                    signContract.getInterimAmount2Date(),
+                    signContract.getBalanceAmount(),
+                    signContract.getBalanceDate(),
+                    signContract.getSpecialTerms(),
+                    signContract.getBuildingDong(),
+                    signContract.getUnitHo(),
+                    signContract.getRentedPart(),
+                    signContract.getProviderSignatureFileId(),
+                    signContract.getCustomerSignatureFileId(),
+                    signContract.getCompletedPdfFileId(),
+                    signContract.getProviderSignedAt(),
+                    signContract.getCustomerSignedAt()
             );
         }
     }

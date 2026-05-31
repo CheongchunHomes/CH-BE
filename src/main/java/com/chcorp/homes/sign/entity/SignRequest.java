@@ -6,15 +6,13 @@ import com.chcorp.homes.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
-
-
 @ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity
+@Table(name = "sign_request")
 public class SignRequest extends MutableBaseEntity {
 
     @Id
@@ -37,35 +35,11 @@ public class SignRequest extends MutableBaseEntity {
     @Column(nullable = false)
     private SignStatus status;
 
-    @Column(name = "provider_signed_pdf_file_id")
-    private Long providerSignedPdfFileId;
-
-    @Column(name = "completed_pdf_file_id")
-    private Long completedPdfFileId;
-
-    @Column(name = "provider_signed_at")
-    private Instant providerSignedAt;
-
-    @Column(name = "customer_signed_at")
-    private Instant customerSignedAt;
-
     public void providerSign() {
         this.status = SignStatus.PROVIDER_SIGNED;
     }
 
-    public void providerSign(Long providerSignedPdfFileId, Instant providerSignedAt) {
-        this.providerSignedPdfFileId = providerSignedPdfFileId;
-        this.providerSignedAt = providerSignedAt;
-        this.status = SignStatus.PROVIDER_SIGNED;
-    }
-
     public void customerSign() {
-        this.status = SignStatus.COMPLETED;
-    }
-
-    public void customerSign(Long completedPdfFileId, Instant customerSignedAt) {
-        this.completedPdfFileId = completedPdfFileId;
-        this.customerSignedAt = customerSignedAt;
         this.status = SignStatus.COMPLETED;
     }
 
