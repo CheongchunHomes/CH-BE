@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * 시뮬레이터 리포트 서비스
  * AI 분석 결과 저장 및 조회를 담당한다
@@ -40,7 +42,7 @@ public class SimulatorReportService {
 
     // 내 최근 리포트 조회
     @Transactional(readOnly = true)
-    public SimulatorReportResponseDto getMyReport(Long userId) {
+    public Optional<SimulatorReportResponseDto> getMyReport(Long userId) {
         return simulatorReportRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
                 .map(r -> new SimulatorReportResponseDto(
                         r.getAssetSnapshot(),
@@ -48,7 +50,6 @@ public class SimulatorReportService {
                         r.getLoanSnapshot(),
                         r.getScoreSnapshot(),
                         r.getAiResult()
-                ))
-                .orElse(null);
+                ));
     }
 }
