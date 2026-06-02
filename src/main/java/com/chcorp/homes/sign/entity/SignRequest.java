@@ -6,13 +6,13 @@ import com.chcorp.homes.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-
 @ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity
+@Table(name = "sign_request")
 public class SignRequest extends MutableBaseEntity {
 
     @Id
