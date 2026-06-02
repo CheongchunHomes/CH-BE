@@ -89,4 +89,25 @@ public class CommunityService {
 
         communityPostRepository.delete(post);
     }
+
+    @Transactional
+    public void deletePostByAdmin(Long postId) {
+        CommunityPost post = communityPostRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        communityPostRepository.delete(post);
+    }
+    @Transactional
+    public CommunityResponseDTO updatePostByAdmin(Long postId, CommunityUpdateDTO request) {
+        CommunityPost post = communityPostRepository.findById(postId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        post.update(
+                request.region(),
+                request.title(),
+                request.content()
+        );
+
+        return CommunityResponseDTO.from(post);
+    }
 }

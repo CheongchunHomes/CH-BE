@@ -36,6 +36,11 @@ api:
     service-key: ${API_PUBLIC_SERVICE_KEY}
   applyhome:
     service-key: ${API_APPLYHOME_SERVICE_KEY}
+  subscription:
+    applyhome:
+      service-key: ${API_SUBSCRIPTION_APPLYHOME_SERVICE_KEY}
   policy:
     youth:
         service-key: ${API_POLICY_YOUTH_SERVICE_KEY}
+  kakao:
+    rest-api-key: ${KAKAO_REST_API_KEY}

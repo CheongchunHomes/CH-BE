@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside class="sidebar" th:fragment="sidebar(activeMenu)">
+    <div class="brand">
+        <div class="brand-badge">H</div>
+        <div>
+            <h1>관리자 메인</h1>
+            <p>청년 주거 통합 관리</p>
+        </div>
+    </div>
+
+    <div>
+        <div class="menu-title">메뉴 리스트</div>
+        <div class="menu-list">
+            <a class="menu-item" th:classappend="${activeMenu == 'overview'} ? ' active' : ''" th:href="@{/admin}">
+                <strong>관리자 메인</strong>
+                <span>전체 현황</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'users'} ? ' active' : ''" th:href="@{/admin(section='users')}">
+                <strong>유저</strong>
+                <span>유저 리스트</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'subscription'} ? ' active' : ''" th:href="@{/admin(section='subscription')}">
+                <strong>청약</strong>
+                <span>청약 리스트</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'loan'} ? ' active' : ''" th:href="@{/admin/loan}">
+                <strong>대출</strong>
+                <span>대출 허브</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'announcement'} ? ' active' : ''" th:href="@{/admin/announcements}">
+                <strong>공고</strong>
+                <span>공고 리스트</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'policy'} ? ' active' : ''" th:href="@{/admin/policies}">
+                <strong>제도</strong>
+                <span>지원제도 리스트</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'asset'} ? ' active' : ''" th:href="@{/admin(section='asset')}">
+                <strong>자산</strong>
+                <span>파일 관리</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'community'} ? ' active' : ''" th:href="@{/admin(section='community')}">
+                <strong>커뮤니티</strong>
+                <span>게시글 관리</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'notice'} ? ' active' : ''" th:href="@{/admin(section='notice')}">
+                <strong>공지사항</strong>
+                <span>공지사항 관리</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'simulation'} ? ' active' : ''" th:href="@{/admin(section='simulation')}">
+                <strong>시뮬레이션</strong>
+                <span>진단 / 계산</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'statistics'} ? ' active' : ''" th:href="@{/admin(section='statistics')}">
+                <strong>통계 리포트</strong>
+                <span>로그 / 통계</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'settings'} ? ' active' : ''" th:href="@{/admin/subscription-result}">
+                <strong>청약 관리</strong>
+                <span>신청 상태 확인</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'banner'} ? ' active' : ''" th:href="@{/admin/banners}">
+                <strong>배너</strong>
+                <span>메인 배너 관리</span>
+            </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'settings'} ? ' active' : ''" th:href="@{/admin(section='settings')}">
+                <strong>설정</strong>
+                <span>권한 / 시스템</span>
+            </a>
+        </div>
+    </div>
+</aside>
+</body>
+</html>

@@ -26,8 +26,7 @@ public class Notice extends BaseEntity {
     @Column(nullable = false, length = 50)
     private String summary;
 
-    @Lob
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     @Column(nullable = false)
@@ -39,5 +38,19 @@ public class Notice extends BaseEntity {
 
     public void increaseViewCount() {
         this.viewCount++;
+    }
+
+    public void updateFromAdmin(
+            String category,
+            String title,
+            String summary,
+            String content,
+            boolean important
+    ) {
+        this.category = category;
+        this.title = title;
+        this.summary = summary;
+        this.content = content;
+        this.important = important;
     }
 }

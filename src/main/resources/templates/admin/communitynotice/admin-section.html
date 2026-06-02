@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>청년주거원스텝 관리자</title>
+  <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+
+  <th:block th:replace="~{admin/communitynotice/notice-fragments :: styles}"></th:block>
+</head>
+<body>
+<div class="layout">
+  <aside th:replace="~{admin/fragments/layout :: sidebar(${section})}"></aside>
+
+  <main class="content">
+    <section class="hero">
+      <div>
+        <div class="eyebrow" th:text="${sectionBadge}">관리</div>
+        <h2 th:text="${sectionTitle}">관리</h2>
+        <p th:text="${sectionDescription}">관리 화면입니다.</p>
+      </div>
+
+      <div class="hero-actions">
+        <span class="pill">실시간 반영</span>
+        <a class="button" th:href="@{/admin(section=${section})}">새로고침</a>
+      </div>
+    </section>
+
+    <section class="kpi-grid">
+      <article class="card kpi" th:each="card : ${stats}">
+        <div class="label" th:text="${card.label}">지표</div>
+        <div class="value" th:text="${card.value}">0</div>
+        <div class="meta" th:text="${card.meta}">전체</div>
+      </article>
+    </section>
+
+    <!-- 공지사항 관리 화면 -->
+    <section th:if="${section == 'notice'}" class="table-panel">
+      <div class="table-head">
+        <div>
+          <h3 th:text="${sectionTitle}">공지사항 관리</h3>
+          <p th:text="${sectionDescription}">서비스 공지사항을 등록하고 확인합니다.</p>
+        </div>
+        <div class="action-group">
+          <span class="pill">총 <span th:text="${noticeTotalCount}">0</span>건</span>
+          <button type="button" class="button" onclick="showNoticeWritePanel()">공지사항 등록</button>
+        </div>
+      </div>
+
+      <div class="table-scroll" th:if="${!#lists.isEmpty(noticeRows)}">
+        <th:block th:replace="~{admin/communitynotice/notice-fragments :: noticeTable}"></th:block>
+      </div>
+
+      <div class="empty-state" th:if="${#lists.isEmpty(noticeRows)}">
+        등록된 공지사항이 없습니다.
+      </div>
+
+      <div class="pagination" th:if="${pagination != null and !#lists.isEmpty(pagination.pageNumbers)}">
+        <a class="page-btn"
+           th:classappend="${!pagination.hasPrevious} ? ' disabled' : ''"
+           th:href="@{/admin(section=${section}, page=${pagination.currentPage - 1})}">이전</a>
+        <a class="page-btn"
+           th:each="pageNo : ${pagination.pageNumbers}"
+           th:classappend="${pageNo == pagination.currentPage} ? ' active' : ''"
+           th:href="@{/admin(section=${section}, page=${pageNo})}"
+           th:text="${pageNo}">1</a>
+        <a class="page-btn"
+           th:classappend="${!pagination.hasNext} ? ' disabled' : ''"
+           th:href="@{/admin(section=${section}, page=${pagination.currentPage + 1})}">다음</a>
+      </div>
+    </section>
+
+    <th:block th:replace="~{admin/communitynotice/notice-fragments :: noticePanels}"></th:block>
+
+    <!-- 커뮤니티 게시글 관리 화면 -->
+    <section th:if="${section == 'community'}" class="table-panel">
+      <div class="table-head">
+        <div>
+          <h3 th:text="${sectionTitle}">커뮤니티 관리</h3>
+          <p th:text="${sectionDescription}">커뮤니티 게시글을 관리합니다.</p>
+        </div>
+        <span class="pill">총 <span th:text="${tableTotalCount}">0</span>건</span>
+      </div>
+
+      <div class="table-scroll" th:if="${!#lists.isEmpty(tableRows)}">
+        <table>
+          <thead>
+          <tr>
+            <th th:each="header : ${tableHeaders}" th:text="${header}">헤더</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="row : ${tableRows}">
+            <td th:each="cell, cellStat : ${row.columns}">
+              <span th:if="${cellStat.index != 4}" th:text="${cell}">값</span>
+              <form th:if="${cellStat.index == 4}"
+                    th:action="@{/admin/community/{postId}/delete(postId=${cell})}"
+                    method="post">
+                <button type="submit"
+                        class="button danger sm"
+                        onclick="return confirm('커뮤니티 게시글을 삭제하시겠습니까?')">삭제</button>
+              </form>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" th:if="${#lists.isEmpty(tableRows)}">
+        표시할 커뮤니티 게시글이 없습니다.
+      </div>
+
+      <div class="pagination" th:if="${pagination != null and !#lists.isEmpty(pagination.pageNumbers)}">
+        <a class="page-btn"
+           th:classappend="${!pagination.hasPrevious} ? ' disabled' : ''"
+           th:href="@{/admin(section=${section}, page=${pagination.currentPage - 1})}">이전</a>
+        <a class="page-btn"
+           th:each="pageNo : ${pagination.pageNumbers}"
+           th:classappend="${pageNo == pagination.currentPage} ? ' active' : ''"
+           th:href="@{/admin(section=${section}, page=${pageNo})}"
+           th:text="${pageNo}">1</a>
+        <a class="page-btn"
+           th:classappend="${!pagination.hasNext} ? ' disabled' : ''"
+           th:href="@{/admin(section=${section}, page=${pagination.currentPage + 1})}">다음</a>
+      </div>
+    </section>
+
+    <th:block th:replace="~{admin/communitynotice/notice-fragments :: communityNoticeTable}"></th:block>
+    <th:block th:replace="~{admin/communitynotice/notice-fragments :: communityNoticePanels}"></th:block>
+  </main>
+</div>
+
+<th:block th:replace="~{admin/communitynotice/notice-fragments :: noticeScript}"></th:block>
+<th:block th:replace="~{admin/communitynotice/notice-fragments :: communityNoticeScript}"></th:block>
+</body>
+</html>
