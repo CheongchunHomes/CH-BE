@@ -22,19 +22,20 @@ public class SimulatorReportService {
     @Transactional
     public void save(Long userId, SimulatorReportRequestDto dto) {
         simulatorReportRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
-                .ifPresent(simulatorReportRepository::delete);
-
-        SimulatorReport report = SimulatorReport.builder()
-                .userId(userId)
-                .assetSnapshot(dto.assetSnapshot())
-                .housingSnapshot(dto.housingSnapshot())
-                .loanSnapshot(dto.loanSnapshot())
-                .scoreSnapshot(dto.scoreSnapshot())
-                .aiResult(dto.aiResult())
-                .aiPrompt(dto.aiPrompt())
-                .build();
-
-        simulatorReportRepository.save(report);
+                .ifPresentOrElse(
+                        existing -> existing.update(dto),
+                        () -> simulatorReportRepository.save(
+                                SimulatorReport.builder()
+                                        .userId(userId)
+                                        .assetSnapshot(dto.assetSnapshot())
+                                        .housingSnapshot(dto.housingSnapshot())
+                                        .loanSnapshot(dto.loanSnapshot())
+                                        .scoreSnapshot(dto.scoreSnapshot())
+                                        .aiResult(dto.aiResult())
+                                        .aiPrompt(dto.aiPrompt())
+                                        .build()
+                        )
+                );
     }
 
     // 내 최근 리포트 조회
