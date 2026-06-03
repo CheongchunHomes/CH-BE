@@ -1,6 +1,7 @@
 package com.chcorp.homes.properties.controller;
 
 import com.chcorp.homes.properties.dto.PropertyDTO;
+import com.chcorp.homes.properties.dto.PropertyThumbnailDTO;
 import com.chcorp.homes.properties.service.PropertyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -24,5 +25,10 @@ public class PropertyController {
     @GetMapping("/{propertyId}")
     public PropertyDTO getProperty(@PathVariable Long propertyId) {
         return propertyService.getProperty(propertyId);
+    }
+
+    @GetMapping("/{propertyId}/thumbnail")
+    public PropertyThumbnailDTO getPropertyThumbnail(@PathVariable Long propertyId) {
+        return propertyService.getPropertyThumbnail(propertyId);
     }
 }

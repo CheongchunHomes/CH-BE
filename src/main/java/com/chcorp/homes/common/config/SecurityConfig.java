@@ -43,8 +43,9 @@ public class SecurityConfig {
             "/policies/**",
             "/simulator/**",
             "/admin/banners/**",
-            "/banners"
-            ,"/**"   // 임시
+            "/banners",
+            "/files/property-images/**"
+            //"/**"   // 임시
     };
 
     @Bean
