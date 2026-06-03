@@ -1,6 +1,7 @@
 package com.chcorp.homes.users.controller;
 
 import com.chcorp.homes.auth.dto.response.AuthErrorResponseDTO;
+import com.chcorp.homes.users.dto.request.NicknameUpdateRequestDTO;
 import com.chcorp.homes.users.dto.request.PersonalInfoRequestDTO;
 import com.chcorp.homes.users.dto.request.PasswordChangeRequestDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
@@ -41,6 +42,16 @@ public class UserController {
         log.info("Mypage userId: {}", userId);
         MyProfileDTO dto = userService.mypage(userId);
         return ResponseEntity.ok(dto);
+    }
+
+    @PatchMapping("/mypage")
+    public ResponseEntity<Void> updateNickname(
+            Authentication authentication,
+            @RequestBody NicknameUpdateRequestDTO request
+    ) {
+        Long userId = Long.valueOf(authentication.getName());
+        userService.updateNickname(userId, request);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/personal")

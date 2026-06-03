@@ -1,7 +1,8 @@
 package com.chcorp.homes.users.service;
 
-import com.chcorp.homes.users.dto.request.PersonalInfoRequestDTO;
+import com.chcorp.homes.users.dto.request.NicknameUpdateRequestDTO;
 import com.chcorp.homes.users.dto.request.PasswordChangeRequestDTO;
+import com.chcorp.homes.users.dto.request.PersonalInfoRequestDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
 import com.chcorp.homes.users.dto.response.MyProfileDTO;
 import com.chcorp.homes.users.dto.response.PersonalInfoResponseDTO;
@@ -84,6 +85,25 @@ public class UserService {
     }
 
     @Transactional
+    public void updateNickname(Long userId, NicknameUpdateRequestDTO request) {
+        validateNicknameUpdateRequest(request);
+
+        String nickname = request.nickname().trim();
+        User user = findById(userId);
+
+        if (nickname.equals(user.getNickname())) {
+            return;
+        }
+
+        if (userRepository.findByNickname(nickname).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Nickname already exists");
+        }
+
+        user.setNickname(nickname);
+        userRepository.save(user);
+    }
+
+    @Transactional
     public void createPersonalInfo(Long userId, PersonalInfoRequestDTO request) {
         validatePersonalInfoRequest(request);
 
@@ -153,6 +173,12 @@ public class UserService {
     private void validatePasswordChangeRequest(PasswordChangeRequestDTO request) {
         if (request == null || isBlank(request.password())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
+        }
+    }
+
+    private void validateNicknameUpdateRequest(NicknameUpdateRequestDTO request) {
+        if (request == null || isBlank(request.nickname())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nickname is required");
         }
     }
 }
