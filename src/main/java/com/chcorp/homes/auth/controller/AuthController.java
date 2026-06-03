@@ -100,6 +100,7 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<AuthUserResponse> me(Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
-        return ResponseEntity.ok(authService.me(userId));
+        String authLevel = authentication.getDetails() instanceof String details ? details : null;
+        return ResponseEntity.ok(authService.me(userId, authLevel));
     }
 }

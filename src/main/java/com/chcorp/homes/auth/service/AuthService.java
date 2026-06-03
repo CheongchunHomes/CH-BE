@@ -26,6 +26,10 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class AuthService {
 
+    private static final String AUTH_LEVEL_LOGIN = "LOGIN";
+    private static final String AUTH_LEVEL_REFRESH = "REFRESH";
+    private static final String AUTH_LEVEL_REAUTH = "REAUTH";
+
     private final UserRepository userRepository;
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
@@ -43,7 +47,7 @@ public class AuthService {
         refreshTokenService.replaceLoginSession(user, servletRequest);
         RefreshTokenService.IssuedRefreshToken refreshToken = refreshTokenService.issue(user, servletRequest);
 
-        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user);
+        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user, AUTH_LEVEL_LOGIN);
 
         return new AuthLoginResponseDTO(
                 accessToken.token(),
@@ -62,7 +66,7 @@ public class AuthService {
     @Transactional(readOnly = true)
     public AccessTokenResponseDTO refresh(String rawRefreshToken) {
         User user = refreshTokenService.validateForRefresh(rawRefreshToken);
-        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user);
+        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user, AUTH_LEVEL_REFRESH);
         return new AccessTokenResponseDTO(accessToken.token(), accessToken.expiresAt());
     }
 
@@ -91,7 +95,7 @@ public class AuthService {
 
         Instant newRefreshExpiresAt = refreshTokenService.reauth(user, request.refreshToken());
 
-        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user);
+        JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user, AUTH_LEVEL_REAUTH);
         return new ReauthResponseDTO(accessToken.token(), accessToken.expiresAt(), newRefreshExpiresAt);
     }
 
@@ -101,11 +105,11 @@ public class AuthService {
      * BFF 로그인 상태 초기화와 Navbar 표시 기준으로 사용된다.
      */
     @Transactional(readOnly = true)
-    public AuthUserResponse me(Long userId) {
+    public AuthUserResponse me(Long userId, String authLevel) {
         User user = userService.findById(userId);
         boolean hasPersonalInfo =
                 user.getRole() == UserRole.ADMIN || userService.hasPersonalInfo(userId);
-        return AuthUserResponse.from(user, hasPersonalInfo);
+        return AuthUserResponse.from(user, hasPersonalInfo, authLevel);
     }
 
     /**
@@ -130,8 +134,8 @@ public class AuthService {
         return user;
     }
 
-    private JwtTokenProvider.IssuedAccessToken createAccessToken(User user) {
-        return jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name());
+    private JwtTokenProvider.IssuedAccessToken createAccessToken(User user, String authLevel) {
+        return jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name(), authLevel);
     }
 
     private void validateLoginRequest(AuthLoginDTO request) {

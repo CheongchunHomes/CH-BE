@@ -24,6 +24,7 @@ import java.util.List;
 public class JwtTokenProvider {
 
     private static final String TOKEN_TYPE_CLAIM = "type";
+    public static final String AUTH_LEVEL_CLAIM = "authLevel";
     private static final String ACCESS_TOKEN_TYPE = "access";
 
     private final JwtProperties jwtProperties;
@@ -37,7 +38,7 @@ public class JwtTokenProvider {
         );
     }
 
-    public IssuedAccessToken createAccessToken(Long userId, String role) {
+    public IssuedAccessToken createAccessToken(Long userId, String role, String authLevel) {
         Instant now = Instant.now();
         Instant expiration = now.plus(jwtProperties.accessTokenExpiration());
 
@@ -45,6 +46,7 @@ public class JwtTokenProvider {
                 .subject(String.valueOf(userId))
                 .claim("role", role)
                 .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
+                .claim(AUTH_LEVEL_CLAIM, authLevel)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
                 .signWith(secretKey)
@@ -72,15 +74,18 @@ public class JwtTokenProvider {
 
         String userId = claims.getSubject();
         String role = claims.get("role", String.class);
+        String authLevel = claims.get(AUTH_LEVEL_CLAIM, String.class);
 
         List<SimpleGrantedAuthority> authorities =
                 List.of(new SimpleGrantedAuthority("ROLE_" + role));
 
-        return new UsernamePasswordAuthenticationToken(
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 userId,
                 null,
                 authorities
         );
+        authentication.setDetails(authLevel);
+        return authentication;
     }
 
     private Claims getClaims(String token) {

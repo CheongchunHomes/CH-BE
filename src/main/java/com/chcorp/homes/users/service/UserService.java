@@ -1,8 +1,10 @@
 package com.chcorp.homes.users.service;
 
 import com.chcorp.homes.users.dto.request.PersonalInfoRequestDTO;
+import com.chcorp.homes.users.dto.request.PasswordChangeRequestDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
 import com.chcorp.homes.users.dto.response.MyProfileDTO;
+import com.chcorp.homes.users.dto.response.PersonalInfoResponseDTO;
 import com.chcorp.homes.users.entity.PersonalInfo;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.entity.UserRole;
@@ -100,6 +102,43 @@ public class UserService {
         personalInfoRepository.save(personalInfo);
     }
 
+    @Transactional
+    public void changePassword(Long userId, PasswordChangeRequestDTO request) {
+        validatePasswordChangeRequest(request);
+
+        User user = findById(userId);
+        user.setPassword(passwordEncoder.encode(request.password()));
+        userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
+    public PersonalInfoResponseDTO getPersonalInfo(Long userId) {
+        PersonalInfo personalInfo = personalInfoRepository.findByUserId(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personal info not found"));
+
+        return new PersonalInfoResponseDTO(
+                personalInfo.getRealName(),
+                personalInfo.getPhone(),
+                personalInfo.getAddress()
+        );
+    }
+
+    @Transactional
+    public void upsertPersonalInfo(Long userId, PersonalInfoRequestDTO request) {
+        validatePersonalInfoRequest(request);
+
+        PersonalInfo personalInfo = personalInfoRepository.findByUserId(userId)
+                .orElseGet(() -> PersonalInfo.builder()
+                        .user(findById(userId))
+                        .realName(request.realName())
+                        .phone(request.phone())
+                        .address(request.address())
+                        .build());
+
+        personalInfo.update(request.realName(), request.phone(), request.address());
+        personalInfoRepository.save(personalInfo);
+    }
+
     @Transactional(readOnly = true)
     public boolean hasPersonalInfo(Long userId) {
         return personalInfoRepository.existsByUserId(userId);
@@ -108,6 +147,12 @@ public class UserService {
     private void validatePersonalInfoRequest(PersonalInfoRequestDTO request) {
         if (request == null || isBlank(request.realName()) || isBlank(request.phone()) || isBlank(request.address())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Real name, phone, and address are required");
+        }
+    }
+
+    private void validatePasswordChangeRequest(PasswordChangeRequestDTO request) {
+        if (request == null || isBlank(request.password())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
     }
 }
