@@ -61,6 +61,10 @@
                 <strong>청약 관리</strong>
                 <span>신청 상태 확인</span>
             </a>
+            <a class="menu-item" th:classappend="${activeMenu == 'banner'} ? ' active' : ''" th:href="@{/admin/banners}">
+                <strong>배너</strong>
+                <span>메인 배너 관리</span>
+            </a>
             <a class="menu-item" th:classappend="${activeMenu == 'settings'} ? ' active' : ''" th:href="@{/admin(section='settings')}">
                 <strong>설정</strong>
                 <span>권한 / 시스템</span>
