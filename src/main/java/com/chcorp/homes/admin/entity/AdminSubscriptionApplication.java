@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/*
 @Entity
 @Table(name = "subscription_applications")
 @Getter
@@ -39,3 +40,4 @@ public class AdminSubscriptionApplication extends BaseEntity {
         this.resultAt = resultAt;
     }
 }
+*/
