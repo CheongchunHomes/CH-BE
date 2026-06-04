@@ -6,9 +6,11 @@ import com.chcorp.homes.auth.dto.response.AccessTokenResponseDTO;
 import com.chcorp.homes.auth.dto.response.AuthLoginResponseDTO;
 import com.chcorp.homes.auth.dto.response.AuthUserResponse;
 import com.chcorp.homes.auth.dto.response.ReauthResponseDTO;
+import com.chcorp.homes.auth.exception.DisabledUserException;
 import com.chcorp.homes.common.config.JwtTokenProvider;
 import com.chcorp.homes.users.entity.User;
 import com.chcorp.homes.users.entity.UserRole;
+import com.chcorp.homes.users.entity.UserStatus;
 import com.chcorp.homes.users.repository.UserRepository;
 import com.chcorp.homes.users.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,6 +45,7 @@ public class AuthService {
     @Transactional
     public AuthLoginResponseDTO login(AuthLoginDTO request, HttpServletRequest servletRequest) {
         User user = authenticate(request);
+        validateActiveUser(user);
 
         refreshTokenService.replaceLoginSession(user, servletRequest);
         RefreshTokenService.IssuedRefreshToken refreshToken = refreshTokenService.issue(user, servletRequest);
@@ -66,6 +69,7 @@ public class AuthService {
     @Transactional(readOnly = true)
     public AccessTokenResponseDTO refresh(String rawRefreshToken) {
         User user = refreshTokenService.validateForRefresh(rawRefreshToken);
+        validateActiveUser(user);
         JwtTokenProvider.IssuedAccessToken accessToken = createAccessToken(user, AUTH_LEVEL_REFRESH);
         return new AccessTokenResponseDTO(accessToken.token(), accessToken.expiresAt());
     }
@@ -88,6 +92,7 @@ public class AuthService {
         User sessionUser = refreshTokenService.findUserByRefreshToken(request.refreshToken());
 
         User user = userService.findById(sessionUser.getId());
+        validateActiveUser(user);
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
@@ -107,6 +112,7 @@ public class AuthService {
     @Transactional(readOnly = true)
     public AuthUserResponse me(Long userId, String authLevel) {
         User user = userService.findById(userId);
+        validateActiveUser(user);
         boolean hasPersonalInfo =
                 user.getRole() == UserRole.ADMIN || userService.hasPersonalInfo(userId);
         return AuthUserResponse.from(user, hasPersonalInfo, authLevel);
@@ -136,6 +142,12 @@ public class AuthService {
 
     private JwtTokenProvider.IssuedAccessToken createAccessToken(User user, String authLevel) {
         return jwtTokenProvider.createAccessToken(user.getId(), user.getRole().name(), authLevel);
+    }
+
+    private void validateActiveUser(User user) {
+        if (user.getStatus() == UserStatus.disabled) {
+            throw new DisabledUserException();
+        }
     }
 
     private void validateLoginRequest(AuthLoginDTO request) {
