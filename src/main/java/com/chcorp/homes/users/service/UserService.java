@@ -71,7 +71,8 @@ public class UserService {
         User user = findById(userId);
         return new MyProfileDTO(
                 user.getEmail(),
-                user.getNickname()
+                user.getNickname(),
+                user.getCreatedAt()
         );
     }
 
