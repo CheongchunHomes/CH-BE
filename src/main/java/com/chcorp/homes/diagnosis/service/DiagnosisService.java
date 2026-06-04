@@ -94,6 +94,7 @@ public class DiagnosisService {
                 .marriagePeriod(dto.getMarriagePeriod())
                 .hasYoungChild(dto.getHasYoungChild())
                 .singleParent(dto.getSingleParent())
+                .houselessYears(dto.getHouselessYears())
                 .build();
     }
 

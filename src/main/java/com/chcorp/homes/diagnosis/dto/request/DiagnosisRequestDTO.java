@@ -90,6 +90,9 @@ public class DiagnosisRequestDTO {
     /* 한부모 여부 */
     private Boolean singleParent;
 
+    /* 무주택 기간 */
+    private Integer houselessYears;
+
     /**
      * UserProfile → DiagnosisRequestDTO 변환
      * - DB에 저장된 프로필 기반으로 추천 채점할 때 사용

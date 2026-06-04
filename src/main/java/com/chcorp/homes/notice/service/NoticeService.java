@@ -45,10 +45,6 @@ public class NoticeService {
         Notice notice = noticeRepository.findById(noticeId)
                 .orElseThrow(() -> new IllegalArgumentException("공지사항을 찾을 수 없습니다."));
 
-        if (COMMUNITY_CATEGORY.equals(notice.getCategory())) {
-            throw new IllegalArgumentException("공지사항을 찾을 수 없습니다.");
-        }
-
         notice.increaseViewCount();
 
         return NoticeResponseDTO.from(notice);
