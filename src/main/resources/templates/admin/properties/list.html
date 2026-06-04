@@ -75,8 +75,8 @@
                     <tbody>
                     <tr th:each="item : ${properties.content}">
                         <td>
-                            <img class="property-thumb" th:if="${item.thumbnailUrl != null}" th:src="${item.thumbnailUrl}" alt="">
-                            <span th:if="${item.thumbnailUrl == null}">-</span>
+                            <img class="property-thumb" th:if="${item.thumbnailPreviewUrl != null}" th:src="${item.thumbnailPreviewUrl}" alt="">
+                            <span th:if="${item.thumbnailPreviewUrl == null}">-</span>
                         </td>
                         <td th:text="${item.title}">물건명</td>
                         <td th:text="${item.address}">주소</td>
