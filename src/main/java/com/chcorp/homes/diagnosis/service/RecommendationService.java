@@ -192,9 +192,14 @@ public class RecommendationService {
     // ── 공통 유틸 ───────────────────────────────────
 
     private boolean isYouthTarget(DiagnosisRequestDTO dto, int age) {
+        // 만 19~39세면 무조건 통과
         if (age >= AGE_MIN && age <= AGE_MAX) return true;
-        return dto.getEmploymentStatus() == EmploymentStatus.STUDENT
-                || dto.getEmploymentStatus() == EmploymentStatus.JOB_SEEKER;
+        // 대학생/취준생은 만 17세 이상이면 예외 허용
+        if (age >= 17) {
+            return dto.getEmploymentStatus() == EmploymentStatus.STUDENT
+                    || dto.getEmploymentStatus() == EmploymentStatus.JOB_SEEKER;
+        }
+        return false;
     }
 
     private boolean isWithinEmploymentLimit(EmploymentPeriod period) {
