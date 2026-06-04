@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원 관리</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('users')}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">회원 리스트</div>
+                <h2>회원 관리</h2>
+                <p>가입 회원의 상태를 관리하고 확인합니다.</p>
+            </div>
+            <div class="hero-actions">
+                <span class="pill">실시간 반영</span>
+                <a class="button" th:href="@{/admin/users(keyword=${keyword}, status=${status}, page=${currentPage})}">새로고침</a>
+            </div>
+        </section>
+
+        <section class="kpi-grid">
+            <article class="card kpi clickable-card"
+                     data-admin-toggle="true"
+                     aria-controls="adminUsersPanel"
+                     aria-expanded="false"
+                     tabindex="0">
+                <div class="label">등록 회원</div>
+                <div class="value" th:text="${registeredUserCount}">0</div>
+            </article>
+            <article class="card kpi">
+                <div class="label">활성 회원</div>
+                <div class="value" th:text="${activeUserCount}">0</div>
+            </article>
+            <article class="card kpi">
+                <div class="label">비활성 회원</div>
+                <div class="value" th:text="${disabledUserCount}">0</div>
+            </article>
+            <article class="card kpi">
+                <div class="label">관리자</div>
+                <div class="value" th:text="${adminUserCount}">0</div>
+            </article>
+        </section>
+
+        <form class="search-panel" th:action="@{/admin/users}" method="get">
+            <div class="search-group">
+                <label>검색어</label>
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="이메일, 닉네임 검색">
+            </div>
+            <div class="search-group">
+                <label>상태</label>
+                <select name="status">
+                    <option value="" th:selected="${status == ''}">전체</option>
+                    <option value="enabled" th:selected="${status == 'enabled'}">활성</option>
+                    <option value="disabled" th:selected="${status == 'disabled'}">비활성</option>
+                </select>
+            </div>
+            <button class="button" type="submit">검색</button>
+            <a class="button ghost" th:href="@{/admin/users}">초기화</a>
+        </form>
+
+        <section class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3>회원 리스트</h3>
+                    <p>이메일 또는 닉네임으로 검색하고 상태를 바로 변경할 수 있습니다.</p>
+                </div>
+                <span class="pill">총 <span th:text="${users.totalElements}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!users.content.isEmpty()}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>이메일</th>
+                        <th>닉네임</th>
+                        <th>가입일</th>
+                        <th>상태</th>
+                        <th>관리</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="user : ${users.content}">
+                        <td th:text="${user.email}">email@example.com</td>
+                        <td th:text="${user.nickname}">닉네임</td>
+                        <td th:text="${user.createdAt != null ? user.createdAt.toString().substring(0, 10) : '-'}">가입일</td>
+                        <td>
+                            <span class="status-badge"
+                                  th:classappend="${user.status.name() == 'enabled'} ? ' status-approved' : ' status-rejected'"
+                                  th:text="${user.status.name() == 'enabled'} ? '활성' : '비활성'">활성</span>
+                        </td>
+                        <td>
+                            <form class="status-form"
+                                  th:action="@{/admin/users/{userId}/status(userId=${user.id})}"
+                                  method="post">
+                                <input type="hidden" name="status"
+                                       th:value="${user.status.name() == 'enabled'} ? 'disabled' : 'enabled'">
+                                <input type="hidden" name="keyword" th:value="${keyword}">
+                                <input type="hidden" name="filterStatus" th:value="${status}">
+                                <input type="hidden" name="page" th:value="${currentPage}">
+                                <button type="submit"
+                                        class="button sm"
+                                        th:classappend="${user.status.name() == 'enabled'} ? ' danger' : ''"
+                                        th:text="${user.status.name() == 'enabled'} ? '비활성화' : '활성화'">비활성화</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${users.content.isEmpty()}">
+                표시할 회원이 없습니다.
+            </div>
+
+            <div class="pagination" th:if="${totalPages > 1}">
+                <a class="page-btn"
+                   th:classappend="${currentPage == 0} ? ' disabled'"
+                   th:href="@{/admin/users(page=${currentPage - 1}, keyword=${keyword}, status=${status})}">이전</a>
+                <a class="page-btn"
+                   th:if="${startPage > 0}"
+                   th:href="@{/admin/users(page=0, keyword=${keyword}, status=${status})}">1</a>
+                <span class="page-info" th:if="${startPage > 1}">...</span>
+                <a class="page-btn"
+                   th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+                   th:classappend="${pageNum == currentPage} ? ' active'"
+                   th:href="@{/admin/users(page=${pageNum}, keyword=${keyword}, status=${status})}"
+                   th:text="${pageNum + 1}">1</a>
+                <span class="page-info" th:if="${endPage < totalPages - 2}">...</span>
+                <a class="page-btn"
+                   th:if="${endPage < totalPages - 1}"
+                   th:href="@{/admin/users(page=${totalPages - 1}, keyword=${keyword}, status=${status})}"
+                   th:text="${totalPages}">마지막</a>
+                <a class="page-btn"
+                   th:classappend="${currentPage >= totalPages - 1} ? ' disabled'"
+                   th:href="@{/admin/users(page=${currentPage + 1}, keyword=${keyword}, status=${status})}">다음</a>
+                <span class="page-info" th:text="${currentPage + 1} + ' / ' + ${totalPages}">1 / 1</span>
+            </div>
+        </section>
+
+        <section class="table-panel user-toggle-panel" id="adminUsersPanel" hidden>
+            <div class="user-toggle-head">
+                <div>
+                    <h3>관리자 계정</h3>
+                </div>
+                <span class="pill">총 <span th:text="${adminUsers.size()}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!adminUsers.isEmpty()}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>이메일</th>
+                        <th>닉네임</th>
+                        <th>가입일</th>
+                        <th>상태</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="user : ${adminUsers}">
+                        <td th:text="${user.email}">admin@example.com</td>
+                        <td th:text="${user.nickname}">관리자</td>
+                        <td th:text="${user.createdAt != null ? user.createdAt.toString().substring(0, 10) : '-'}">가입일</td>
+                        <td>
+                            <span class="status-badge status-approved">관리자</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${adminUsers.isEmpty()}">
+                등록된 관리자 계정이 없습니다.
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    const adminToggleCard = document.querySelector("[data-admin-toggle]");
+    const adminUsersPanel = document.getElementById("adminUsersPanel");
+
+    function toggleAdminPanel() {
+        const willOpen = adminUsersPanel.hidden;
+        adminUsersPanel.hidden = !willOpen;
+        adminToggleCard.setAttribute("aria-expanded", String(willOpen));
+    }
+
+    adminToggleCard.addEventListener("click", toggleAdminPanel);
+    adminToggleCard.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            toggleAdminPanel();
+        }
+    });
+</script>
+</body>
+</html>

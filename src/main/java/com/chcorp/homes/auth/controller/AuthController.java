@@ -6,8 +6,8 @@ import com.chcorp.homes.auth.dto.request.AuthReauthRequestDTO;
 import com.chcorp.homes.auth.dto.request.AuthRefreshRequestDTO;
 import com.chcorp.homes.auth.dto.response.AccessTokenResponseDTO;
 import com.chcorp.homes.auth.dto.response.AuthErrorResponseDTO;
-import com.chcorp.homes.auth.dto.response.AuthLoginResponseDTO;
 import com.chcorp.homes.auth.dto.response.AuthUserResponse;
+import com.chcorp.homes.auth.exception.DisabledUserException;
 import com.chcorp.homes.auth.exception.ReauthRequiredException;
 import com.chcorp.homes.auth.exception.RefreshExpiredException;
 import com.chcorp.homes.auth.service.AuthService;
@@ -29,11 +29,22 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthLoginResponseDTO> login(
+    public ResponseEntity<?> login(
             @RequestBody AuthLoginDTO request,
             HttpServletRequest servletRequest
     ) {
-        return ResponseEntity.ok(authService.login(request, servletRequest));
+        try {
+            return ResponseEntity.ok(authService.login(request, servletRequest));
+        } catch (DisabledUserException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthErrorResponseDTO("USER_DISABLED"));
+        } catch (ResponseStatusException e) {
+            if (e.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new AuthErrorResponseDTO("INVALID_CREDENTIALS"));
+            }
+            throw e;
+        }
     }
 
     /**
@@ -47,6 +58,9 @@ public class AuthController {
         try {
             AccessTokenResponseDTO response = authService.refresh(request.refreshToken());
             return ResponseEntity.ok(response);
+        } catch (DisabledUserException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthErrorResponseDTO("USER_DISABLED"));
         } catch (ReauthRequiredException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new AuthErrorResponseDTO("REAUTH_REQUIRED"));
@@ -65,6 +79,9 @@ public class AuthController {
     public ResponseEntity<?> reauth(@RequestBody AuthReauthRequestDTO request) {
         try {
             return ResponseEntity.ok(authService.reauth(request));
+        } catch (DisabledUserException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new AuthErrorResponseDTO("USER_DISABLED"));
         } catch (RefreshExpiredException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new AuthErrorResponseDTO("REFRESH_EXPIRED"));
@@ -100,6 +117,7 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<AuthUserResponse> me(Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
-        return ResponseEntity.ok(authService.me(userId));
+        String authLevel = authentication.getDetails() instanceof String details ? details : null;
+        return ResponseEntity.ok(authService.me(userId, authLevel));
     }
 }
