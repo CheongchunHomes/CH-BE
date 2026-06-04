@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/loan-products")
+@RequestMapping("/loan-products")
 public class LoanProductApiController {
 
     private final LoanProductRepository loanProductRepository;
