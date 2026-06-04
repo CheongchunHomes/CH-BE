@@ -38,6 +38,12 @@ public class AuthController {
         } catch (DisabledUserException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new AuthErrorResponseDTO("USER_DISABLED"));
+        } catch (ResponseStatusException e) {
+            if (e.getStatusCode().value() == HttpStatus.UNAUTHORIZED.value()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new AuthErrorResponseDTO("INVALID_CREDENTIALS"));
+            }
+            throw e;
         }
     }
 
