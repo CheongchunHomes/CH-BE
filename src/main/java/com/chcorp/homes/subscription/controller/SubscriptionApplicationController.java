@@ -20,6 +20,10 @@ public class SubscriptionApplicationController {
             Authentication authentication,
             @RequestBody SubscriptionApplicationCreateRequestDTO request
     ) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.status(401).build();
+        }
+
         Long currentUserId = Long.valueOf(authentication.getName());
 
         return ResponseEntity.ok(subscriptionApplicationService.apply(currentUserId, request));

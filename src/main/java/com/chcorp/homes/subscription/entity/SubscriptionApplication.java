@@ -6,6 +6,8 @@ import com.chcorp.homes.users.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(
         name = "subscription_applications",
@@ -23,7 +25,12 @@ import lombok.*;
 public class SubscriptionApplication extends MutableBaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @SequenceGenerator(
+            name = "subscription_application_seq",
+            sequenceName = "subscription_application_id_seq",
+            allocationSize = 1
+    )
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "subscription_application_seq")
     @Column(name = "id")
     private Long id;
 
@@ -38,6 +45,9 @@ public class SubscriptionApplication extends MutableBaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private SubscriptionApplicationStatus status;
+
+    @Column(name = "result_at")
+    private LocalDateTime resultAt;
 
     @Column(name = "supply_id")
     private Long supplyId;
@@ -56,4 +66,9 @@ public class SubscriptionApplication extends MutableBaseEntity {
 
     @Column(name = "detail_address")
     private String detailAddress;
+
+    public void applyResult(SubscriptionApplicationStatus status, LocalDateTime resultAt) {
+        this.status = status;
+        this.resultAt = resultAt;
+    }
 }

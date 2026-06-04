@@ -47,7 +47,7 @@ public class SubscriptionApplicationService {
         SubscriptionApplication application = SubscriptionApplication.builder()
                 .user(user)
                 .announcement(announcement)
-                .status(SubscriptionApplicationStatus.APPLIED)
+                .status(SubscriptionApplicationStatus.PENDING)
                 .supplyId(request.supplyId())
                 .housingType(normalize(request.housingType()))
                 .applicantName(normalize(request.applicantName()))
