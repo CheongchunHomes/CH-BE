@@ -368,6 +368,12 @@ public class AnnouncementService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public long countTodayAnnouncements() {
+        Long count = repository.countTodayVisibleAnnouncements(LocalDate.now());
+        return count == null ? 0L : count;
+    }
+
     // ===============
     // 공통 유틸 메서드
     // ===============
