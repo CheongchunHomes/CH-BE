@@ -743,6 +743,39 @@ tbody tr:nth-child(even) td {
     cursor: pointer;
 }
 
+.clickable-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.clickable-card:hover,
+.clickable-card:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 38px rgba(37, 99, 235, 0.14);
+}
+
+.user-toggle-panel {
+    display: grid;
+    gap: 16px;
+}
+
+.user-toggle-panel[hidden] {
+    display: none;
+}
+
+.user-toggle-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 22px 24px 0;
+}
+
+.user-toggle-head h3 {
+    margin: 0;
+    font-size: 24px;
+}
+
 .muted,
 .subtext,
 .source-note {
