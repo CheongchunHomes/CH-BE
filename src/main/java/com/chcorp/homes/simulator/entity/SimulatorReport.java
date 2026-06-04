@@ -1,6 +1,7 @@
 package com.chcorp.homes.simulator.entity;
 
 import com.chcorp.homes.common.entity.BaseEntity;
+import com.chcorp.homes.simulator.dto.SimulatorReportRequestDto;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -60,4 +61,13 @@ public class SimulatorReport extends BaseEntity {
     // PDF 파일 경로 (미구현)
     @Column(name = "pdf_url")
     private String pdfUrl;
+
+    public void update(SimulatorReportRequestDto dto) {
+        this.assetSnapshot   = dto.assetSnapshot();
+        this.housingSnapshot = dto.housingSnapshot();
+        this.loanSnapshot    = dto.loanSnapshot();
+        this.scoreSnapshot   = dto.scoreSnapshot();
+        this.aiResult        = dto.aiResult();
+        this.aiPrompt        = dto.aiPrompt();
+    }
 }

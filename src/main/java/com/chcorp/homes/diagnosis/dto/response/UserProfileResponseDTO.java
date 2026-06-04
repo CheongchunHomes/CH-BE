@@ -39,6 +39,7 @@ public class UserProfileResponseDTO {
     private MarriagePeriod marriagePeriod;
     private Boolean hasYoungChild;
     private Boolean singleParent;
+    private Integer houselessYears;
 
     /* UserProfile 엔티티 → DTO 변환 */
     public static UserProfileResponseDTO from(UserProfile profile) {
@@ -65,6 +66,7 @@ public class UserProfileResponseDTO {
                 .marriagePeriod(profile.getMarriagePeriod())
                 .hasYoungChild(profile.getHasYoungChild())
                 .singleParent(profile.getSingleParent())
+                .houselessYears(profile.getHouselessYears())
                 .build();
     }
 }

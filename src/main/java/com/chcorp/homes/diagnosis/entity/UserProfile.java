@@ -137,6 +137,10 @@ public class UserProfile extends MutableBaseEntity {
     @Column(name = "is_single_parent")
     private Boolean singleParent;
 
+    /* 무주택 기간 (년 단위, 청약가점 산정용) */
+    @Column(name = "houseless_years")
+    private Integer houselessYears;
+
     /**
      * Dirty Checking 업데이트 메서드
      * - @Transactional 안에서 호출 시 자동 UPDATE
@@ -165,6 +169,7 @@ public class UserProfile extends MutableBaseEntity {
         this.marriagePeriod = dto.getMarriagePeriod();
         this.hasYoungChild = dto.getHasYoungChild();
         this.singleParent = dto.getSingleParent();
+        this.houselessYears = dto.getHouselessYears();
 
     }
 }

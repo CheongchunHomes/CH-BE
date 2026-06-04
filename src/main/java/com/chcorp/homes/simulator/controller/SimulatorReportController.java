@@ -35,7 +35,8 @@ public class SimulatorReportController {
     @GetMapping("/me")
     public ResponseEntity<SimulatorReportResponseDto> getMyReport(Authentication authentication) {
         Long userId = Long.valueOf(authentication.getName());
-        SimulatorReportResponseDto report = simulatorReportService.getMyReport(userId);
-        return report != null ? ResponseEntity.ok(report) : ResponseEntity.noContent().build();
+        return simulatorReportService.getMyReport(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 }

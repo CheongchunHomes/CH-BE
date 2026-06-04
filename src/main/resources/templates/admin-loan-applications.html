@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>대출신청 관리 | 관리자</title>
+    <title>대출신청관리 | 관리자</title>
     <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
 </head>
 <body>
@@ -13,13 +13,13 @@
     <main class="content">
         <section class="hero">
             <div>
-                <div class="eyebrow">대출신청 관리</div>
+                <div class="eyebrow">대출신청관리</div>
                 <h2>대출신청 목록</h2>
-                <p>결제대기 상태로 들어온 신청을 확인하고, 승인 또는 거부 처리 후 처리 시간을 남깁니다.</p>
+                <p>결제대기, 결제승인, 결제거부 상태를 확인하고 처리 시간을 기록합니다.</p>
             </div>
             <div class="hero-actions">
                 <span class="pill">실시간 반영</span>
-                <a class="button ghost" href="/admin/loan">대출 허브</a>
+                <a class="button ghost" href="/admin/loan">대출 목록</a>
             </div>
         </section>
 
@@ -32,7 +32,7 @@
             <article class="card stat-card">
                 <div class="label">기본 상태</div>
                 <div class="value">결제대기</div>
-                <div class="meta">디폴트</div>
+                <div class="meta">대기 상태</div>
             </article>
         </section>
 
@@ -40,7 +40,7 @@
             <div class="table-head">
                 <div>
                     <h3>대출신청 리스트</h3>
-                    <p>상태는 결제대기 / 결제승인 / 결제거부로 관리하며, 승인 또는 거부 시 처리 시간을 기록합니다.</p>
+                    <p>상태를 결제대기 / 결제승인 / 결제거부로 관리하며, 승인 또는 거부 처리 시간을 기록합니다.</p>
                 </div>
                 <span class="pill">총 <span th:text="${applicationCount}">0</span>건</span>
             </div>
@@ -50,7 +50,7 @@
                     <thead>
                     <tr>
                         <th>신청ID</th>
-                        <th>유저</th>
+                        <th>회원</th>
                         <th>상품</th>
                         <th>신청금액(만원)</th>
                         <th>상태</th>
@@ -60,32 +60,31 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="application : ${applications}">
-                        <td th:text="${application.applicationId}">1</td>
+                    <tr th:each="loanApplication : ${applications}">
+                        <td th:text="${loanApplication.applicationId}">1</td>
                         <td>
-                            <div th:text="${application.user.nickname}">홍길동</div>
-                            <div class="subtext" th:text="${application.user.email}">test@example.com</div>
+                            <div th:text="${loanApplication.user != null ? loanApplication.user.nickname : '-'}">nickname</div>
+                            <div class="subtext" th:text="${loanApplication.user != null ? loanApplication.user.email : '-'}">email@example.com</div>
                         </td>
                         <td>
-                            <div th:text="${application.loanProduct.name}">상품명</div>
-                            <div class="subtext" th:text="${application.loanProduct.provider}">제공기관</div>
+                            <div th:text="${loanApplication.loanProduct != null ? loanApplication.loanProduct.name : '-'}">상품명</div>
+                            <div class="subtext" th:text="${loanApplication.loanProduct != null ? loanApplication.loanProduct.provider : '-'}">기관명</div>
                         </td>
-                        <td th:text="${application.applyAmount != null ? application.applyAmount + '' : '-'}">0</td>
+                        <td th:text="${loanApplication.applyAmount != null ? loanApplication.applyAmount + '' : '-'}">0</td>
                         <td>
                             <span class="status-badge"
-                                  th:classappend="${application.status.name() == 'PAYMENT_APPROVED'} ? ' status-approved' : (${application.status.name() == 'PAYMENT_REJECTED'} ? ' status-rejected' : ' status-pending')"
-                                  th:text="${application.status.dbValue}">결제대기</span>
+                                  th:classappend="${loanApplication.status.name() == 'PAYMENT_APPROVED'} ? ' status-approved' : (${loanApplication.status.name() == 'PAYMENT_REJECTED'} ? ' status-rejected' : ' status-pending')"
+                                  th:text="${loanApplication.status.dbValue}">결제대기</span>
                         </td>
-                        <td th:text="${application.createdAt}">-</td>
-                        <td th:text="${application.decisionAt != null ? application.decisionAt : '-'}">-</td>
+                        <td th:text="${loanApplication.createdAt}">-</td>
+                        <td th:text="${loanApplication.decisionAt != null ? loanApplication.decisionAt : '-'}">-</td>
                         <td>
-                            <form class="status-form" th:action="@{/admin/loan-applications/{applicationId}/status(applicationId=${application.applicationId})}" method="post">
+                            <form class="status-form" th:action="@{/admin/loan-applications/{applicationId}/status(applicationId=${loanApplication.applicationId})}" method="post">
                                 <select name="status">
                                     <option th:each="status : ${statusOptions}"
                                             th:value="${status.name()}"
                                             th:text="${status.dbValue}"
-                                            th:selected="${status == application.status}">
-                                    </option>
+                                            th:selected="${status == loanApplication.status}"></option>
                                 </select>
                                 <button type="submit">변경</button>
                             </form>
