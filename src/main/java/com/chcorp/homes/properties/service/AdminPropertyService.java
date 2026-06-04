@@ -1,6 +1,7 @@
 package com.chcorp.homes.properties.service;
 
 import com.chcorp.homes.files.service.FileService;
+import com.chcorp.homes.properties.dto.AdminPropertyListDTO;
 import com.chcorp.homes.properties.dto.AdminPropertyRequestDTO;
 import com.chcorp.homes.properties.entity.Property;
 import com.chcorp.homes.properties.repository.PropertyRepository;
@@ -21,20 +22,27 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class AdminPropertyService {
 
+    private static final int DEFAULT_PROPERTY_IMAGE_COUNT = 10;
+    private static final String DEFAULT_PROPERTY_IMAGE_PATH = "/images/properties/default-%d.jpg";
+
     private final PropertyRepository propertyRepository;
     private final UserRepository userRepository;
     private final KakaoAddressGeocodingService geocodingService;
     private final FileService fileService;
 
     @Transactional(readOnly = true)
-    public Page<Property> getList(String keyword, String category, String dealType, int page, int size) {
+    public Page<AdminPropertyListDTO> getList(String keyword, String category, String dealType, int page, int size) {
         Pageable pageable = PageRequest.of(
                 page,
                 size,
                 Sort.by(Sort.Direction.DESC, "id")
         );
 
-        return propertyRepository.findAll(buildSearchSpec(keyword, category, dealType), pageable);
+        return propertyRepository.findAll(buildSearchSpec(keyword, category, dealType), pageable)
+                .map(property -> AdminPropertyListDTO.from(
+                        property,
+                        resolveThumbnailPreviewUrl(property.getId(), property.getThumbnailUrl())
+                ));
     }
 
     @Transactional(readOnly = true)
@@ -140,12 +148,32 @@ public class AdminPropertyService {
 
     @Transactional(readOnly = true)
     public String resolveThumbnailPreviewUrl(String thumbnailUrl) {
-        Long fileId = fileService.parseFileReference(thumbnailUrl);
-        if (fileId == null) {
-            return thumbnailUrl;
+        return resolveThumbnailPreviewUrl(null, thumbnailUrl);
+    }
+
+    @Transactional(readOnly = true)
+    public String resolveThumbnailPreviewUrl(Long propertyId, String thumbnailUrl) {
+        String normalizedThumbnailUrl = normalize(thumbnailUrl);
+        if (normalizedThumbnailUrl == null) {
+            return resolveFallbackThumbnailUrl(propertyId);
         }
 
-        return fileService.createPublicSignedDownloadUrl(fileId).signedUrl();
+        Long fileId = fileService.parseFileReference(thumbnailUrl);
+        if (fileId == null) {
+            return normalizedThumbnailUrl;
+        }
+
+        try {
+            return fileService.createPublicSignedDownloadUrl(fileId).signedUrl();
+        } catch (RuntimeException e) {
+            return resolveFallbackThumbnailUrl(propertyId);
+        }
+    }
+
+    private String resolveFallbackThumbnailUrl(Long propertyId) {
+        long seed = propertyId == null ? 0L : propertyId - 1L;
+        int imageNumber = Math.floorMod(seed, DEFAULT_PROPERTY_IMAGE_COUNT) + 1;
+        return DEFAULT_PROPERTY_IMAGE_PATH.formatted(imageNumber);
     }
 
     private void validate(AdminPropertyRequestDTO dto) {
