@@ -21,6 +21,9 @@ public class AlarmNotificationController {
 
     @GetMapping("/unread")
     public ResponseEntity<List<AlarmNotificationResponseDTO>> getUnreadAlarms(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.ok(List.of());
+        }
         Long userId = Long.valueOf(authentication.getName());
         return ResponseEntity.ok(alarmNotificationService.getUnreadAlarms(userId));
     }
@@ -30,6 +33,9 @@ public class AlarmNotificationController {
             Authentication authentication,
             @PathVariable Long alarmNotificationId
     ) {
+        if (authentication == null || authentication.getName() == null) {
+            return ResponseEntity.noContent().build();
+        }
         Long userId = Long.valueOf(authentication.getName());
         alarmNotificationService.markAsRead(alarmNotificationId, userId);
         return ResponseEntity.noContent().build();
