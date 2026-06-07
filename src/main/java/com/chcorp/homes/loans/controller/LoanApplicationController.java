@@ -1,14 +1,18 @@
 package com.chcorp.homes.loans.controller;
 
-import com.chcorp.homes.loans.entity.LoanApplication;
-import com.chcorp.homes.loans.repository.LoanApplicationRepository;
-import com.chcorp.homes.users.entity.User;
-import com.chcorp.homes.users.repository.UserRepository;
-import java.time.Instant;
+import com.chcorp.homes.loans.dto.request.LoanApplicationCreateRequestDTO;
+import com.chcorp.homes.loans.dto.response.LoanApplicationResponseDTO;
+import com.chcorp.homes.loans.dto.response.LoanApplicationSummaryResponseDTO;
+import com.chcorp.homes.loans.service.LoanApplicationService;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,58 +21,45 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/loan-applications")
 public class LoanApplicationController {
 
-    private final LoanApplicationRepository loanApplicationRepository;
-    private final UserRepository userRepository;
+    private final LoanApplicationService loanApplicationService;
 
     @GetMapping("/me")
-    public ResponseEntity<LoanApplicationSummaryResponse> getMyLatestLoanApplication(Authentication authentication) {
-        if (authentication == null || authentication.getName() == null) {
-            return ResponseEntity.ok(LoanApplicationSummaryResponse.empty());
+    public ResponseEntity<LoanApplicationSummaryResponseDTO> getMyLatestLoanApplication(Authentication authentication) {
+        Long userId = resolveUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.ok(LoanApplicationSummaryResponseDTO.empty());
         }
 
-        Long userId;
-        try {
-            userId = Long.valueOf(authentication.getName());
-        } catch (NumberFormatException ex) {
-            return ResponseEntity.ok(LoanApplicationSummaryResponse.empty());
-        }
-
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return ResponseEntity.ok(LoanApplicationSummaryResponse.empty());
-        }
-
-        LoanApplication application = loanApplicationRepository.findFirstByUserOrderByUpdatedAtDescApplicationIdDesc(user)
-                .orElse(null);
-
-        if (application == null) {
-            return ResponseEntity.ok(LoanApplicationSummaryResponse.empty());
-        }
-
-        return ResponseEntity.ok(LoanApplicationSummaryResponse.from(application));
+        return ResponseEntity.ok(loanApplicationService.getLatestLoanApplication(userId));
     }
 
-    public record LoanApplicationSummaryResponse(
-            Long applicationId,
-            String status,
-            Instant updatedAt,
-            Instant createdAt,
-            Long loanId,
-            Long userId
+    @PostMapping
+    public ResponseEntity<?> createLoanApplication(
+            Authentication authentication,
+            @RequestBody LoanApplicationCreateRequestDTO request
     ) {
-        static LoanApplicationSummaryResponse empty() {
-            return new LoanApplicationSummaryResponse(null, null, null, null, null, null);
+        Long userId = resolveUserId(authentication);
+        if (userId == null) {
+            userId = request.userId();
         }
 
-        static LoanApplicationSummaryResponse from(LoanApplication application) {
-            return new LoanApplicationSummaryResponse(
-                    application.getApplicationId(),
-                    application.getStatus() != null ? application.getStatus().name() : null,
-                    application.getUpdatedAt(),
-                    application.getCreatedAt(),
-                    application.getLoanProduct() != null ? application.getLoanProduct().getLoanId() : null,
-                    application.getUser() != null ? application.getUser().getId() : null
-            );
+        try {
+            LoanApplicationResponseDTO response = loanApplicationService.createLoanApplication(userId, request);
+            return ResponseEntity.ok(response);
+        } catch (ResponseStatusException ex) {
+            return ResponseEntity.status(ex.getStatusCode()).body(Map.of("message", ex.getReason()));
+        }
+    }
+
+    private Long resolveUserId(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            return null;
+        }
+
+        try {
+            return Long.valueOf(authentication.getName());
+        } catch (NumberFormatException ex) {
+            return null;
         }
     }
 }
