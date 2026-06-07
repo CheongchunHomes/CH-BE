@@ -3,6 +3,7 @@ package com.chcorp.homes.loans.repository;
 import com.chcorp.homes.loans.entity.LoanApplication;
 import com.chcorp.homes.loans.entity.LoanApplicationStatus;
 import com.chcorp.homes.users.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -16,6 +17,7 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
 
     List<LoanApplication> findAllByStatus(LoanApplicationStatus status);
 
+    @EntityGraph(attributePaths = {"user", "loanProduct"})
     Optional<LoanApplication> findFirstByUserOrderByUpdatedAtDescApplicationIdDesc(User user);
 
     @Query("""
