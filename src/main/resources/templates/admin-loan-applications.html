@@ -57,6 +57,7 @@
                         <th>신청일</th>
                         <th>처리일</th>
                         <th>상태변경</th>
+                        <th>미리보기</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -89,6 +90,14 @@
                                 <button type="submit">변경</button>
                             </form>
                         </td>
+                        <td>
+                            <button type="button"
+                                    class="button ghost"
+                                    th:attr="data-preview-url=@{/admin/loan-applications/{applicationId}/contract-preview(applicationId=${loanApplication.applicationId})}"
+                                    onclick="openContractPreview(this)">
+                                미리보기
+                            </button>
+                        </td>
                     </tr>
                     </tbody>
                 </table>
@@ -100,5 +109,38 @@
         </section>
     </main>
 </div>
+<script>
+    async function openContractPreview(button) {
+        const url = button?.dataset?.previewUrl;
+        if (!url) {
+            alert("미리보기 경로를 찾을 수 없습니다.");
+            return;
+        }
+
+        button.disabled = true;
+        const originalText = button.textContent;
+        button.textContent = "불러오는 중...";
+
+        try {
+            const response = await fetch(url, { cache: "no-store" });
+            if (!response.ok) {
+                throw new Error(`미리보기 요청 실패: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!data?.signedUrl) {
+                throw new Error("미리보기 URL이 없습니다.");
+            }
+
+            window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+        } catch (error) {
+            console.error(error);
+            alert(error instanceof Error ? error.message : "미리보기를 불러오지 못했습니다.");
+        } finally {
+            button.disabled = false;
+            button.textContent = originalText ?? "미리보기";
+        }
+    }
+</script>
 </body>
 </html>
