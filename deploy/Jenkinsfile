@@ -1,0 +1,111 @@
+pipeline {
+    agent any
+
+    environment {
+        PROJECT_DIR = '/home/ec2-user/ch-project'
+        BE_DIR = "${PROJECT_DIR}/CH-BE"
+        FE_DIR = "${PROJECT_DIR}/CH-FE"
+        AI_DIR = "${PROJECT_DIR}/CH-AI"
+        COMPOSE_FILE = "${BE_DIR}/deploy/docker-compose.prod.yml"
+        ENV_FILE = "${PROJECT_DIR}/.env"
+    }
+
+    stages {
+        stage('Check server files') {
+            steps {
+                sh '''
+                    set -eu
+                    test -d "$BE_DIR"
+                    test -d "$FE_DIR"
+                    test -d "$AI_DIR"
+                    test -f "$ENV_FILE"
+                    docker --version
+                    docker compose version
+                '''
+            }
+        }
+
+        stage('Pull main branches') {
+            steps {
+                sh '''
+                    set -eu
+
+                    # Deployment clones should not contain manual edits.
+                    # --ff-only fails safely if the local branch diverged.
+                    cd "$BE_DIR"
+                    git fetch origin main
+                    git checkout main
+                    git pull --ff-only origin main
+
+                    cd "$FE_DIR"
+                    git fetch origin main
+                    git checkout main
+                    git pull --ff-only origin main
+
+                    cd "$AI_DIR"
+                    git fetch origin main
+                    git checkout main
+                    git pull --ff-only origin main
+                '''
+            }
+        }
+
+        stage('Build and deploy containers') {
+            steps {
+                sh '''
+                    set -eu
+                    cd "$PROJECT_DIR"
+                    docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build
+                    docker ps
+                '''
+            }
+        }
+
+        stage('Health check') {
+            steps {
+                sh '''
+                    set -eu
+
+                    check_http() {
+                      name="$1"
+                      url="$2"
+                      echo "Checking $name: $url"
+                      for i in $(seq 1 30); do
+                        status=$(curl -sS -o /dev/null -w "%{http_code}" "$url" || true)
+                        if [ "$status" -ge 200 ] && [ "$status" -lt 500 ]; then
+                          echo "$name is responding with HTTP $status"
+                          return 0
+                        fi
+                        sleep 3
+                      done
+                      echo "$name health check failed"
+                      return 1
+                    }
+
+                    check_http frontend http://127.0.0.1:3000/
+                    check_http backend http://127.0.0.1:18080/announcements
+                    check_http ai http://127.0.0.1:8000/health
+                '''
+            }
+        }
+
+        stage('Reload Nginx') {
+            steps {
+                sh '''
+                    set -eu
+                    sudo nginx -t
+                    sudo systemctl reload nginx
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            sh '''
+                cd "$PROJECT_DIR"
+                docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" ps || true
+            '''
+        }
+    }
+}

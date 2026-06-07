@@ -1,0 +1,115 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ch-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: homes
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ch-postgres-data:/var/lib/postgresql/data
+    ports:
+      # Localhost binding only. Do not open 5432 in the EC2 security group.
+      - "127.0.0.1:5432:5432"
+    networks:
+      - ch-network
+
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: ch-backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: homes
+      DB_USERNAME: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+      ACCESS_TOKEN_EXPIRATION: ${ACCESS_TOKEN_EXPIRATION}
+      REFRESH_TOKEN_EXPIRATION: ${REFRESH_TOKEN_EXPIRATION}
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY}
+      SUPABASE_PRIVATE_FILE_BUCKET: ${SUPABASE_PRIVATE_FILE_BUCKET:-private-files}
+      SUPABASE_SIGNED_DOWNLOAD_TTL_SECONDS: ${SUPABASE_SIGNED_DOWNLOAD_TTL_SECONDS:-300}
+      API_PUBLIC_SERVICE_KEY: ${API_PUBLIC_SERVICE_KEY}
+      API_APPLYHOME_SERVICE_KEY: ${API_APPLYHOME_SERVICE_KEY}
+      API_SUBSCRIPTION_APPLYHOME_SERVICE_KEY: ${API_SUBSCRIPTION_APPLYHOME_SERVICE_KEY}
+      API_SUBSCRIPTION_APPLYHOME_COMPETITION_SERVICE_KEY: ${API_SUBSCRIPTION_APPLYHOME_COMPETITION_SERVICE_KEY}
+      API_POLICY_YOUTH_SERVICE_KEY: ${API_POLICY_YOUTH_SERVICE_KEY}
+      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY}
+      AI_BASE_URL: http://ai:8000
+    ports:
+      # Localhost binding only. Nginx or frontend container should be the public path.
+      - "127.0.0.1:18080:18080"
+    networks:
+      - ch-network
+
+  ai:
+    build:
+      context: ../../CH-AI
+      dockerfile: Dockerfile
+    container_name: ch-ai
+    restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      API_BASE_URL: http://backend:18080
+    ports:
+      # Localhost binding only. Public browser traffic should use Nginx /ai-api.
+      - "127.0.0.1:8000:8000"
+    networks:
+      - ch-network
+
+  frontend:
+    build:
+      context: ../../CH-FE
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: /api
+        NEXT_PUBLIC_AI_BASE_URL: /ai-api
+        NEXT_PUBLIC_BACKEND_IMAGE_BASE_URL: /api
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_BACKEND_WS_URL: ${NEXT_PUBLIC_BACKEND_WS_URL}
+        NEXT_PUBLIC_KAKAO_MAP_KEY: ${NEXT_PUBLIC_KAKAO_MAP_KEY:-}
+    container_name: ch-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - ai
+    environment:
+      NODE_ENV: production
+      API_BASE_URL: http://backend:18080
+      AI_BASE_URL: http://ai:8000
+      LOAN_API_BASE_URL: http://backend:18080
+      NEXT_PUBLIC_API_BASE_URL: /api
+      NEXT_PUBLIC_AI_BASE_URL: /ai-api
+      NEXT_PUBLIC_BACKEND_IMAGE_BASE_URL: /api
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_BACKEND_WS_URL: ${NEXT_PUBLIC_BACKEND_WS_URL}
+      NEXT_PUBLIC_KAKAO_MAP_KEY: ${NEXT_PUBLIC_KAKAO_MAP_KEY:-}
+    ports:
+      # Localhost binding only. Nginx exposes the actual public 80/443 entry.
+      - "127.0.0.1:3000:3000"
+    networks:
+      - ch-network
+
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: ch-redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "127.0.0.1:6379:6379"
+  #   networks:
+  #     - ch-network
+
+networks:
+  ch-network:
+    name: ch-network
+
+volumes:
+  ch-postgres-data:
+    name: ch-postgres-data

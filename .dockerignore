@@ -1,0 +1,11 @@
+.git
+.gradle
+build
+out
+uploads
+*.log
+.env
+.env.*
+!*.env.example
+docker-compose*.yml
+deploy/.env
