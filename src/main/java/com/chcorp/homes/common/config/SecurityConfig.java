@@ -46,7 +46,9 @@ public class SecurityConfig {
             "/images/properties/**",
             "/admin/banners/**",
             "/banners",
-            "/files/property-images/**"
+            "/files/property-images/**",
+            "/notice/**",
+            "/community/**"
             //"/**"   // 임시
     };
 
