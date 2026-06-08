@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <body>
 <aside class="sidebar" th:fragment="sidebar(activeMenu)">
@@ -17,13 +17,13 @@
                 <strong>관리자 메인</strong>
                 <span>전체 현황</span>
             </a>
-            <a class="menu-item" th:classappend="${activeMenu == 'users'} ? ' active' : ''" th:href="@{/admin(section='users')}">
+            <a class="menu-item" th:classappend="${activeMenu == 'users'} ? ' active' : ''" th:href="@{/admin/users}">
                 <strong>회원</strong>
                 <span>회원 리스트</span>
             </a>
-            <a class="menu-item" th:classappend="${activeMenu == 'subscription'} ? ' active' : ''" th:href="@{/admin(section='subscription')}">
-                <strong>청약</strong>
-                <span>청약 리스트</span>
+            <a class="menu-item" th:classappend="${activeMenu == 'property'} ? ' active' : ''" th:href="@{/admin/properties}">
+                <strong>물건 관리</strong>
+                <span>임대 물건 관리</span>
             </a>
             <a class="menu-item" th:classappend="${activeMenu == 'loan'} ? ' active' : ''" th:href="@{/admin/loan}">
                 <strong>대출</strong>
