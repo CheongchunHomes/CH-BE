@@ -25,19 +25,17 @@ public class CommunityController {
 
         return Long.valueOf(authentication.getName());
     }
-
-    @GetMapping
-    public ResponseEntity<CommunityPageResponseDTO> getPosts(
-            @RequestParam(required = false) String region,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        return ResponseEntity.ok(
-                communityService.getPosts(region, keyword, page, size)
-        );
-    }
-
+//    @GetMapping
+//    public ResponseEntity<CommunityPageResponseDTO> getPosts(
+//            @RequestParam(required = false) String region,
+//            @RequestParam(required = false) String keyword,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size
+//    ) {
+//        return ResponseEntity.ok(
+//                communityService.getPosts(region, keyword, page, size)
+//        );
+//    }
     @GetMapping("/list")
     public ResponseEntity<CommunityPageResponseDTO> getPostsByListPath(
             @RequestParam(required = false) String region,
