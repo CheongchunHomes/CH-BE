@@ -82,7 +82,7 @@ public class RecommendationService {
         int score = 0;
         if (Boolean.TRUE.equals(dto.getHouseless()))  score += 30;
         if (!Boolean.TRUE.equals(dto.getMarried()))   score += 15;
-        if (isYouthTarget(dto, age))                  score += 25;
+        if (isYouthTarget(age))                  score += 25;
         if (incomePass)                               score += 20;
         if (assetPass)                                score += 10;
         return build("청년 매입임대", score,
@@ -94,7 +94,7 @@ public class RecommendationService {
         int score = 0;
         if (Boolean.TRUE.equals(dto.getHouseless()))  score += 30;
         if (!Boolean.TRUE.equals(dto.getMarried()))   score += 15;
-        if (isYouthTarget(dto, age))                  score += 25;
+        if (isYouthTarget(age))                  score += 25;
         if (incomePass)                               score += 20;
         if (assetPass)                                score += 10;
         return build("청년 전세임대", score,
@@ -191,16 +191,12 @@ public class RecommendationService {
 
     // ── 공통 유틸 ───────────────────────────────────
 
-    private boolean isYouthTarget(DiagnosisRequestDTO dto, int age) {
-        // 만 19~39세면 무조건 통과
-        if (age >= AGE_MIN && age <= AGE_MAX) return true;
-        // 대학생/취준생은 만 17세 이상이면 예외 허용
-        if (age >= 17) {
-            return dto.getEmploymentStatus() == EmploymentStatus.STUDENT
-                    || dto.getEmploymentStatus() == EmploymentStatus.JOB_SEEKER;
-        }
-        return false;
+    // 만 19~39세면 무조건 통과
+    private boolean isYouthTarget(int age) {
+        return age >= AGE_MIN && age <= AGE_MAX;
     }
+
+
 
     private boolean isWithinEmploymentLimit(EmploymentPeriod period) {
         if (period == null) return false;
