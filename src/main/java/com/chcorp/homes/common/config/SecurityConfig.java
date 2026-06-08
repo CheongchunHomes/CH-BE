@@ -36,6 +36,7 @@ public class SecurityConfig {
             "/announcements/**",
             "/properties/**",
             "/subscription",
+            "/subscription/map",
             "/map",
             "/ws/map-chat",
             "/ws/map-chat/**",
