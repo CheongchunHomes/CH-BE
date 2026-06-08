@@ -1,5 +1,6 @@
 package com.chcorp.homes.properties.controller;
 
+import com.chcorp.homes.properties.dto.AdminPropertyListDTO;
 import com.chcorp.homes.properties.dto.AdminPropertyRequestDTO;
 import com.chcorp.homes.properties.entity.Property;
 import com.chcorp.homes.properties.service.AdminPropertyService;
@@ -27,7 +28,7 @@ public class AdminPropertyController {
                        @RequestParam(defaultValue = "") String dealType,
                        @RequestParam(defaultValue = "0") int page,
                        Model model) {
-        Page<Property> result = adminPropertyService.getList(keyword, category, dealType, page, 10);
+        Page<AdminPropertyListDTO> result = adminPropertyService.getList(keyword, category, dealType, page, 10);
 
         model.addAttribute("properties", result);
         model.addAttribute("keyword", keyword);
@@ -68,7 +69,7 @@ public class AdminPropertyController {
         model.addAttribute("form", toForm(property));
         model.addAttribute("isEdit", true);
         model.addAttribute("propertyId", id);
-        model.addAttribute("thumbnailPreviewUrl", adminPropertyService.resolveThumbnailPreviewUrl(property.getThumbnailUrl()));
+        model.addAttribute("thumbnailPreviewUrl", adminPropertyService.resolveThumbnailPreviewUrl(id, property.getThumbnailUrl()));
         return "admin/properties/form";
     }
 

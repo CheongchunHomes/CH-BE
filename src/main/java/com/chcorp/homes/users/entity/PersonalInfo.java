@@ -31,4 +31,10 @@ public class PersonalInfo {
 
     @Column(nullable = false)
     private String phone;
+
+    public void update(String realName, String phone, String address) {
+        this.realName = realName;
+        this.phone = phone;
+        this.address = address;
+    }
 }

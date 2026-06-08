@@ -2,6 +2,7 @@ package com.chcorp.homes.announcements.controller;
 
 
 import com.chcorp.homes.announcements.dto.AnnouncementListDTO;
+import com.chcorp.homes.announcements.dto.AnnouncementTodayCountResponseDTO;
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.service.AnnouncementService;
 import com.chcorp.homes.announcements.service.ApplyhomeAnnouncementService;
@@ -88,6 +89,12 @@ public class AnnouncementController {
 
         //3. DTO 형태로 반환
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/today-count")
+    public ResponseEntity<AnnouncementTodayCountResponseDTO> getTodayCount() {
+        long count = announcementService.countTodayAnnouncements();
+        return ResponseEntity.ok(new AnnouncementTodayCountResponseDTO(count));
     }
 
     // api 단건 조회 (공고 상세페이지 용)

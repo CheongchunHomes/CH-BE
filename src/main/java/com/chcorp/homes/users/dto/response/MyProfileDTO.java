@@ -1,7 +1,10 @@
 package com.chcorp.homes.users.dto.response;
 
+import java.time.Instant;
+
 public record MyProfileDTO(
         String email,
-        String nickname
+        String nickname,
+        Instant createdAt
 ) {
 }

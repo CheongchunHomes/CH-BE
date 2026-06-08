@@ -6,8 +6,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/*
 @Entity
-@Table(name = "subscription_application")
+@Table(name = "subscription_applications")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -39,3 +40,4 @@ public class AdminSubscriptionApplication extends BaseEntity {
         this.resultAt = resultAt;
     }
 }
+*/

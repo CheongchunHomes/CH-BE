@@ -1,9 +1,13 @@
 package com.chcorp.homes.users.controller;
 
+import com.chcorp.homes.auth.dto.response.AuthErrorResponseDTO;
+import com.chcorp.homes.users.dto.request.NicknameUpdateRequestDTO;
 import com.chcorp.homes.users.dto.request.PersonalInfoRequestDTO;
+import com.chcorp.homes.users.dto.request.PasswordChangeRequestDTO;
 import com.chcorp.homes.users.dto.request.RegisterDTO;
 import com.chcorp.homes.users.dto.response.MyProfileDTO;
 import com.chcorp.homes.users.dto.response.NicknameCheckResponseDTO;
+import com.chcorp.homes.users.dto.response.PersonalInfoResponseDTO;
 import com.chcorp.homes.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +44,16 @@ public class UserController {
         return ResponseEntity.ok(dto);
     }
 
+    @PatchMapping("/mypage")
+    public ResponseEntity<Void> updateNickname(
+            Authentication authentication,
+            @RequestBody NicknameUpdateRequestDTO request
+    ) {
+        Long userId = Long.valueOf(authentication.getName());
+        userService.updateNickname(userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/personal")
     public ResponseEntity<Void> personal(
             Authentication authentication,
@@ -48,5 +62,48 @@ public class UserController {
         Long userId = Long.valueOf(authentication.getName());
         userService.createPersonalInfo(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PatchMapping("/password")
+    public ResponseEntity<Void> changePassword(
+            Authentication authentication,
+            @RequestBody PasswordChangeRequestDTO request
+    ) {
+        Long userId = Long.valueOf(authentication.getName());
+        userService.changePassword(userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/personal")
+    public ResponseEntity<PersonalInfoResponseDTO> getPersonalInfo(Authentication authentication) {
+        Long userId = Long.valueOf(authentication.getName());
+        return ResponseEntity.ok(userService.getPersonalInfo(userId));
+    }
+
+    @PutMapping("/personal")
+    public ResponseEntity<Void> upsertPersonalInfo(
+            Authentication authentication,
+            @RequestBody PersonalInfoRequestDTO request
+    ) {
+        Long userId = Long.valueOf(authentication.getName());
+        userService.upsertPersonalInfo(userId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @ExceptionHandler(SensitiveAuthRequiredException.class)
+    public ResponseEntity<AuthErrorResponseDTO> handleSensitiveAuthRequired() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new AuthErrorResponseDTO("REAUTH_REQUIRED"));
+    }
+
+    private void requireSensitiveAuthLevel(Authentication authentication) {
+        String authLevel = authentication.getDetails() instanceof String details ? details : null;
+
+        if (!"LOGIN".equals(authLevel) && !"REAUTH".equals(authLevel)) {
+            throw new SensitiveAuthRequiredException();
+        }
+    }
+
+    private static class SensitiveAuthRequiredException extends RuntimeException {
     }
 }

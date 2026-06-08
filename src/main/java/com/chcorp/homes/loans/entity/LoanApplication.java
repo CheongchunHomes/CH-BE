@@ -48,6 +48,9 @@ public class LoanApplication extends MutableBaseEntity {
     @Column(name = "apply_amount", nullable = false)
     private Long applyAmount;
 
+    @Column(name = "address")
+    private String address;
+
     @Setter
     @Convert(converter = LoanApplicationStatusConverter.class)
     @Column(name = "status", nullable = false, length = 20)

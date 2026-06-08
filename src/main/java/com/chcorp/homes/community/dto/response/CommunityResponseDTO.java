@@ -2,7 +2,7 @@ package com.chcorp.homes.community.dto.response;
 
 import com.chcorp.homes.community.entity.CommunityPost;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CommunityResponseDTO(
         Long postId,
@@ -10,8 +10,8 @@ public record CommunityResponseDTO(
         String region,
         String title,
         String content,
-        Integer viewCount
-        //LocalDateTime createdAt
+        Integer viewCount,
+        Instant createdAt
 ) {
     public static CommunityResponseDTO from(CommunityPost post) {
         return new CommunityResponseDTO(
@@ -20,8 +20,8 @@ public record CommunityResponseDTO(
                 post.getRegion(),
                 post.getTitle(),
                 post.getContent(),
-                post.getViewCount()
-                //post.getCreateAt()
+                post.getViewCount(),
+                post.getCreatedAt()
         );
     }
 }
