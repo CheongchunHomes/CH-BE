@@ -48,7 +48,8 @@ public class SecurityConfig {
             "/banners",
             "/files/property-images/**",
             "/notice/**",
-            "/community/**"
+            "/community/list",
+            "/community/{postId}"
             //"/**"   // 임시
     };
 
