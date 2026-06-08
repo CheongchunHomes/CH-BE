@@ -69,7 +69,7 @@ services:
       context: ../../CH-FE
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_BASE_URL: /api
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
         NEXT_PUBLIC_AI_BASE_URL: /ai-api
         NEXT_PUBLIC_BACKEND_IMAGE_BASE_URL: /api
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
@@ -85,7 +85,7 @@ services:
       API_BASE_URL: http://backend:18080
       AI_BASE_URL: http://ai:8000
       LOAN_API_BASE_URL: http://backend:18080
-      NEXT_PUBLIC_API_BASE_URL: /api
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
       NEXT_PUBLIC_AI_BASE_URL: /ai-api
       NEXT_PUBLIC_BACKEND_IMAGE_BASE_URL: /api
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
