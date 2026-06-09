@@ -42,9 +42,15 @@ public class SecurityConfig {
             "/policies",
             "/policies/**",
             "/simulator/**",
+            "/files/property-images/**",
+            "/images/properties/**",
             "/admin/banners/**",
-            "/banners"
-            ,"/**"   // 임시
+            "/banners",
+            "/files/property-images/**",
+            "/notice/**",
+            "/community/list",
+            "/community/{postId}"
+            //"/**"   // 임시
     };
 
     @Bean

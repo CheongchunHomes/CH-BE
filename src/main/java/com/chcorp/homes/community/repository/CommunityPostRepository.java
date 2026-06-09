@@ -12,7 +12,7 @@ public interface CommunityPostRepository extends JpaRepository<CommunityPost, Lo
     @Query("""
             SELECT p
             FROM CommunityPost p
-            WHERE (:region IS NULL OR :region = '' OR p.region = :region)
+            WHERE (:region IS NULL OR :region = '' OR p.region LIKE CONCAT(:region, '%'))
               AND (
                     :keyword IS NULL
                     OR :keyword = ''

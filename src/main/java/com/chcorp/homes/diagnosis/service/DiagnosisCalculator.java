@@ -145,13 +145,18 @@ public class DiagnosisCalculator {
      */
     private int calcSaleScore(DiagnosisRequestDTO dto) {
         int score = 0;
-        if (Boolean.TRUE.equals(dto.getHouseless()))
-            score += 20;
+        score += calcHouselessScore(dto.getHouselessYears());
         if (dto.getDependentCount() != null)
             score += Math.min(dto.getDependentCount() * 5, 35);
         if (Boolean.TRUE.equals(dto.getHasSubscription()) && dto.getSubscriptionMonths() != null)
             score += Math.min(dto.getSubscriptionMonths() / 6, 17);
         return Math.min((int)(score / 84.0 * 100), 100);
+    }
+
+    private int calcHouselessScore(Integer years) {
+        if (years == null || years == 0) return 0;
+        if (years >= 15) return 32;
+        return (years + 1) * 2;  // 1년→4점, 2년→6점 ... 14년→30점
     }
 
     // ── 코멘트 생성 ─────────────────────────────────

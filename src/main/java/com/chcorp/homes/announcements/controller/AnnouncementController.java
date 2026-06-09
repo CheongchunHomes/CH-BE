@@ -91,13 +91,13 @@ public class AnnouncementController {
         return ResponseEntity.ok(dto);
     }
 
-    // api 단건 조회 (공고 상세페이지 용)
     @GetMapping("/today-count")
     public ResponseEntity<AnnouncementTodayCountResponseDTO> getTodayCount() {
         long count = announcementService.countTodayAnnouncements();
         return ResponseEntity.ok(new AnnouncementTodayCountResponseDTO(count));
     }
 
+    // api 단건 조회 (공고 상세페이지 용)
     @GetMapping("/{id}")
     public ResponseEntity<AnnouncementListDTO> getOne(@PathVariable Long id) {
         Announcement announcement = announcementService.getOne(id);

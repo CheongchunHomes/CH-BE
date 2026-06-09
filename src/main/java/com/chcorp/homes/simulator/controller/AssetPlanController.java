@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import com.chcorp.homes.simulator.exception.PlanAccessDeniedException;
-import com.chcorp.homes.simulator.exception.PlanNotFoundException;
 
 import java.util.List;
 
@@ -22,6 +20,7 @@ public class AssetPlanController {
     // GET /api/simulator/asset-plans — 플랜 전체 조회
     @GetMapping
     public ResponseEntity<List<AssetPlanResponseDto>> getPlans(Authentication authentication) {
+        if (authentication == null) return ResponseEntity.ok(List.of());
         Long userId = Long.valueOf(authentication.getName());
         return ResponseEntity.ok(assetPlanService.getPlans(userId));
     }
@@ -44,13 +43,7 @@ public class AssetPlanController {
             @RequestBody AssetPlanRequestDto dto
     ) {
         Long userId = Long.valueOf(authentication.getName());
-        try {
-            return ResponseEntity.ok(assetPlanService.updatePlan(userId, planId, dto));
-        } catch (PlanNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (PlanAccessDeniedException e) {
-            return ResponseEntity.status(403).build();
-        }
+        return ResponseEntity.ok(assetPlanService.updatePlan(userId, planId, dto));
     }
 
     // DELETE /api/simulator/asset-plans/:id — 플랜 삭제
@@ -60,13 +53,7 @@ public class AssetPlanController {
             @PathVariable Long planId
     ) {
         Long userId = Long.valueOf(authentication.getName());
-        try {
-            assetPlanService.deletePlan(userId, planId);
-            return ResponseEntity.noContent().build();
-        } catch (PlanNotFoundException e) {
-            return ResponseEntity.notFound().build();
-        } catch (PlanAccessDeniedException e) {
-            return ResponseEntity.status(403).build();
-        }
+        assetPlanService.deletePlan(userId, planId);
+        return ResponseEntity.noContent().build();
     }
 }

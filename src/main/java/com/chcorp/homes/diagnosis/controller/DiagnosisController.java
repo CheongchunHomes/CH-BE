@@ -46,6 +46,7 @@ public class DiagnosisController {
     public ResponseEntity<UserProfileResponseDTO> getMyProfile(
             Authentication authentication
     ) {
+        if (authentication == null) return ResponseEntity.noContent().build();
         Long userId = Long.valueOf(authentication.getName());
         return diagnosisService.getMyProfile(userId)
                 .map(ResponseEntity::ok)

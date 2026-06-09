@@ -49,6 +49,18 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     // 사용자 화면 기본 목록용
     Page<Announcement> findByIsVisibleTrue(Pageable pageable);
 
+    @Query("""
+        SELECT COUNT(a)
+        FROM Announcement a
+        WHERE a.isVisible = true
+          AND (
+                (COALESCE(a.applyStartDate, a.beginDe) IS NULL OR COALESCE(a.applyStartDate, a.beginDe) <= :today)
+            AND (COALESCE(a.applyEndDate, a.endDe) IS NULL OR COALESCE(a.applyEndDate, a.endDe) >= :today)
+            AND (COALESCE(a.applyStartDate, a.beginDe) IS NOT NULL OR COALESCE(a.applyEndDate, a.endDe) IS NOT NULL)
+          )
+    """)
+    Long countTodayVisibleAnnouncements(@Param("today") LocalDate today);
+
     Page<Announcement> findByRecuitmentTypeAndIsVisibleTrue(
             String recuitmentType,
             Pageable pageable
@@ -452,17 +464,5 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
         ORDER BY a.announcementId ASC
     """)
     List<Announcement> findGeocodeTargets(Pageable pageable);
-
-    @Query("""
-        SELECT COUNT(a)
-        FROM Announcement a
-        WHERE a.isVisible = true
-          AND (
-                (COALESCE(a.applyStartDate, a.beginDe) IS NULL OR COALESCE(a.applyStartDate, a.beginDe) <= :today)
-            AND (COALESCE(a.applyEndDate, a.endDe) IS NULL OR COALESCE(a.applyEndDate, a.endDe) >= :today)
-            AND (COALESCE(a.applyStartDate, a.beginDe) IS NOT NULL OR COALESCE(a.applyEndDate, a.endDe) IS NOT NULL)
-          )
-    """)
-    Long countTodayVisibleAnnouncements(@Param("today") LocalDate today);
 
 }

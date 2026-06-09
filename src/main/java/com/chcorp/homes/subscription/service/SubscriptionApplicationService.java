@@ -3,6 +3,7 @@ package com.chcorp.homes.subscription.service;
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.repository.AnnouncementRepository;
 import com.chcorp.homes.subscription.dto.request.SubscriptionApplicationCreateRequestDTO;
+import com.chcorp.homes.subscription.dto.response.SubscriptionApplicationLatestResponseDTO;
 import com.chcorp.homes.subscription.dto.response.SubscriptionApplicationResponseDTO;
 import com.chcorp.homes.subscription.entity.SubscriptionApplication;
 import com.chcorp.homes.subscription.entity.SubscriptionApplicationStatus;
@@ -22,6 +23,21 @@ public class SubscriptionApplicationService {
     private final SubscriptionApplicationRepository subscriptionApplicationRepository;
     private final UserRepository userRepository;
     private final AnnouncementRepository announcementRepository;
+
+    @Transactional(readOnly = true)
+    public SubscriptionApplicationLatestResponseDTO getLatestApplication(Long currentUserId) {
+        validateCurrentUserId(currentUserId);
+
+        SubscriptionApplication application = subscriptionApplicationRepository
+                .findFirstByUser_IdOrderByUpdatedAtDescIdDesc(currentUserId)
+                .orElse(null);
+
+        if (application == null) {
+            return SubscriptionApplicationLatestResponseDTO.empty();
+        }
+
+        return SubscriptionApplicationLatestResponseDTO.from(application);
+    }
 
     @Transactional
     public SubscriptionApplicationResponseDTO apply(
