@@ -51,4 +51,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRole(UserRole role);
 
     long countByRoleNotAndStatus(UserRole role, UserStatus status);
+
 }

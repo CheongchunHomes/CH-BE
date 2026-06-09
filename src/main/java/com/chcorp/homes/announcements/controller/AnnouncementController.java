@@ -2,6 +2,7 @@ package com.chcorp.homes.announcements.controller;
 
 
 import com.chcorp.homes.announcements.dto.AnnouncementListDTO;
+import com.chcorp.homes.announcements.dto.AnnouncementTodayCountResponseDTO;
 import com.chcorp.homes.announcements.entity.Announcement;
 import com.chcorp.homes.announcements.service.AnnouncementService;
 import com.chcorp.homes.announcements.service.ApplyhomeAnnouncementService;
@@ -91,6 +92,12 @@ public class AnnouncementController {
     }
 
     // api 단건 조회 (공고 상세페이지 용)
+    @GetMapping("/today-count")
+    public ResponseEntity<AnnouncementTodayCountResponseDTO> getTodayCount() {
+        long count = announcementService.countTodayAnnouncements();
+        return ResponseEntity.ok(new AnnouncementTodayCountResponseDTO(count));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<AnnouncementListDTO> getOne(@PathVariable Long id) {
         Announcement announcement = announcementService.getOne(id);

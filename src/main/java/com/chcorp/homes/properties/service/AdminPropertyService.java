@@ -32,12 +32,16 @@ public class AdminPropertyService {
 
     @Transactional(readOnly = true)
     public Page<AdminPropertyListDTO> getList(String keyword, String category, String dealType, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "id")
+        );
 
         return propertyRepository.findAll(buildSearchSpec(keyword, category, dealType), pageable)
                 .map(property -> AdminPropertyListDTO.from(
                         property,
-                        resolveThumbnailPreviewUrl(property.getLandlordUserId(), property.getThumbnailUrl())
+                        resolveThumbnailPreviewUrl(property.getId(), property.getThumbnailUrl())
                 ));
     }
 
@@ -144,41 +148,25 @@ public class AdminPropertyService {
 
     @Transactional(readOnly = true)
     public String resolveThumbnailPreviewUrl(String thumbnailUrl) {
-        return resolveThumbnailPreviewUrl(null, thumbnailUrl, null);
+        return resolveThumbnailPreviewUrl(null, thumbnailUrl);
     }
 
     @Transactional(readOnly = true)
-    public String resolveThumbnailPreviewUrl(Long ownerUserId, String thumbnailUrl) {
-        return resolveThumbnailPreviewUrl(null, thumbnailUrl, ownerUserId);
-    }
-
-    @Transactional(readOnly = true)
-    public String resolveThumbnailPreviewUrl(Long propertyId, String thumbnailUrl, Long ownerUserId) {
+    public String resolveThumbnailPreviewUrl(Long propertyId, String thumbnailUrl) {
         String normalizedThumbnailUrl = normalize(thumbnailUrl);
         if (normalizedThumbnailUrl == null) {
             return resolveFallbackThumbnailUrl(propertyId);
         }
 
-        Long fileId = parseLong(normalizedThumbnailUrl);
+        Long fileId = fileService.parseFileReference(thumbnailUrl);
         if (fileId == null) {
             return normalizedThumbnailUrl;
         }
 
         try {
-            if (ownerUserId == null) {
-                return normalizedThumbnailUrl;
-            }
-            return fileService.createSignedDownloadUrl(ownerUserId, fileId).signedUrl();
+            return fileService.createPublicSignedDownloadUrl(fileId).signedUrl();
         } catch (RuntimeException e) {
             return resolveFallbackThumbnailUrl(propertyId);
-        }
-    }
-
-    private Long parseLong(String value) {
-        try {
-            return Long.valueOf(value.trim());
-        } catch (RuntimeException e) {
-            return null;
         }
     }
 

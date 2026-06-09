@@ -439,6 +439,12 @@ public class AnnouncementService {
     // 단건 조회
     // ==============
     @Transactional(readOnly = true)
+    public long countTodayAnnouncements() {
+        Long count = repository.countTodayVisibleAnnouncements(LocalDate.now());
+        return count == null ? 0L : count;
+    }
+
+    @Transactional(readOnly = true)
     public Announcement getOne(Long id) {
         return repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("공고를 찾을 수 없습니다."));

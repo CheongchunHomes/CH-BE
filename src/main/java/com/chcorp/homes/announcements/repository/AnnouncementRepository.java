@@ -453,4 +453,16 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Long
     """)
     List<Announcement> findGeocodeTargets(Pageable pageable);
 
+    @Query("""
+        SELECT COUNT(a)
+        FROM Announcement a
+        WHERE a.isVisible = true
+          AND (
+                (COALESCE(a.applyStartDate, a.beginDe) IS NULL OR COALESCE(a.applyStartDate, a.beginDe) <= :today)
+            AND (COALESCE(a.applyEndDate, a.endDe) IS NULL OR COALESCE(a.applyEndDate, a.endDe) >= :today)
+            AND (COALESCE(a.applyStartDate, a.beginDe) IS NOT NULL OR COALESCE(a.applyEndDate, a.endDe) IS NOT NULL)
+          )
+    """)
+    Long countTodayVisibleAnnouncements(@Param("today") LocalDate today);
+
 }

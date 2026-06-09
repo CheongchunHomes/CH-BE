@@ -20,6 +20,7 @@ public class Property extends BaseEntity {
     @Column(name = "property_id")
     private Long id;
 
+    // 매물 기본 정보
     @Column(nullable = false, length = 100)
     private String title;
 
@@ -29,6 +30,8 @@ public class Property extends BaseEntity {
     @Column(length = 50)
     private String region;
 
+    // 매물 등록자 userId
+    // User 엔티티와 직접 연관관계를 걸지 않고 Long 값만 저장합니다.
     @Column(name = "landlord_user_id")
     private Long landlordUserId;
 
@@ -44,6 +47,7 @@ public class Property extends BaseEntity {
     @Column(name = "deal_type", length = 30)
     private String dealType;
 
+    // 금액 정보
     @Column(name = "deposit_amount")
     private Integer depositAmount;
 
@@ -53,6 +57,8 @@ public class Property extends BaseEntity {
     @Column(name = "maintenance_fee")
     private Integer maintenanceFee;
 
+
+    // 구조 정보
     @Column(name = "room_type", length = 50)
     private String roomType;
 
@@ -68,6 +74,7 @@ public class Property extends BaseEntity {
     @Column(name = "bathroom_count")
     private Integer bathroomCount;
 
+    // 건물 정보
     @Column
     private Integer floor;
 
@@ -89,6 +96,7 @@ public class Property extends BaseEntity {
     @Column(name = "building_use", length = 100)
     private String buildingUse;
 
+    // 입주 및 등록 정보
     @Column(name = "move_in_type", length = 50)
     private String moveInType;
 
@@ -101,6 +109,7 @@ public class Property extends BaseEntity {
     @Column(name = "first_registration_date")
     private LocalDate firstRegistrationDate;
 
+    // 쉼표 문자열 저장 정보
     @Column(columnDefinition = "TEXT")
     private String tag;
 
@@ -110,6 +119,7 @@ public class Property extends BaseEntity {
     @Column(name = "security_facilities", columnDefinition = "TEXT")
     private String securityFacilities;
 
+    // 화면 표시 정보
     @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
 
@@ -183,4 +193,5 @@ public class Property extends BaseEntity {
         this.thumbnailUrl = thumbnailUrl;
         this.description = description;
     }
+
 }
