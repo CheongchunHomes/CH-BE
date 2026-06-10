@@ -45,7 +45,8 @@ pipeline {
                         ssh -o StrictHostKeyChecking=no "$EC2_USER@$EC2_HOST" "
                             cd '$EC2_DEPLOY_DIR' &&
                             BACKEND_IMAGE='$FULL_IMAGE' docker compose --env-file .env -f deploy/docker-compose.deploy.yml pull backend &&
-                            BACKEND_IMAGE='$FULL_IMAGE' docker compose --env-file .env -f deploy/docker-compose.deploy.yml up -d --no-build postgres backend
+                            BACKEND_IMAGE='$FULL_IMAGE' docker compose --env-file .env -f deploy/docker-compose.deploy.yml up -d --no-build postgres backend &&
+                            docker image prune -f
                         "
                     '''
                 }

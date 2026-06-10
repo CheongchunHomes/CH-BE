@@ -8,7 +8,7 @@ COPY gradlew ./
 RUN chmod +x ./gradlew
 
 COPY src ./src
-RUN ./gradlew clean bootJar --no-daemon
+RUN ./gradlew clean bootJar --no-daemon || ./gradlew clean bootJar --no-daemon
 
 FROM eclipse-temurin:17-jre
 
