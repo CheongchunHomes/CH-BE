@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Controller
@@ -328,12 +329,97 @@ public class AdminController {
     }
 
     private List<RecentLog> buildRecentLogs() {
-        return List.of(
-                new RecentLog("신생아 특례 버팀목대출", "계약서 생성 완료", "2분 전"),
-                new RecentLog("버팀목 전세자금대출", "전자서명 대기", "15분 전"),
-                new RecentLog("중소기업취업청년 전월세보증금", "PDF 저장 완료", "31분 전"),
-                new RecentLog("일반 버팀목전세자금대출", "다음 페이지 이동", "1시간 전")
+        List<RecentLogCandidate> candidates = new ArrayList<>();
+
+        appendRecentLogs(
+                candidates,
+                userRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+                        .limit(2)
+                        .map(user -> new RecentLogCandidate(
+                                safe(user.getNickname()),
+                                "회원 저장 완료",
+                                user.getCreatedAt()
+                        ))
         );
+
+        appendRecentLogs(
+                candidates,
+                propertyRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+                        .limit(2)
+                        .map(property -> new RecentLogCandidate(
+                                safe(property.getTitle()),
+                                "물건 저장 완료",
+                                property.getCreatedAt()
+                        ))
+        );
+
+        appendRecentLogs(
+                candidates,
+                announcementRepository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt")).stream()
+                        .limit(2)
+                        .map(announcement -> new RecentLogCandidate(
+                                safe(announcement.getTitle()),
+                                "공고 저장 완료",
+                                announcement.getUpdatedAt()
+                        ))
+        );
+
+        appendRecentLogs(
+                candidates,
+                subscriptionRepository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt")).stream()
+                        .limit(2)
+                        .map(subscription -> new RecentLogCandidate(
+                                safe(subscription.getTitle()),
+                                "청약 공고 저장 완료",
+                                subscription.getUpdatedAt()
+                        ))
+        );
+
+        appendRecentLogs(
+                candidates,
+                policyRepository.findAll(Sort.by(Sort.Direction.DESC, "updatedAt")).stream()
+                        .limit(2)
+                        .map(policy -> new RecentLogCandidate(
+                                safe(policy.getTitle()),
+                                "제도 저장 완료",
+                                policy.getUpdatedAt()
+                        ))
+        );
+
+        appendRecentLogs(
+                candidates,
+                noticeRepository.findAll(PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "createdAt"))).stream()
+                        .map(notice -> new RecentLogCandidate(
+                                safe(notice.getTitle()),
+                                "공지 저장 완료",
+                                notice.getCreatedAt()
+                        ))
+        );
+
+        appendRecentLogs(
+                candidates,
+                communityPostRepository.findAll(PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "createdAt"))).stream()
+                        .map(post -> new RecentLogCandidate(
+                                safe(post.getTitle()),
+                                "게시글 저장 완료",
+                                post.getCreatedAt()
+                        ))
+        );
+
+        return candidates.stream()
+                .filter(candidate -> candidate.occurredAt() != null)
+                .sorted(Comparator.comparing(RecentLogCandidate::occurredAt).reversed())
+                .limit(4)
+                .map(candidate -> new RecentLog(
+                        candidate.title(),
+                        candidate.detail(),
+                        relativeTime(candidate.occurredAt())
+                ))
+                .toList();
+    }
+
+    private void appendRecentLogs(List<RecentLogCandidate> target, java.util.stream.Stream<RecentLogCandidate> source) {
+        source.forEach(target::add);
     }
 
     private long pagedTotalCount(String section) {
@@ -419,6 +505,33 @@ public class AdminController {
         return TIME_FMT.format(instant.atZone(ZoneId.of("Asia/Seoul")));
     }
 
+    private String relativeTime(Instant instant) {
+        if (instant == null) {
+            return "-";
+        }
+
+        Instant now = Instant.now();
+        long minutes = Math.max(0, java.time.Duration.between(instant, now).toMinutes());
+        if (minutes < 1) {
+            return "방금 전";
+        }
+        if (minutes < 60) {
+            return minutes + "분 전";
+        }
+
+        long hours = minutes / 60;
+        if (hours < 24) {
+            return hours + "시간 전";
+        }
+
+        long days = hours / 24;
+        if (days < 7) {
+            return days + "일 전";
+        }
+
+        return TIME_FMT.format(instant.atZone(ZoneId.of("Asia/Seoul")));
+    }
+
     private String safe(String value) {
         return value == null || value.isBlank() ? "-" : value;
     }
@@ -444,6 +557,9 @@ public class AdminController {
     }
 
     public record RecentLog(String title, String detail, String time) {
+    }
+
+    private record RecentLogCandidate(String title, String detail, Instant occurredAt) {
     }
 
     public record TableRow(List<String> columns) {
