@@ -1,7 +1,11 @@
 services:
   jenkins:
-    image: jenkins/jenkins:lts-jdk21
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    image: ch-jenkins:local
     container_name: myapp-jenkins
+    user: root
     restart: unless-stopped
     ports:
       - "8080:8080"
