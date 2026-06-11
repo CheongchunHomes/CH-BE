@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,13 +24,18 @@ public class AnnouncementCoordinateService {
     @Transactional
     public CoordinateUpdateResult updateMissingCoordinates() {
         List<Announcement> announcements =
-                announcementRepository.findTop100ByLatitudeIsNullAndLongitudeIsNullAndAddressIsNotNull();
+                announcementRepository.findGeocodeTargets(PageRequest.of(0,1000));
 
         int successCount = 0;
         int failCount = 0;
 
         for (Announcement announcement : announcements) {
             String address = announcement.getAddress();
+
+            if (address == null || address.isBlank()) {
+                failCount++;
+                continue;
+            }
 
             KakaoGeocodingService.Coordinate coordinate =
                     kakaoGeocodingService.getCoordinateByAddress(address);

@@ -38,12 +38,12 @@ public class AnnouncementQueryRepository {
             int size
     ) {
         QAnnouncement announcement = QAnnouncement.announcement;
-
         QSubscriptionHouseType houseType = QSubscriptionHouseType.subscriptionHouseType;
 
         Pageable pageable = PageRequest.of(page, size);
-
         BooleanBuilder condition = new BooleanBuilder();
+
+        LocalDate today = LocalDate.now();
 
         // 사용자 화면에는 노출 공고만 조회
         condition.and(announcement.isVisible.isTrue());
@@ -52,7 +52,34 @@ public class AnnouncementQueryRepository {
             condition.and(announcement.region.containsIgnoreCase(region));
         }
 
-        if (hasText(status)) {
+        // =========================
+        // 상태 / 마감 조건
+        // DB status 값이 아니라 신청기간 기준으로 판단
+        // =========================
+        if (!hasText(status) || "전체".equals(status)) {
+            // 전체: 마감되지 않은 공고만 조회
+            condition.and(
+                    announcement.applyEndDate.isNull()
+                            .or(announcement.applyEndDate.goe(today))
+            );
+        } else if ("접수중".equals(status)) {
+            // 접수중: 시작일이 오늘 이전/오늘이고, 마감일이 오늘 이후/오늘
+            condition.and(
+                    announcement.applyStartDate.isNull()
+                            .or(announcement.applyStartDate.loe(today))
+            );
+            condition.and(
+                    announcement.applyEndDate.isNull()
+                            .or(announcement.applyEndDate.goe(today))
+            );
+        } else if ("접수예정".equals(status)) {
+            // 접수예정: 시작일이 오늘 이후
+            condition.and(announcement.applyStartDate.gt(today));
+        } else if ("마감".equals(status) || "접수마감".equals(status)) {
+            // 마감: 마감일이 오늘 이전
+            condition.and(announcement.applyEndDate.lt(today));
+        } else {
+            // 그 외 상태값은 기존 status 기준
             condition.and(announcement.status.eq(status));
         }
 
@@ -65,9 +92,7 @@ public class AnnouncementQueryRepository {
         }
 
         if (deadlineSoon) {
-            LocalDate today = LocalDate.now();
             LocalDate deadlineEnd = today.plusDays(30);
-
             condition.and(announcement.applyEndDate.between(today, deadlineEnd));
         }
 
@@ -137,8 +162,12 @@ public class AnnouncementQueryRepository {
 
         NumberExpression<Double> distanceExpression = null;
 
+        // =========================
+        // 위치 기반 필터
+        // 마감 여부는 위 상태 조건에서 처리하고,
+        // 여기서는 좌표/거리 조건만 처리
+        // =========================
         if (useLocationFilter) {
-            // 위치 기반 필터를 적용할 때는 좌표가 있는 공고만 조회
             condition.and(announcement.latitude.isNotNull());
             condition.and(announcement.longitude.isNotNull());
 
@@ -185,7 +214,6 @@ public class AnnouncementQueryRepository {
                 .limit(pageable.getPageSize());
 
         if (useLocationFilter && distanceExpression != null) {
-            // 거리 순 / 5km 이내 / 10km 이내 모두 거리순 정렬
             query.orderBy(
                     distanceExpression.asc(),
                     announcement.applyEndDate.desc().nullsLast(),
