@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'IMAGE_NAME', defaultValue: 'your-dockerhub-username/ch-be', description: 'Backend Docker image name')
+        string(name: 'IMAGE_NAME', defaultValue: 'garlgaru/ch-be', description: 'Backend Docker image name')
         string(name: 'IMAGE_TAG', defaultValue: 'latest', description: 'Backend Docker image tag')
         credentials(name: 'DOCKER_REGISTRY_CREDENTIALS', defaultValue: 'docker-registry', description: 'Docker registry username/password', credentialType: 'com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl')
         credentials(name: 'EC2_SSH_KEY', defaultValue: 'ec2-ssh-key', description: 'EC2 SSH private key', credentialType: 'com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey')
