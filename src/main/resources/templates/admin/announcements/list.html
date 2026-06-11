@@ -61,6 +61,9 @@
             <form th:action="@{/admin/announcements/trigger/applyhome}" method="post">
                 <button class="button sm" type="submit">청약홈 수집</button>
             </form>
+            <button class="button sm" type="button" onclick="updateCoordinates()">
+                공고 좌표 일괄 업데이트
+            </button>
         </div>
 
         <!-- 테이블 -->
@@ -214,5 +217,35 @@
         </section>
     </main>
 </div>
+<script>
+    function updateCoordinates() {
+        if (!confirm("위도/경도가 없는 공고의 좌표를 일괄 업데이트하시겠습니까?")) {
+            return;
+        }
+         fetch("/admin/announcements/coordinates/update", {
+            method: "POST"
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("좌표 업데이트 요청 실패");
+                }
+                return response.json();
+            })
+            .then(function (result) {
+                alert(
+                    "좌표 업데이트 완료\n" +
+                    "대상: " + result.targetCount + "건\n" +
+                    "성공: " + result.successCount + "건\n" +
+                    "실패: " + result.failCount + "건"
+                );
+
+                location.reload();
+            })
+            .catch(function (error) {
+                console.error(error);
+                alert("좌표 업데이트 중 오류가 발생했습니다.");
+            });
+    }
+</script>
 </body>
 </html>

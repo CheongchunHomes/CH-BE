@@ -20,6 +20,7 @@ public class AdminAnnouncementService {
     private final AnnouncementService announcementService;
     private final ApplyhomeAnnouncementService applyhomeAnnouncementService;
     private final AnnouncementScrapRepository announcementScrapRepository;
+    private final AnnouncementCoordinateService announcementCoordinateService;
 
     // ==================
     // 목록 조회
@@ -198,16 +199,19 @@ public class AdminAnnouncementService {
     @Transactional
     public void triggerFetchAllRegions() {
         announcementService.fetchAllRegions();
+        announcementCoordinateService.updateMissingCoordinates();
     }
 
     @Transactional
     public void triggerFetchSale() {
         announcementService.fetchSaleAnnouncements();
+        announcementCoordinateService.updateMissingCoordinates();
     }
 
     @Transactional
     public void triggerFetchApplyhome() {
         applyhomeAnnouncementService.fetchApplyhome();
+        announcementCoordinateService.updateMissingCoordinates();
     }
 
     // =========================
