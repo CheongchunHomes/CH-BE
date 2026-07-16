@@ -2,12 +2,14 @@ package com.chcorp.homes.common.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.Instant;
 
+@Getter
 @MappedSuperclass
-public class MutableBaseEntity extends BaseEntity{
+public class MutableBaseEntity extends BaseEntity {
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)

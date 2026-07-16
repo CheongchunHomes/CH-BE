@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공고 등록/수정</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('announcement')}"></aside>
+
+    <main class="content">
+        <div class="form-panel">
+            <h2 th:text="${isEdit} ? '공고 수정' : '공고 등록'">공고 등록</h2>
+
+            <form th:action="${isEdit} ? @{/admin/announcements/{id}/edit(id=${announcementId})} : @{/admin/announcements}"
+                  method="post"
+                  th:object="${form}">
+
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>제목</label>
+                        <input type="text" th:field="*{title}" placeholder="공고 제목">
+                    </div>
+                    <div class="form-group">
+                        <label>지역</label>
+                        <input type="text" th:field="*{region}" placeholder="서울, 경기 등">
+                    </div>
+                    <div class="form-group">
+                        <label>모집유형</label>
+                        <input type="text" th:field="*{recuitmentType}" placeholder="공공임대, 공공분양 등">
+                    </div>
+                    <div class="form-group">
+                        <label>대상유형</label>
+                        <input type="text" th:field="*{targetType}" placeholder="공공임대주택 등">
+                    </div>
+                    <div class="form-group">
+                        <label>상태</label>
+                        <select th:field="*{status}">
+                            <option value="">선택</option>
+                            <option value="접수중">접수중</option>
+                            <option value="접수예정">접수예정</option>
+                            <option value="마감">마감</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>신청 시작일</label>
+                        <input type="date" th:field="*{applyStartDate}">
+                    </div>
+                    <div class="form-group">
+                        <label>신청 종료일</label>
+                        <input type="date" th:field="*{applyEndDate}">
+                    </div>
+                    <div class="form-group">
+                        <label>노출여부</label>
+                        <select th:field="*{isVisible}">
+                            <option value="true">노출</option>
+                            <option value="false">숨김</option>
+                        </select>
+                    </div>
+                    <div class="form-group full">
+                        <label>주소</label>
+                        <input type="text" th:field="*{address}" placeholder="상세 주소">
+                    </div>
+                    <div class="form-group full">
+                        <label>원문 URL</label>
+                        <input type="text" th:field="*{sourceUrl}" placeholder="https://...">
+                    </div>
+                    <div class="form-group full">
+                        <label>공고 내용</label>
+                        <textarea th:field="*{content}" placeholder="공고 내용을 입력하세요"></textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a class="button ghost" th:href="@{/admin/announcements}">취소</a>
+                    <button class="button" type="submit"
+                            th:text="${isEdit} ? '수정 완료' : '등록 완료'">등록 완료</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

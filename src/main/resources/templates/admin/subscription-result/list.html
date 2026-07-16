@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청약 신청 결과 관리</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+    <style>
+        .badge.pending { background: var(--blue-soft); color: var(--blue); }
+        .badge.win { background: var(--green-soft); color: #059669; }
+        .badge.lose { background: var(--red-soft); color: var(--red); }
+        .badge.done { background: #eef2ff; color: #4f46e5; }
+    </style>
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('subscription_result')}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">청약 신청 결과</div>
+                <h2>청약 결과 관리</h2>
+                <p>유저별 청약 당첨 · 낙첨 결과를 확인하고 관리합니다.</p>
+                <form method="get" action="/admin/subscription-result" style="display:flex; gap:8px; margin-top:12px;">
+                    <input type="number" name="userId" placeholder="유저 ID"
+                           th:value="${param.userId}"
+                           style="padding:8px 12px; border-radius:10px; border:1px solid var(--line); font-size:14px;"/>
+                    <select name="status" style="padding:8px 12px; border-radius:10px; border:1px solid var(--line); font-size:14px;">
+                        <option value="">전체 상태</option>
+                        <option value="PENDING" th:selected="${param.status == 'PENDING'}">대기중</option>
+                        <option value="APPLIED" th:selected="${param.status == 'APPLIED'}">당첨</option>
+                        <option value="CANCELED" th:selected="${param.status == 'CANCELED'}">낙첨</option>
+                    </select>
+                    <button class="button sm" type="submit">검색</button>
+                    <a class="button sm" href="/admin/subscription-result">초기화</a>
+                </form>
+            </div>
+        </section>
+
+        <section class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3>청약 신청 목록</h3>
+                    <p>신청한 유저의 당첨 · 낙첨 결과를 처리합니다.</p>
+                </div>
+                <span class="pill">총 <span th:text="${#lists.size(applications)}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!#lists.isEmpty(applications)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>신청 ID</th>
+                        <th>유저 ID</th>
+                        <th>공고 ID</th>
+                        <th>상태</th>
+                        <th>신청일</th>
+                        <th>결과일</th>
+                        <th>처리</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="app : ${applications}">
+                        <td th:text="${app.id}">1</td>
+                        <td th:text="${app.user.id}">1</td>
+                        <td th:text="${app.announcement.announcementId}">1</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${app.status.name() == 'PENDING' ? 'pending' : (app.status.name() == 'APPLIED' ? 'win' : 'lose')}"
+                                  th:text="${app.status.name() == 'PENDING' ? '대기중' : (app.status.name() == 'APPLIED' ? '당첨' : (app.status.name() == 'CANCELED' ? '낙첨' : app.status.name()))}">대기중</span>
+                        </td>
+                        <td th:text="${app.createdAt}">-</td>
+                        <td th:text="${app.resultAt != null ? app.resultAt : '-'}">-</td>
+                        <td>
+                            <div class="action-group" th:if="${app.status.name() == 'PENDING'}">
+                                <form th:action="@{/admin/subscription-result/{id}/result(id=${app.id})}" method="post">
+                                    <input type="hidden" name="status" value="APPLIED">
+                                    <button class="button sm" type="submit">당첨</button>
+                                </form>
+                                <form th:action="@{/admin/subscription-result/{id}/result(id=${app.id})}" method="post">
+                                    <input type="hidden" name="status" value="CANCELED">
+                                    <button class="button sm danger" type="submit">낙첨</button>
+                                </form>
+                            </div>
+                            <span class="badge done" th:if="${app.status.name() != 'PENDING'}">처리완료</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${#lists.isEmpty(applications)}">
+                청약 신청 내역이 없습니다.
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

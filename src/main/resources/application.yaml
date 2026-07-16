@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 18080
 
 spring:
   application:
@@ -18,3 +18,29 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
+supabase:
+  url: ${SUPABASE_URL}
+  secret-key: ${SUPABASE_SECRET_KEY}
+  storage:
+    private-file-bucket: ${SUPABASE_PRIVATE_FILE_BUCKET:private-files}
+    signed-download-ttl-seconds: ${SUPABASE_SIGNED_DOWNLOAD_TTL_SECONDS:300}
+
+
+jwt:
+  secret: ${SECRET_KEY}
+  access-token-expiration: ${ACCESS_TOKEN_EXPIRATION}
+  refresh-token-expiration: ${REFRESH_TOKEN_EXPIRATION}
+
+api:
+  public:
+    service-key: ${API_PUBLIC_SERVICE_KEY}
+  applyhome:
+    service-key: ${API_APPLYHOME_SERVICE_KEY}
+  subscription:
+    applyhome:
+      service-key: ${API_SUBSCRIPTION_APPLYHOME_SERVICE_KEY}
+  policy:
+    youth:
+        service-key: ${API_POLICY_YOUTH_SERVICE_KEY}
+  kakao:
+    rest-api-key: ${KAKAO_REST_API_KEY}

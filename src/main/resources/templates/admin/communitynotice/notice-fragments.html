@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <th:block th:fragment="styles">
+    <style>
+      .notice-summary {
+        display: block;
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+      }
+
+      .notice-dialog {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        padding: 24px;
+        background: rgba(15, 23, 42, 0.42);
+        overflow-y: auto;
+      }
+
+      .notice-dialog.is-open {
+        display: grid;
+        place-items: center;
+      }
+
+      .notice-dialog-panel {
+        width: min(760px, 100%);
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 28px;
+      }
+
+      .notice-dialog-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+
+      .notice-dialog-head h3 {
+        margin: 0;
+        font-size: 22px;
+      }
+
+      .notice-dialog-head p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .notice-close {
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: #ffffff;
+        color: var(--text);
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+      }
+
+      .notice-check {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 8px;
+        width: fit-content;
+        font-size: 14px;
+        font-weight: 800;
+        color: #334155;
+        white-space: nowrap;
+      }
+
+      .notice-check input[type="checkbox"] {
+        width: auto;
+        flex: 0 0 auto;
+        margin: 0;
+      }
+    </style>
+  </th:block>
+</head>
+<body>
+<th:block th:fragment="noticeTable">
+  <table>
+    <thead>
+    <tr>
+      <th>제목</th>
+      <th>분류</th>
+      <th>구분</th>
+      <th>작성일</th>
+      <th>관리</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="notice : ${noticeRows}">
+      <td>
+        <strong th:text="${notice.title}">공지 제목</strong>
+        <span class="notice-summary" th:text="${notice.summary}">공지 요약</span>
+      </td>
+      <td th:text="${notice.category}">분류</td>
+      <td>
+        <span th:class="${notice.important} ? 'badge hidden' : 'badge gray'"
+              th:text="${notice.important} ? '중요' : '일반'">일반</span>
+      </td>
+      <td th:text="${notice.createdAt}">작성일</td>
+      <td>
+        <div class="action-group">
+          <button type="button"
+                  class="action-link"
+                  th:attr="data-notice-id=${notice.noticeId},
+                           data-category=${notice.category},
+                           data-title=${notice.title},
+                           data-summary=${notice.summary},
+                           data-content=${notice.content},
+                           data-important=${notice.important}"
+                  onclick="showNoticeEditPanel(this)">
+            수정
+          </button>
+          <form th:action="@{/admin/notice/{noticeId}/delete(noticeId=${notice.noticeId})}" method="post">
+            <button type="submit" class="button danger sm" onclick="return confirm('공지사항을 삭제하시겠습니까?')">삭제</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+</th:block>
+
+<th:block th:fragment="noticePanels">
+  <div id="noticeWritePanel" class="notice-dialog" aria-hidden="true">
+    <section class="notice-dialog-panel">
+      <div class="notice-dialog-head">
+        <div>
+          <h3>공지사항 등록</h3>
+          <p>서비스 공지사항을 작성합니다.</p>
+        </div>
+        <button type="button" class="notice-close" onclick="hideNoticePanels()" aria-label="닫기">&times;</button>
+      </div>
+
+      <form th:action="@{/admin/notice/write}" method="post">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="noticeCategory">분류</label>
+            <select id="noticeCategory" name="category" required>
+              <option value="운영자 안내">운영자 안내</option>
+              <option value="정책 변경">정책 변경</option>
+              <option value="점검">점검</option>
+              <option value="업데이트">업데이트</option>
+              <option value="약관 변경">약관 변경</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="noticeTitle">제목</label>
+            <input id="noticeTitle" name="title" type="text" required>
+          </div>
+          <div class="form-group full">
+            <label for="noticeSummary">요약</label>
+            <input id="noticeSummary" name="summary" type="text">
+          </div>
+          <div class="form-group full">
+            <label for="noticeContent">내용</label>
+            <textarea id="noticeContent" name="content" required></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="notice-check">
+              <input name="important" type="checkbox" value="true">
+              중요 공지
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="button ghost" onclick="hideNoticePanels()">취소</button>
+          <button type="submit" class="button">저장</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="noticeEditPanel" class="notice-dialog" aria-hidden="true">
+    <section class="notice-dialog-panel">
+      <div class="notice-dialog-head">
+        <div>
+          <h3>공지사항 수정</h3>
+          <p>선택한 공지사항 내용을 수정합니다.</p>
+        </div>
+        <button type="button" class="notice-close" onclick="hideNoticePanels()" aria-label="닫기">&times;</button>
+      </div>
+
+      <form id="noticeEditForm" method="post">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="editNoticeCategory">분류</label>
+            <select id="editNoticeCategory" name="category" required>
+              <option value="운영자 안내">운영자 안내</option>
+              <option value="정책 변경">정책 변경</option>
+              <option value="점검">점검</option>
+              <option value="업데이트">업데이트</option>
+              <option value="약관 변경">약관 변경</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editNoticeTitle">제목</label>
+            <input id="editNoticeTitle" name="title" type="text" required>
+          </div>
+          <div class="form-group full">
+            <label for="editNoticeSummary">요약</label>
+            <input id="editNoticeSummary" name="summary" type="text">
+          </div>
+          <div class="form-group full">
+            <label for="editNoticeContent">내용</label>
+            <textarea id="editNoticeContent" name="content" required></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="notice-check">
+              <input id="editNoticeImportant" name="important" type="checkbox" value="true">
+              중요 공지
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="button ghost" onclick="hideNoticePanels()">취소</button>
+          <button type="submit" class="button">수정</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</th:block>
+
+<th:block th:fragment="communityNoticeTable">
+  <section th:if="${section == 'community'}" class="table-panel">
+    <div class="table-head">
+      <div>
+        <h3>커뮤니티 공지사항</h3>
+        <p>커뮤니티 상단에 노출할 공지사항을 관리합니다.</p>
+      </div>
+      <button type="button" class="button" onclick="showCommunityNoticeWritePanel()">커뮤니티 공지 등록</button>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+        <tr>
+          <th>제목</th>
+          <th>분류</th>
+          <th>구분</th>
+          <th>작성일</th>
+          <th>관리</th>
+        </tr>
+        </thead>
+        <tbody id="communityNoticeRows">
+        <tr>
+          <td colspan="5" class="muted">커뮤니티 공지사항을 불러오는 중입니다.</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</th:block>
+
+<th:block th:fragment="communityNoticePanels">
+  <div id="communityNoticeWritePanel" class="notice-dialog" aria-hidden="true">
+    <section class="notice-dialog-panel">
+      <div class="notice-dialog-head">
+        <div>
+          <h3>커뮤니티 공지 등록</h3>
+          <p>커뮤니티 영역에 노출할 공지를 작성합니다.</p>
+        </div>
+        <button type="button" class="notice-close" onclick="hideCommunityNoticePanels()" aria-label="닫기">&times;</button>
+      </div>
+
+      <form th:action="@{/admin/community/notice/write}" method="post">
+        <div class="form-grid">
+          <input id="communityNoticeCategory" name="category" type="hidden" value="커뮤니티">
+          <div class="form-group full">
+            <label for="communityNoticeTitle">제목</label>
+            <input id="communityNoticeTitle" name="title" type="text" required>
+          </div>
+          <div class="form-group full">
+            <label for="communityNoticeSummary">요약</label>
+            <input id="communityNoticeSummary" name="summary" type="text">
+          </div>
+          <div class="form-group full">
+            <label for="communityNoticeContent">내용</label>
+            <textarea id="communityNoticeContent" name="content" required></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="notice-check">
+              <input name="important" type="checkbox" value="true">
+              중요 공지
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="button ghost" onclick="hideCommunityNoticePanels()">취소</button>
+          <button type="submit" class="button">저장</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div id="communityNoticeEditPanel" class="notice-dialog" aria-hidden="true">
+    <section class="notice-dialog-panel">
+      <div class="notice-dialog-head">
+        <div>
+          <h3>커뮤니티 공지 수정</h3>
+          <p>선택한 커뮤니티 공지를 수정합니다.</p>
+        </div>
+        <button type="button" class="notice-close" onclick="hideCommunityNoticePanels()" aria-label="닫기">&times;</button>
+      </div>
+
+      <form id="communityNoticeEditForm" method="post">
+        <div class="form-grid">
+          <input id="editCommunityNoticeCategory" name="category" type="hidden" value="커뮤니티">
+          <div class="form-group full">
+            <label for="editCommunityNoticeTitle">제목</label>
+            <input id="editCommunityNoticeTitle" name="title" type="text" required>
+          </div>
+          <div class="form-group full">
+            <label for="editCommunityNoticeSummary">요약</label>
+            <input id="editCommunityNoticeSummary" name="summary" type="text">
+          </div>
+          <div class="form-group full">
+            <label for="editCommunityNoticeContent">내용</label>
+            <textarea id="editCommunityNoticeContent" name="content" required></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="notice-check">
+              <input id="editCommunityNoticeImportant" name="important" type="checkbox" value="true">
+              중요 공지
+            </label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="button ghost" onclick="hideCommunityNoticePanels()">취소</button>
+          <button type="submit" class="button">수정</button>
+        </div>
+      </form>
+    </section>
+  </div>
+</th:block>
+
+<th:block th:fragment="noticeScript">
+  <script>
+    function openNoticeDialog(dialog) {
+      if (!dialog) {
+        return;
+      }
+
+      dialog.classList.add('is-open');
+      dialog.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeNoticeDialog(dialog) {
+      if (!dialog) {
+        return;
+      }
+
+      dialog.classList.remove('is-open');
+      dialog.setAttribute('aria-hidden', 'true');
+    }
+
+    function showNoticeWritePanel() {
+      openNoticeDialog(document.getElementById('noticeWritePanel'));
+    }
+
+    function showNoticeEditPanel(button) {
+      const form = document.getElementById('noticeEditForm');
+      if (!form || !button) {
+        return;
+      }
+
+      form.action = '/admin/notice/' + button.dataset.noticeId + '/edit';
+      document.getElementById('editNoticeCategory').value = button.dataset.category || '';
+      document.getElementById('editNoticeTitle').value = button.dataset.title || '';
+      document.getElementById('editNoticeSummary').value = button.dataset.summary || '';
+      document.getElementById('editNoticeContent').value = button.dataset.content || '';
+      document.getElementById('editNoticeImportant').checked = button.dataset.important === 'true';
+      openNoticeDialog(document.getElementById('noticeEditPanel'));
+    }
+
+    function hideNoticePanels() {
+      closeNoticeDialog(document.getElementById('noticeWritePanel'));
+      closeNoticeDialog(document.getElementById('noticeEditPanel'));
+    }
+  </script>
+</th:block>
+
+<th:block th:fragment="communityNoticeScript">
+  <script>
+    function showCommunityNoticeWritePanel() {
+      openNoticeDialog(document.getElementById('communityNoticeWritePanel'));
+    }
+
+    function showCommunityNoticeEditPanel(button) {
+      const form = document.getElementById('communityNoticeEditForm');
+      if (!form || !button) {
+        return;
+      }
+
+      form.action = '/admin/community/notice/' + button.dataset.noticeId + '/edit';
+      document.getElementById('editCommunityNoticeCategory').value = button.dataset.category || '';
+      document.getElementById('editCommunityNoticeTitle').value = button.dataset.title || '';
+      document.getElementById('editCommunityNoticeSummary').value = button.dataset.summary || '';
+      document.getElementById('editCommunityNoticeContent').value = button.dataset.content || '';
+      document.getElementById('editCommunityNoticeImportant').checked = button.dataset.important === 'true';
+      openNoticeDialog(document.getElementById('communityNoticeEditPanel'));
+    }
+
+    function hideCommunityNoticePanels() {
+      closeNoticeDialog(document.getElementById('communityNoticeWritePanel'));
+      closeNoticeDialog(document.getElementById('communityNoticeEditPanel'));
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderCommunityNoticeRows(notices) {
+      const tbody = document.getElementById('communityNoticeRows');
+      if (!tbody) {
+        return;
+      }
+
+      if (!Array.isArray(notices) || notices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">등록된 커뮤니티 공지사항이 없습니다.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = notices.map((notice) => {
+        const createdAt = notice.createdAt ? new Date(notice.createdAt).toLocaleString('ko-KR') : '-';
+        const badgeClass = notice.important ? 'badge hidden' : 'badge gray';
+        const badgeText = notice.important ? '중요' : '일반';
+
+        return `
+          <tr>
+            <td>
+              <strong>${escapeHtml(notice.title)}</strong>
+              <span class="notice-summary">${escapeHtml(notice.summary)}</span>
+            </td>
+            <td>${escapeHtml(notice.category)}</td>
+            <td><span class="${badgeClass}">${badgeText}</span></td>
+            <td>${escapeHtml(createdAt)}</td>
+            <td>
+              <div class="action-group">
+                <button type="button"
+                        class="action-link"
+                        data-notice-id="${escapeHtml(notice.noticeId)}"
+                        data-category="${escapeHtml(notice.category)}"
+                        data-title="${escapeHtml(notice.title)}"
+                        data-summary="${escapeHtml(notice.summary)}"
+                        data-content="${escapeHtml(notice.content)}"
+                        data-important="${notice.important}"
+                        onclick="showCommunityNoticeEditPanel(this)">
+                  수정
+                </button>
+                <form action="/admin/community/notice/${escapeHtml(notice.noticeId)}/delete" method="post">
+                  <button type="submit" class="button danger sm" onclick="return confirm('커뮤니티 공지사항을 삭제하시겠습니까?')">삭제</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    if (document.getElementById('communityNoticeRows')) {
+      fetch('/admin/community/notice/list')
+        .then((response) => response.ok ? response.json() : [])
+        .then(renderCommunityNoticeRows)
+        .catch(() => renderCommunityNoticeRows([]));
+    }
+  </script>
+</th:block>
+</body>
+</html>

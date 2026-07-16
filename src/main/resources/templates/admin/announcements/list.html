@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공고 관리</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+
+    <!-- 사이드바 -->
+    <aside th:replace="~{admin/fragments/layout :: sidebar('announcement')}"></aside>
+
+    <main class="content">
+
+        <!-- 헤더 -->
+        <section class="hero">
+            <div>
+                <div class="eyebrow">공고 리스트</div>
+                <h2>공고 관리</h2>
+                <p>노출 중인 공고의 지역, 유형, 상태를 관리합니다.</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" th:href="@{/admin/announcements/new}">+ 공고 등록</a>
+            </div>
+        </section>
+
+        <!-- 검색 -->
+        <form class="search-panel" th:action="@{/admin/announcements}" method="get">
+            <div class="search-group">
+                <label>검색어</label>
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="제목, 지역 검색">
+            </div>
+            <div class="search-group">
+                <label>지역</label>
+                <input type="text" name="region" th:value="${region}" placeholder="서울, 경기 등">
+            </div>
+            <div class="search-group">
+                <label>상태</label>
+                <select name="status">
+                    <option value="" th:selected="${status == ''}">전체</option>
+                    <option value="접수중" th:selected="${status == '접수중'}">접수중</option>
+                    <option value="접수예정" th:selected="${status == '접수예정'}">접수예정</option>
+                    <option value="마감" th:selected="${status == '마감'}">마감</option>
+                </select>
+            </div>
+            <button class="button" type="submit">검색</button>
+            <a class="button ghost" th:href="@{/admin/announcements}">초기화</a>
+        </form>
+
+        <!-- API 트리거 -->
+        <div class="trigger-panel">
+            <span class="trigger-label">외부 API 수집</span>
+            <form th:action="@{/admin/announcements/trigger/regions}" method="post">
+                <button class="button sm" type="submit">임대주택 수집</button>
+            </form>
+            <form th:action="@{/admin/announcements/trigger/sale}" method="post">
+                <button class="button sm" type="submit">분양주택 수집</button>
+            </form>
+            <form th:action="@{/admin/announcements/trigger/applyhome}" method="post">
+                <button class="button sm" type="submit">청약홈 수집</button>
+            </form>
+            <button class="button sm" type="button" onclick="updateCoordinates()">
+                공고 좌표 일괄 업데이트
+            </button>
+        </div>
+
+        <!-- 테이블 -->
+        <section class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3>공고 리스트</h3>
+                    <p>노출 중인 공고의 지역, 유형, 상태를 관리합니다.</p>
+                </div>
+                <span class="pill">총 <span th:text="${announcements.totalElements}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!announcements.isEmpty()}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>제목</th>
+                        <th>지역</th>
+                        <th>모집유형</th>
+                        <th>상태</th>
+                        <th>노출여부</th>
+                        <th>신청기간</th>
+                        <th>관리</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${announcements}">
+                        <td th:text="${item.title}">제목</td>
+                        <td th:text="${item.region}">지역</td>
+                        <td th:text="${item.recuitmentType}">유형</td>
+                        <td th:text="${item.status}">상태</td>
+                        <td>
+                            <span class="badge"
+                                  th:classappend="${item.isVisible} ? 'visible' : 'hidden'"
+                                  th:text="${item.isVisible} ? '노출' : '숨김'">노출</span>
+                        </td>
+                        <td>
+                            <span th:text="${item.applyStartDate} + ' ~ ' + ${item.applyEndDate}">기간</span>
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                <!-- 수정 -->
+                                <a class="button sm ghost"
+                                   th:href="@{/admin/announcements/{id}/edit(id=${item.announcementId})}">수정</a>
+                                <!-- 노출여부 토글 -->
+                                <form th:action="@{/admin/announcements/{id}/visibility(id=${item.announcementId})}"
+                                      method="post">
+                                    <input type="hidden" name="isVisible"
+                                           th:value="${!item.isVisible}">
+                                    <button class="button sm"
+                                            th:classappend="${item.isVisible} ? 'danger' : ''"
+                                            th:text="${item.isVisible} ? '숨김처리' : '노출처리'"
+                                            type="submit">토글</button>
+                                </form>
+                                <!-- 관리자등록 공고만 실제 삭제 가능 -->
+                                <form th:if="${item.sourceType == '관리자등록'}"
+                                      th:action="@{/admin/announcements/{id}/delete(id=${item.announcementId})}"
+                                      method="post"
+                                      onsubmit="return confirm('정말 삭제하시겠습니까?')">
+                                    <button class="button sm danger" type="submit">삭제/숨김</button>
+                                </form>
+
+                                <!-- 외부 API 공고는 삭제 불가, 숨김처리만 가능 -->
+                                <span class="source-note" th:if="${item.sourceType != '관리자등록'}">
+                                    API 공고
+                                </span>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${announcements.isEmpty()}">
+                표시할 공고가 없습니다.
+            </div>
+
+            <!-- 페이지네이션 -->
+            <div class="pagination" th:if="${totalPages > 1}">
+
+                <!-- 이전 -->
+                <a class="page-btn"
+                   th:classappend="${currentPage == 0} ? ' disabled'"
+                   th:href="@{/admin/announcements(
+                        page=${currentPage - 1},
+                        keyword=${keyword},
+                        region=${region},
+                        status=${status}
+                   )}">
+                                이전
+                            </a>
+
+                            <!-- 첫 페이지 -->
+                            <a class="page-btn"
+                               th:if="${currentPage > 4}"
+                               th:href="@{/admin/announcements(
+                        page=0,
+                        keyword=${keyword},
+                        region=${region},
+                        status=${status}
+                   )}">
+                                1
+                            </a>
+
+                            <span class="page-btn disabled" th:if="${currentPage > 5}">...</span>
+
+                            <!-- 현재 페이지 기준 앞뒤 4개만 표시 -->
+                            <th:block th:each="pageNum : ${#numbers.sequence(
+                        T(java.lang.Math).max(0, currentPage - 4),
+                        T(java.lang.Math).min(totalPages - 1, currentPage + 4)
+                    )}">
+                                <a class="page-btn"
+                                   th:classappend="${pageNum == currentPage} ? ' active'"
+                                   th:href="@{/admin/announcements(
+                            page=${pageNum},
+                            keyword=${keyword},
+                            region=${region},
+                            status=${status}
+                       )}"
+                                   th:text="${pageNum + 1}">
+                                </a>
+                            </th:block>
+
+                            <span class="page-btn disabled" th:if="${currentPage < totalPages - 6}">...</span>
+
+                            <!-- 마지막 페이지 -->
+                            <a class="page-btn"
+                               th:if="${currentPage < totalPages - 5}"
+                               th:href="@{/admin/announcements(
+                        page=${totalPages - 1},
+                        keyword=${keyword},
+                        region=${region},
+                        status=${status}
+                   )}"
+                               th:text="${totalPages}">
+                            </a>
+
+                            <!-- 다음 -->
+                            <a class="page-btn"
+                               th:classappend="${currentPage >= totalPages - 1} ? ' disabled'"
+                               th:href="@{/admin/announcements(
+                        page=${currentPage + 1},
+                        keyword=${keyword},
+                        region=${region},
+                        status=${status}
+                   )}">
+                                다음
+                            </a>
+
+            </div>
+        </section>
+    </main>
+</div>
+<script>
+    function updateCoordinates() {
+        if (!confirm("위도/경도가 없는 공고의 좌표를 일괄 업데이트하시겠습니까?")) {
+            return;
+        }
+         fetch("/admin/announcements/coordinates/update", {
+            method: "POST"
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("좌표 업데이트 요청 실패");
+                }
+                return response.json();
+            })
+            .then(function (result) {
+                alert(
+                    "좌표 업데이트 완료\n" +
+                    "대상: " + result.targetCount + "건\n" +
+                    "성공: " + result.successCount + "건\n" +
+                    "실패: " + result.failCount + "건"
+                );
+
+                location.reload();
+            })
+            .catch(function (error) {
+                console.error(error);
+                alert("좌표 업데이트 중 오류가 발생했습니다.");
+            });
+    }
+</script>
+</body>
+</html>

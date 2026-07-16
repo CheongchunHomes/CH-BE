@@ -27,9 +27,10 @@ public class User extends BaseEntity {
     private String password;
 
     @Setter
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nickname;
 
+    @Enumerated(EnumType.STRING)
     @Column
     private OauthProvider provider;
 
@@ -37,7 +38,12 @@ public class User extends BaseEntity {
     private String provider_user_id;
 
     @Setter
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role;
 
 }

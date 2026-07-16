@@ -1,0 +1,97 @@
+﻿<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청년주거원스텝 관리자</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar(${section})}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow" th:text="${sectionBadge}">관리자 메인</div>
+                <h2 th:text="${sectionTitle}">관리자 메인</h2>
+                <p th:text="${sectionDescription}">
+                    청약, 대출, 공고, 유저 현황을 한눈에 확인하는 관리자 홈입니다.
+                </p>
+            </div>
+            <div class="hero-actions">
+                <span class="pill">실시간 반영</span>
+                <a class="button" th:href="@{/admin(section=${section})}">새로고침</a>
+            </div>
+        </section>
+
+        <section class="kpi-grid">
+            <article class="card kpi" th:each="card : ${stats}">
+                <div class="label" th:text="${card.label}">지표</div>
+                <div class="value" th:text="${card.value}">0</div>
+                <div class="meta" th:text="${card.meta}">전체</div>
+            </article>
+        </section>
+
+        <section th:if="${isOverview}" class="overview-grid">
+            <article class="panel card">
+                <h3>운영 요약</h3>
+                <p>유저, 청약, 공고, 대출 현황을 빠르게 확인할 수 있는 관리자 메인입니다.</p>
+                <div class="quick-grid">
+                    <a class="quick-card" th:each="action : ${overviewActions}" th:href="${action.href}">
+                        <strong th:text="${action.title}">유저 리스트</strong>
+                        <small th:text="${action.description}">설명</small>
+                    </a>
+                </div>
+            </article>
+
+            <article class="panel card list-card">
+                <h3>최근 작업</h3>
+                <p>최근 상태 변경과 저장 내역을 간단히 확인합니다.</p>
+                <div class="recent">
+                    <div class="recent-item" th:each="item : ${recentLogs}">
+                        <div>
+                            <strong th:text="${item.title}">항목</strong>
+                            <span th:text="${item.detail}">상세</span>
+                            <span th:text="${item.time}">방금 전</span>
+                        </div>
+                        <div class="status-chip">확인</div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <section th:unless="${isOverview}" class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3 th:text="${sectionTitle}">리스트</h3>
+                    <p th:text="${sectionDescription}">설명</p>
+                </div>
+                <span class="pill">총 <span th:text="${#lists.size(tableRows)}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!#lists.isEmpty(tableRows)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th th:each="header : ${tableHeaders}" th:text="${header}">헤더</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${tableRows}">
+                        <td th:each="cell : ${row.columns}">
+                            <span th:text="${cell}">값</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${#lists.isEmpty(tableRows)}">
+                표시할 데이터가 아직 없습니다.
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

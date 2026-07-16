@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지원제도 등록/수정</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('policy')}"></aside>
+
+  <main class="content">
+    <div class="form-panel">
+      <h2 th:text="${isEdit} ? '지원제도 수정' : '지원제도 등록'">지원제도 등록</h2>
+
+      <form th:action="${isEdit} ? @{/admin/policies/{id}/edit(id=${policyId})} : @{/admin/policies}"
+            method="post"
+            th:object="${form}">
+
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>제목</label>
+            <input type="text" th:field="*{title}" placeholder="제도명">
+          </div>
+          <div class="form-group">
+            <label>대분류</label>
+            <select th:field="*{mainCategory}">
+              <option value="">선택</option>
+              <option value="주거비지원">주거비지원</option>
+              <option value="기타지원">기타지원</option>
+              <option value="기타사업">기타사업</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>소분류</label>
+            <select th:field="*{subCategory}">
+              <option value="">선택</option>
+              <option value="월세지원">월세지원</option>
+              <option value="보증금지원">보증금지원</option>
+              <option value="주거급여">주거급여</option>
+              <option value="이사비지원">이사비지원</option>
+              <option value="융자지원">융자지원</option>
+              <option value="주거교육">주거교육</option>
+              <option value="상담지원">상담지원</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>상태</label>
+            <select th:field="*{status}">
+              <option value="">선택</option>
+              <option value="상시신청">상시신청</option>
+              <option value="신청가능">신청가능</option>
+              <option value="신청예정">신청예정</option>
+              <option value="마감">마감</option>
+              <option value="확인필요">확인필요</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>노출여부</label>
+            <select th:field="*{isVisible}">
+              <option value="true">노출</option>
+              <option value="false">숨김</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>지원유형</label>
+            <input type="text" th:field="*{supportType}" placeholder="현금, 현물 등">
+          </div>
+          <div class="form-group">
+            <label>신청기간</label>
+            <input type="text" th:field="*{applyPeriod}" placeholder="상시 또는 날짜 범위">
+          </div>
+          <div class="form-group">
+            <label>주관기관</label>
+            <input type="text" th:field="*{supervisingInstitution}" placeholder="주관기관명">
+          </div>
+          <div class="form-group full">
+            <label>원문 URL</label>
+            <input type="text" th:field="*{sourceUrl}" placeholder="https://...">
+          </div>
+          <div class="form-group full">
+            <label>온라인 신청 URL</label>
+            <input type="text" th:field="*{onlineApplyUrl}" placeholder="https://...">
+          </div>
+          <div class="form-group full">
+            <label>요약</label>
+            <textarea th:field="*{summary}" placeholder="제도 요약"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>지원 내용</label>
+            <textarea th:field="*{content}" placeholder="지원 내용을 입력하세요"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>지원 대상</label>
+            <textarea th:field="*{targetDesc}" placeholder="지원 대상을 입력하세요"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>신청 방법</label>
+            <textarea th:field="*{applyMethod}" placeholder="신청 방법을 입력하세요"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>구비서류</label>
+            <textarea th:field="*{requiredDocuments}" placeholder="제출 서류를 입력하세요"></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <a class="button ghost" th:href="@{/admin/policies}">취소</a>
+          <button class="button" type="submit"
+                  th:text="${isEdit} ? '수정 완료' : '등록 완료'">등록 완료</button>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>물건 관리</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('property')}"></aside>
+
+    <main class="content">
+        <section class="hero">
+            <div>
+                <div class="eyebrow">물건 관리</div>
+                <h2>임대 물건 리스트</h2>
+                <p>지도와 상세페이지에 노출될 임대 물건 정보를 관리합니다.</p>
+            </div>
+            <div class="hero-actions">
+                <a class="button" th:href="@{/admin/properties/new}">+ 물건 등록</a>
+            </div>
+        </section>
+
+        <form class="search-panel" th:action="@{/admin/properties}" method="get">
+            <div class="search-group">
+                <label>검색어</label>
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="물건명, 주소 검색">
+            </div>
+            <div class="search-group">
+                <label>분류</label>
+                <select name="category">
+                    <option value="" th:selected="${category == ''}">전체</option>
+                    <option value="원룸/투룸" th:selected="${category == '원룸/투룸'}">원룸/투룸</option>
+                    <option value="아파트" th:selected="${category == '아파트'}">아파트</option>
+                    <option value="주택/빌라" th:selected="${category == '주택/빌라'}">주택/빌라</option>
+                    <option value="오피스텔" th:selected="${category == '오피스텔'}">오피스텔</option>
+                </select>
+            </div>
+            <div class="search-group">
+                <label>거래 유형</label>
+                <select name="dealType">
+                    <option value="" th:selected="${dealType == ''}">전체</option>
+                    <option value="monthly_rent" th:selected="${dealType == 'monthly_rent'}">월세</option>
+                    <option value="jeonse" th:selected="${dealType == 'jeonse'}">전세</option>
+                </select>
+            </div>
+            <button class="button" type="submit">검색</button>
+            <a class="button ghost" th:href="@{/admin/properties}">초기화</a>
+        </form>
+
+        <section class="table-panel">
+            <div class="table-head">
+                <div>
+                    <h3>물건 리스트</h3>
+                    <p>주소 입력 물건은 저장 시 카카오 주소 API로 좌표가 자동 변환됩니다.</p>
+                </div>
+                <span class="pill">총 <span th:text="${properties.totalElements}">0</span>건</span>
+            </div>
+
+            <div class="table-scroll" th:if="${!properties.content.isEmpty()}">
+                <table class="property-table">
+                    <thead>
+                    <tr>
+                        <th>이미지</th>
+                        <th>물건명</th>
+                        <th>주소</th>
+                        <th>거래</th>
+                        <th>금액</th>
+                        <th>임대인 ID</th>
+                        <th>좌표</th>
+                        <th>관리</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${properties.content}">
+                        <td>
+                            <img class="property-thumb" th:if="${item.thumbnailPreviewUrl != null}" th:src="${item.thumbnailPreviewUrl}" alt="">
+                            <span th:if="${item.thumbnailPreviewUrl == null}">-</span>
+                        </td>
+                        <td th:text="${item.title}">물건명</td>
+                        <td th:text="${item.address}">주소</td>
+                        <td th:text="${item.dealType == 'jeonse' ? '전세' : '월세'}">월세</td>
+                        <td class="price-cell">
+                            <span th:text="${item.depositAmount != null ? '보증금 ' + item.depositAmount + '만원' : '보증금 -'}">보증금 -</span>
+                            <span th:text="${item.monthlyRentAmount != null ? '월세 ' + item.monthlyRentAmount + '만원' : '월세 -'}">월세 -</span>
+                            <span th:text="${item.maintenanceFee != null ? '관리비 ' + item.maintenanceFee + '만원' : '관리비 -'}">관리비 -</span>
+                        </td>
+                        <td th:text="${item.landlordUserId}">1</td>
+                        <td>
+                            <span th:text="${item.latitude}">0</span>,
+                            <span th:text="${item.longitude}">0</span>
+                        </td>
+                        <td>
+                            <div class="action-group">
+                                <a class="button sm ghost" th:href="@{/admin/properties/{id}/edit(id=${item.id})}">수정</a>
+                                <form th:action="@{/admin/properties/{id}/delete(id=${item.id})}" method="post" onsubmit="return confirm('물건을 삭제하시겠습니까?')">
+                                    <button class="button sm danger" type="submit">삭제</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" th:if="${properties.content.isEmpty()}">
+                등록된 물건이 없습니다.
+            </div>
+
+            <div class="pagination" th:if="${totalPages > 1}">
+                <a class="page-btn"
+                   th:classappend="${currentPage == 0} ? ' disabled'"
+                   th:href="@{/admin/properties(page=${currentPage - 1}, keyword=${keyword}, category=${category}, dealType=${dealType})}">이전</a>
+                <a class="page-btn"
+                   th:if="${startPage > 0}"
+                   th:href="@{/admin/properties(page=0, keyword=${keyword}, category=${category}, dealType=${dealType})}">1</a>
+                <span class="page-info" th:if="${startPage > 1}">...</span>
+                <a class="page-btn"
+                   th:each="pageNum : ${#numbers.sequence(startPage, endPage)}"
+                   th:classappend="${pageNum == currentPage} ? ' active'"
+                   th:href="@{/admin/properties(page=${pageNum}, keyword=${keyword}, category=${category}, dealType=${dealType})}"
+                   th:text="${pageNum + 1}">1</a>
+                <span class="page-info" th:if="${endPage < totalPages - 2}">...</span>
+                <a class="page-btn"
+                   th:if="${endPage < totalPages - 1}"
+                   th:href="@{/admin/properties(page=${totalPages - 1}, keyword=${keyword}, category=${category}, dealType=${dealType})}"
+                   th:text="${totalPages}">마지막</a>
+                <a class="page-btn"
+                   th:classappend="${currentPage >= totalPages - 1} ? ' disabled'"
+                   th:href="@{/admin/properties(page=${currentPage + 1}, keyword=${keyword}, category=${category}, dealType=${dealType})}">다음</a>
+                <span class="page-info" th:text="${currentPage + 1} + ' / ' + ${totalPages}">1 / 1</span>
+            </div>
+        </section>
+    </main>
+</div>
+</body>
+</html>

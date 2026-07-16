@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지원제도 관리</title>
+    <link rel="stylesheet" th:href="@{/admin/css/admin.css}">
+</head>
+<body>
+<div class="layout">
+    <aside th:replace="~{admin/fragments/layout :: sidebar('policy')}"></aside>
+
+  <main class="content">
+
+    <section class="hero">
+      <div>
+        <div class="eyebrow">지원제도 리스트</div>
+        <h2>지원제도 관리</h2>
+        <p>노출 중인 지원제도의 유형, 상태를 관리합니다.</p>
+      </div>
+      <div class="hero-actions">
+        <a class="button" th:href="@{/admin/policies/new}">+ 제도 등록</a>
+      </div>
+    </section>
+
+    <!-- 검색 -->
+    <form class="search-panel" th:action="@{/admin/policies}" method="get">
+      <div class="search-group">
+        <label>검색어</label>
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="제목 검색">
+      </div>
+      <div class="search-group">
+        <label>대분류</label>
+        <select name="mainCategory">
+          <option value="" th:selected="${mainCategory == ''}">전체</option>
+          <option value="주거비지원" th:selected="${mainCategory == '주거비지원'}">주거비지원</option>
+          <option value="기타지원" th:selected="${mainCategory == '기타지원'}">기타지원</option>
+          <option value="기타사업" th:selected="${mainCategory == '기타사업'}">기타사업</option>
+        </select>
+      </div>
+      <div class="search-group">
+        <label>소분류</label>
+        <select name="subCategory">
+          <option value="" th:selected="${subCategory == ''}">전체</option>
+          <option value="월세지원" th:selected="${subCategory == '월세지원'}">월세지원</option>
+          <option value="보증금지원" th:selected="${subCategory == '보증금지원'}">보증금지원</option>
+          <option value="주거급여" th:selected="${subCategory == '주거급여'}">주거급여</option>
+          <option value="이사비지원" th:selected="${subCategory == '이사비지원'}">이사비지원</option>
+          <option value="융자지원" th:selected="${subCategory == '융자지원'}">융자지원</option>
+          <option value="주거교육" th:selected="${subCategory == '주거교육'}">주거교육</option>
+          <option value="상담지원" th:selected="${subCategory == '상담지원'}">상담지원</option>
+          <option value="기타" th:selected="${subCategory == '기타'}">기타</option>
+        </select>
+      </div>
+      <div class="search-group">
+        <label>상태</label>
+        <select name="status">
+          <option value="" th:selected="${status == ''}">전체</option>
+          <option value="상시신청" th:selected="${status == '상시신청'}">상시신청</option>
+          <option value="신청가능" th:selected="${status == '신청가능'}">신청가능</option>
+          <option value="신청예정" th:selected="${status == '신청예정'}">신청예정</option>
+          <option value="마감" th:selected="${status == '마감'}">마감</option>
+          <option value="확인필요" th:selected="${status == '확인필요'}">확인필요</option>
+        </select>
+      </div>
+      <button class="button" type="submit">검색</button>
+      <a class="button ghost" th:href="@{/admin/policies}">초기화</a>
+    </form>
+
+    <!-- API 트리거 -->
+    <div class="trigger-panel">
+      <span class="trigger-label">외부 API 수집</span>
+      <form th:action="@{/admin/policies/trigger/youth}" method="post">
+        <button class="button sm" type="submit">청년정책 수집</button>
+      </form>
+      <form th:action="@{/admin/policies/trigger/public}" method="post">
+        <button class="button sm" type="submit">공공서비스 수집</button>
+      </form>
+    </div>
+
+    <!-- 테이블 -->
+    <section class="table-panel">
+      <div class="table-head">
+        <div>
+          <h3>지원제도 리스트</h3>
+          <p>노출 중인 지원제도의 유형, 상태를 관리합니다.</p>
+        </div>
+        <span class="pill">총 <span th:text="${policies.totalElements}">0</span>건</span>
+      </div>
+
+      <div class="table-scroll" th:if="${!policies.content.isEmpty()}">
+        <table>
+          <thead>
+          <tr>
+            <th>제목</th>
+            <th>대분류</th>
+            <th>소분류</th>
+            <th>상태</th>
+            <th>노출여부</th>
+            <th>관리</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr th:each="item : ${policies.content}">
+            <td th:text="${item.title}">제목</td>
+            <td th:text="${item.mainCategory}">대분류</td>
+            <td th:text="${item.subCategory}">소분류</td>
+            <td th:text="${item.status}">상태</td>
+            <td>
+                            <span class="badge"
+                                  th:classappend="${item.isVisible} ? 'visible' : 'hidden'"
+                                  th:text="${item.isVisible} ? '노출' : '숨김'">노출</span>
+            </td>
+            <td>
+              <div class="action-group">
+                <a class="button sm ghost"
+                   th:href="@{/admin/policies/{id}/edit(id=${item.policyId})}">수정</a>
+                <form th:action="@{/admin/policies/{id}/visibility(id=${item.policyId})}"
+                      method="post">
+                  <input type="hidden" name="isVisible" th:value="${!item.isVisible}">
+                  <button class="button sm"
+                          th:classappend="${item.isVisible} ? 'danger' : ''"
+                          th:text="${item.isVisible} ? '숨김처리' : '노출처리'"
+                          type="submit">토글</button>
+                </form>
+
+                <!-- 관리자등록 제도만 실제 삭제 가능 -->
+                <form th:if="${item.sourceType == '관리자등록'}"
+                      th:action="@{/admin/policies/{id}/delete(id=${item.policyId})}"
+                      method="post"
+                      onsubmit="return confirm('스크랩된 제도는 실제 삭제되지 않고 숨김처리됩니다. 계속 진행하시겠습니까?')">
+                  <button class="button sm danger" type="submit">삭제</button>
+                </form>
+
+                <!-- 외부 API 제도는 삭제 불가, 숨김처리만 가능 -->
+                <span class="source-note" th:if="${item.sourceType != '관리자등록'}">
+                  API 제도
+                </span>
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" th:if="${policies.content.isEmpty()}">
+        표시할 지원제도가 없습니다.
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div class="pagination" th:if="${totalPages > 1}">
+
+        <!-- 이전 -->
+        <a class="page-btn"
+           th:classappend="${currentPage == 0} ? ' disabled'"
+           th:href="@{/admin/policies(
+        page=${currentPage - 1},
+        keyword=${keyword},
+        mainCategory=${mainCategory},
+        subCategory=${subCategory},
+        status=${status}
+     )}">
+          이전
+        </a>
+
+        <!-- 첫 페이지 -->
+        <a class="page-btn"
+           th:if="${currentPage > 4}"
+           th:href="@{/admin/policies(
+        page=0,
+        keyword=${keyword},
+        mainCategory=${mainCategory},
+        subCategory=${subCategory},
+        status=${status}
+     )}">
+          1
+        </a>
+
+        <span class="page-btn disabled" th:if="${currentPage > 5}">...</span>
+
+        <!-- 현재 페이지 기준 앞뒤 4개만 표시 -->
+        <th:block th:each="pageNum : ${#numbers.sequence(
+      T(java.lang.Math).max(0, currentPage - 4),
+      T(java.lang.Math).min(totalPages - 1, currentPage + 4)
+      )}">
+          <a class="page-btn"
+             th:classappend="${pageNum == currentPage} ? ' active'"
+             th:href="@{/admin/policies(
+          page=${pageNum},
+          keyword=${keyword},
+          mainCategory=${mainCategory},
+          subCategory=${subCategory},
+          status=${status}
+       )}"
+             th:text="${pageNum + 1}">
+          </a>
+        </th:block>
+
+        <span class="page-btn disabled" th:if="${currentPage < totalPages - 6}">...</span>
+
+        <!-- 마지막 페이지 -->
+        <a class="page-btn"
+           th:if="${currentPage < totalPages - 5}"
+           th:href="@{/admin/policies(
+        page=${totalPages - 1},
+        keyword=${keyword},
+        mainCategory=${mainCategory},
+        subCategory=${subCategory},
+        status=${status}
+     )}"
+           th:text="${totalPages}">
+        </a>
+
+        <!-- 다음 -->
+        <a class="page-btn"
+           th:classappend="${currentPage >= totalPages - 1} ? ' disabled'"
+           th:href="@{/admin/policies(
+        page=${currentPage + 1},
+        keyword=${keyword},
+        mainCategory=${mainCategory},
+        subCategory=${subCategory},
+        status=${status}
+     )}">
+          다음
+        </a>
+
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
